@@ -1,0 +1,1073 @@
+/* =============================================================
+   WasteHero Design System — Global CSS
+   Source: Figma "Products - Pricing" (node 26:3111)
+   Extracted: April 2026
+   Font: Poppins (Regular 400, Medium 500, SemiBold 600)
+   ============================================================= */
+
+/* ─────────────────────────────────────────────
+   @font-face — Poppins via Google Fonts
+   ───────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+/* ─────────────────────────────────────────────
+   CSS Custom Properties (Design Tokens)
+   ───────────────────────────────────────────── */
+:root {
+
+  /* -------------------------------------------
+     COLOUR — Brand
+  ------------------------------------------- */
+  --color-brand-primary:          #155dfc;   /* Blue 500 — CTA buttons, active tab indicator, links */
+  --color-brand-primary-hover:    #1249d0;   /* Blue 600 — Button hover state */
+  --color-brand-primary-light:    #eff6ff;   /* Blue 50  — Brand tint backgrounds, focus rings */
+
+  /* -------------------------------------------
+     COLOUR — Neutrals (Gray scale)
+     Named after the roles they play in the UI
+  ------------------------------------------- */
+  --color-neutral-900:            #171717;   /* Darkest — rarely used directly */
+  --color-neutral-800:            #262626;   /* Dark text */
+  --color-neutral-700:            #404040;   /* text-primary: page titles, row primary labels */
+  --color-neutral-600:            #525252;   /* text-secondary emphasis */
+  --color-neutral-500:            #737373;   /* text-secondary: nav items, table headers, placeholders */
+  --color-neutral-400:            #a1a1a1;   /* text-placeholder: input placeholder text */
+  --color-neutral-300:            #d4d4d4;   /* Dividers, subtle borders */
+  --color-neutral-200:            #e5e5e5;   /* Input/card borders */
+  --color-neutral-150:            #f2f2f2;   /* Surface borders: topbar, sidebar, table row dividers */
+  --color-neutral-100:            #f5f5f5;   /* Surface subtle */
+  --color-neutral-50:             #f9f9f9;   /* Surface input background, search bar bg */
+  --color-neutral-25:             #fafafa;   /* Modal/form input background */
+
+  /* -------------------------------------------
+     COLOUR — Surface / Background
+  ------------------------------------------- */
+  --color-bg-page:                #ffffff;   /* Page background */
+  --color-bg-sidebar:             #ffffff;   /* Left nav panel */
+  --color-bg-topbar:              #ffffff;   /* Header bar */
+  --color-bg-surface:             #ffffff;   /* Cards, modals, panels */
+  --color-bg-input:               #fafafa;   /* Form field background */
+  --color-bg-input-alt:           #f9f9f9;   /* Search bar, secondary input */
+  --color-bg-table-header:        #f9f9f9;   /* Table column header row */
+  --color-bg-hover:               rgba(23, 23, 23, 0.05); /* Row/item hover state */
+  --color-bg-overlay:             rgba(23, 23, 23, 0.60); /* Modal backdrop */
+
+  /* -------------------------------------------
+     COLOUR — Border / Divider
+  ------------------------------------------- */
+  --color-border-default:         #f2f2f2;   /* Topbar bottom, sidebar right, table row, card borders */
+  --color-border-input:           #e5e5e5;   /* Form input default border */
+  --color-border-input-hover:     #155dfc;   /* Input focused/hovered border */
+  --color-border-divider:         #f2f2f2;   /* Horizontal dividers inside modals */
+  --color-border-subtle:          #e6e6e6;   /* Secondary/ghost button border */
+
+  /* -------------------------------------------
+     COLOUR — Text
+  ------------------------------------------- */
+  --color-text-primary:           #404040;   /* Page & section titles, primary labels, active nav */
+  --color-text-secondary:         #737373;   /* Nav items, subheadings, table column headers, placeholder text */
+  --color-text-placeholder:       #a1a1a1;   /* Form input placeholder */
+  --color-text-inverse:           #ffffff;   /* Text on filled (blue/green) surfaces */
+  --color-text-link:              #155dfc;   /* Clickable links */
+
+  /* -------------------------------------------
+     COLOUR — Status / Badge
+  ------------------------------------------- */
+
+  /* Active / Success */
+  --color-status-active-bg:       #f0fdf4;   /* Active badge background */
+  --color-status-active-border:   #b9f8cf;   /* Active badge border */
+  --color-status-active-text:     #008236;   /* Active badge label */
+
+  /* Info / Category badge (Service Product, Container Product…) */
+  --color-status-info-bg:         #f0f9ff;   /* Info badge background */
+  --color-status-info-border:     #b8e6fe;   /* Info badge border */
+  --color-status-info-text:       #0069a8;   /* Info badge label */
+
+  /* Danger / Destructive (icon color only — no badge defined yet) */
+  --color-icon-danger:            #ef4444;   /* Trash / delete icon */
+
+  /* -------------------------------------------
+     COLOUR — Icon
+  ------------------------------------------- */
+  --color-icon-primary:           rgba(23, 23, 23, 0.80); /* Primary icon fill */
+  --color-icon-secondary:         rgba(23, 23, 23, 0.50); /* Secondary / muted icon fill */
+  --color-icon-link:              #155dfc;                /* Link / interactive icon */
+
+  /* -------------------------------------------
+     TYPOGRAPHY — Font family
+  ------------------------------------------- */
+  --font-family-base:             'Poppins', sans-serif;
+
+  /* -------------------------------------------
+     TYPOGRAPHY — Font weights
+  ------------------------------------------- */
+  --font-weight-regular:          400;
+  --font-weight-medium:           500;
+  --font-weight-semibold:         600;
+
+  /* -------------------------------------------
+     TYPOGRAPHY — Font sizes (scale extracted from Figma)
+  ------------------------------------------- */
+  --font-size-xs:                 12px;   /* Table column headers (uppercase labels) */
+  --font-size-sm:                 14px;   /* Small supporting text */
+  --font-size-base:               16px;   /* Body, nav items, buttons, badges, form labels */
+  --font-size-lg:                 18px;   /* Sub-section headings */
+  --font-size-xl:                 20px;   /* Section headings */
+  --font-size-2xl:                24px;   /* Page title (e.g. "Products") */
+  --font-size-3xl:                28px;   /* Large display headings */
+
+  /* -------------------------------------------
+     TYPOGRAPHY — Line height
+  ------------------------------------------- */
+  --line-height-none:             1;       /* Compact single-line labels (buttons, nav) */
+  --line-height-tight:            1.25;    /* Headings */
+  --line-height-normal:           1.5;     /* Body copy */
+  --line-height-relaxed:          1.75;    /* Long-form text */
+
+  /* -------------------------------------------
+     TYPOGRAPHY — Letter spacing
+  ------------------------------------------- */
+  --letter-spacing-normal:        0em;
+  --letter-spacing-wide:          0.05em;  /* Uppercase table headers */
+  --letter-spacing-wider:         0.08em;
+
+  /* -------------------------------------------
+     SPACING (base-8 scale)
+  ------------------------------------------- */
+  --space-0:    0px;
+  --space-1:    4px;
+  --space-2:    8px;
+  --space-3:    12px;
+  --space-4:    16px;     /* Standard internal padding, gaps */
+  --space-5:    20px;
+  --space-6:    24px;     /* Section padding, tab gaps, title spacing */
+  --space-7:    28px;
+  --space-8:    32px;     /* Modal/card inner padding, section gaps */
+  --space-10:   40px;
+  --space-12:   48px;     /* Component height (buttons, nav rows, search bars) */
+  --space-14:   56px;
+  --space-16:   64px;
+  --space-20:   80px;     /* Topbar height */
+  --space-24:   96px;
+  --space-32:   128px;
+
+  /* -------------------------------------------
+     LAYOUT — Fixed dimensions
+  ------------------------------------------- */
+  --layout-topbar-height:         80px;    /* Top navigation bar */
+  --layout-sidebar-width:         290px;   /* Left navigation sidebar */
+  --layout-content-offset-x:     290px;   /* Main content left offset (sidebar width) */
+  --layout-icon-size-sm:          16px;
+  --layout-icon-size-md:          24px;    /* Standard icon size */
+  --layout-icon-size-lg:          32px;
+  --layout-icon-btn-size:         40px;    /* Square icon button (bell, settings, avatar) */
+
+  /* -------------------------------------------
+     BORDER RADIUS
+  ------------------------------------------- */
+  --radius-xs:   2px;
+  --radius-sm:   4px;    /* Icon button containers (Rectangle 1 inside Group) */
+  --radius-md:   8px;    /* Inputs, search bars, buttons, table items, small cards */
+  --radius-lg:   12px;
+  --radius-xl:   16px;   /* Modals, large panels */
+  --radius-full: 9999px; /* Pills / badge chips (Active, Service Product) */
+
+  /* -------------------------------------------
+     BORDER WIDTH
+  ------------------------------------------- */
+  --border-width-default:         1px;
+  --border-width-indicator:       2px;    /* Active tab underline */
+  --border-width-divider:         1px;    /* Section dividers */
+
+  /* -------------------------------------------
+     SHADOW
+     Note: UI uses mostly flat design; shadows appear
+     only on modal/dropdown overlays.
+  ------------------------------------------- */
+  --shadow-none:    none;
+  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md:      0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-lg:      0 8px 16px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);  /* Modals, dropdowns */
+
+  /* -------------------------------------------
+     TRANSITION
+  ------------------------------------------- */
+  --transition-fast:              100ms ease;
+  --transition-base:              150ms ease;
+  --transition-slow:              250ms ease;
+
+  /* -------------------------------------------
+     Z-INDEX
+  ------------------------------------------- */
+  --z-index-base:      0;
+  --z-index-dropdown:  100;
+  --z-index-sticky:    200;
+  --z-index-fixed:     300;    /* Topbar, sidebar */
+  --z-index-overlay:   400;    /* Modal backdrop */
+  --z-index-modal:     500;    /* Modal panel */
+  --z-index-toast:     600;
+
+}
+
+
+/* ─────────────────────────────────────────────
+   BASE RESET & ROOT STYLES
+   ───────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family:    var(--font-family-base);
+  font-size:      var(--font-size-base);
+  font-weight:    var(--font-weight-regular);
+  line-height:    var(--line-height-normal);
+  color:          var(--color-text-secondary);
+  background:     var(--color-bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color:           var(--color-text-link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size:   inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+
+/* ─────────────────────────────────────────────
+   TYPOGRAPHY UTILITIES
+   ───────────────────────────────────────────── */
+
+/* Page title — e.g. "Products" H1 */
+.text-page-title {
+  font-size:   var(--font-size-2xl);        /* 24px */
+  font-weight: var(--font-weight-semibold); /* 600 */
+  color:       var(--color-text-primary);   /* #404040 */
+  line-height: var(--line-height-none);
+}
+
+/* Section subtitle — "Manage your product catalogue" */
+.text-page-subtitle {
+  font-size:   var(--font-size-base);       /* 16px */
+  font-weight: var(--font-weight-regular);  /* 400 */
+  color:       var(--color-text-secondary); /* #737373 */
+  line-height: var(--line-height-none);
+}
+
+/* Section/modal heading — "Add additional service" */
+.text-section-heading {
+  font-size:   var(--font-size-2xl);        /* 24px */
+  font-weight: var(--font-weight-semibold); /* 600 */
+  color:       var(--color-text-secondary); /* #737373 — matches Figma exactly */
+  line-height: var(--line-height-none);
+}
+
+/* Table row primary label — "Mixed Waste Collection" */
+.text-label-primary {
+  font-size:   var(--font-size-base);       /* 16px */
+  font-weight: var(--font-weight-medium);   /* 500 */
+  color:       var(--color-text-primary);   /* #404040 */
+  line-height: var(--line-height-none);
+}
+
+/* Table row secondary label — "General mixed municipal waste" */
+.text-label-secondary {
+  font-size:   var(--font-size-base);       /* 16px */
+  font-weight: var(--font-weight-regular);  /* 400 */
+  color:       var(--color-text-secondary); /* #737373 */
+  line-height: var(--line-height-none);
+}
+
+/* Form field label — "Service name", "Category" */
+.text-field-label {
+  font-size:   var(--font-size-base);       /* 16px */
+  font-weight: var(--font-weight-medium);   /* 500 */
+  color:       var(--color-text-secondary); /* #737373 */
+  line-height: var(--line-height-none);
+}
+
+/* Table column header — "PRODUCT NAME", "STATUS" */
+.text-table-header {
+  font-size:      var(--font-size-xs);        /* 12px */
+  font-weight:    var(--font-weight-medium);  /* 500 */
+  color:          var(--color-text-secondary);/* #737373 */
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide); /* 0.05em */
+  line-height:    var(--line-height-none);
+}
+
+/* Navigation item text */
+.text-nav-item {
+  font-size:   var(--font-size-base);       /* 16px */
+  font-weight: var(--font-weight-regular);  /* 400 */
+  color:       var(--color-text-secondary); /* #737373 */
+  line-height: var(--line-height-none);
+  white-space: nowrap;
+}
+
+/* Active navigation item */
+.text-nav-item--active {
+  font-weight: var(--font-weight-medium);   /* 500 */
+  color:       var(--color-text-primary);   /* #404040 */
+}
+
+/* Breadcrumb / topbar active section */
+.text-breadcrumb-active {
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-medium);   /* 500 */
+  color:       var(--color-text-primary);   /* #404040 */
+}
+
+/* Breadcrumb parent */
+.text-breadcrumb-parent {
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-regular);  /* 400 */
+  color:       var(--color-text-secondary); /* #737373 */
+}
+
+/* Input placeholder text */
+.text-placeholder {
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  color:       var(--color-text-placeholder); /* #a1a1a1 */
+  line-height: var(--line-height-none);
+}
+
+/* Button / CTA label */
+.text-button {
+  font-size:   var(--font-size-base);       /* 16px */
+  font-weight: var(--font-weight-medium);   /* 500 */
+  line-height: var(--line-height-none);
+  white-space: nowrap;
+}
+
+
+/* ─────────────────────────────────────────────
+   LAYOUT
+   ───────────────────────────────────────────── */
+
+/* App shell wrapper */
+.wh-app {
+  display:   flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg-page);
+}
+
+/* Top navigation bar */
+.wh-topbar {
+  position:       fixed;
+  top:            0;
+  left:           0;
+  right:          0;
+  height:         var(--layout-topbar-height);   /* 80px */
+  background:     var(--color-bg-topbar);        /* #ffffff */
+  border-bottom:  var(--border-width-default) solid var(--color-border-default); /* #f2f2f2 */
+  display:        flex;
+  align-items:    center;
+  justify-content: space-between;
+  padding:        0 var(--space-4);              /* 0 16px */
+  z-index:        var(--z-index-fixed);
+}
+
+/* Left group in topbar: logo + breadcrumb */
+.wh-topbar__left {
+  display:    flex;
+  align-items: center;
+  gap:        var(--space-6);                    /* 24px */
+}
+
+/* Right group in topbar: search + icon actions + avatar */
+.wh-topbar__right {
+  display:    flex;
+  align-items: center;
+  gap:        var(--space-4);                    /* 16px */
+}
+
+/* Left sidebar navigation */
+.wh-sidebar {
+  position:       fixed;
+  top:            var(--layout-topbar-height);   /* 80px */
+  left:           0;
+  width:          var(--layout-sidebar-width);   /* 290px */
+  height:         calc(100vh - var(--layout-topbar-height));
+  background:     var(--color-bg-sidebar);       /* #ffffff */
+  border-right:   var(--border-width-default) solid var(--color-border-default); /* #f2f2f2 */
+  padding:        var(--space-2);                /* 8px */
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);                /* 8px */
+  overflow-y:     auto;
+  z-index:        var(--z-index-fixed);
+}
+
+/* Main content area */
+.wh-main {
+  margin-top:   var(--layout-topbar-height);     /* 80px */
+  margin-left:  var(--layout-sidebar-width);     /* 290px */
+  padding:      var(--space-8);                  /* 32px */
+  min-height:   calc(100vh - var(--layout-topbar-height));
+  background:   var(--color-bg-page);
+}
+
+/* Page content header row (title + actions) */
+.wh-page-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-bottom:   var(--space-8);               /* 32px */
+}
+
+.wh-page-header__title-group {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-3);                /* 12px */
+}
+
+.wh-page-header__actions {
+  display:    flex;
+  align-items: center;
+  gap:        var(--space-4);                    /* 16px */
+}
+
+
+/* ─────────────────────────────────────────────
+   NAVIGATION — Tab bar (secondary navigation)
+   e.g. Products | Categories | Waste Fractions | Zones | Pricing Units
+   ───────────────────────────────────────────── */
+
+.wh-tabs {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--space-12);                /* 48px — matches Figma tab spacing */
+  border-bottom: var(--border-width-default) solid var(--color-border-default);
+  padding:       var(--space-6) var(--space-8) 0;/* 24px 32px 0 */
+}
+
+.wh-tab {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-6);                /* 24px gap between label and indicator */
+  cursor:         pointer;
+  padding-bottom: 0;
+  position:       relative;
+}
+
+.wh-tab__label {
+  font-size:   var(--font-size-base);            /* 16px */
+  font-weight: var(--font-weight-regular);       /* 400 */
+  color:       var(--color-text-secondary);      /* #737373 */
+  line-height: var(--line-height-none);
+  white-space: nowrap;
+  transition:  color var(--transition-base);
+}
+
+/* Active tab indicator line */
+.wh-tab__indicator {
+  height:     var(--border-width-indicator);     /* 2px */
+  width:      100%;
+  background: transparent;
+  transition: background var(--transition-base);
+}
+
+.wh-tab--active .wh-tab__label {
+  font-weight: var(--font-weight-medium);        /* 500 */
+  color:       var(--color-brand-primary);       /* #155dfc */
+}
+
+.wh-tab--active .wh-tab__indicator {
+  background: var(--color-brand-primary);        /* #155dfc */
+}
+
+.wh-tab:hover .wh-tab__label {
+  color: var(--color-text-primary);
+}
+
+
+/* ─────────────────────────────────────────────
+   NAVIGATION — Sidebar nav items
+   ───────────────────────────────────────────── */
+
+.wh-nav-item {
+  display:        flex;
+  align-items:    center;
+  justify-content: space-between;
+  height:         var(--space-12);               /* 48px */
+  padding:        var(--space-2) var(--space-4); /* 8px 16px */
+  border-radius:  var(--radius-md);              /* 8px */
+  cursor:         pointer;
+  transition:     background var(--transition-base);
+}
+
+.wh-nav-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.wh-nav-item__inner {
+  display:    flex;
+  align-items: center;
+  gap:        var(--space-4);                    /* 16px */
+}
+
+.wh-nav-item__icon {
+  width:  var(--layout-icon-size-md);            /* 24px */
+  height: var(--layout-icon-size-md);
+  flex-shrink: 0;
+}
+
+.wh-nav-item__chevron {
+  width:  var(--layout-icon-size-md);
+  height: var(--layout-icon-size-md);
+  flex-shrink: 0;
+}
+
+/* Sidebar search bar */
+.wh-sidebar-search {
+  display:        flex;
+  align-items:    center;
+  gap:            var(--space-4);                /* 16px */
+  height:         var(--space-12);               /* 48px */
+  padding:        var(--space-2) var(--space-4); /* 8px 16px */
+  background:     var(--color-bg-input-alt);     /* #f9f9f9 */
+  border:         var(--border-width-default) solid var(--color-border-default); /* #f2f2f2 */
+  border-radius:  var(--radius-md);              /* 8px */
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Icon button (40×40 square)
+   e.g. bell, settings, help in topbar; edit/delete in table rows
+   ───────────────────────────────────────────── */
+
+.wh-icon-btn {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  width:          var(--layout-icon-btn-size);   /* 40px */
+  height:         var(--layout-icon-btn-size);   /* 40px */
+  border-radius:  var(--radius-sm);              /* 4px */
+  background:     transparent;
+  border:         none;
+  cursor:         pointer;
+  flex-shrink:    0;
+  transition:     background var(--transition-base);
+}
+
+.wh-icon-btn:hover {
+  background: var(--color-bg-hover);
+}
+
+.wh-icon-btn img,
+.wh-icon-btn svg {
+  width:  var(--layout-icon-size-md);            /* 24px */
+  height: var(--layout-icon-size-md);
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Button (primary / secondary / ghost)
+   ───────────────────────────────────────────── */
+
+.wh-btn {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  gap:            var(--space-4);                /* 16px — icon + label gap */
+  height:         var(--space-12);               /* 48px */
+  padding:        var(--space-2) var(--space-4); /* 8px 16px */
+  border-radius:  var(--radius-md);              /* 8px */
+  border:         none;
+  cursor:         pointer;
+  font-family:    var(--font-family-base);
+  font-size:      var(--font-size-base);         /* 16px */
+  font-weight:    var(--font-weight-medium);     /* 500 */
+  line-height:    var(--line-height-none);
+  white-space:    nowrap;
+  transition:     background var(--transition-base),
+                  border-color var(--transition-base),
+                  box-shadow var(--transition-base);
+  text-decoration: none;
+}
+
+/* Primary — blue fill, white label */
+.wh-btn--primary {
+  background: var(--color-brand-primary);        /* #155dfc */
+  color:      var(--color-text-inverse);         /* #ffffff */
+}
+
+.wh-btn--primary:hover {
+  background: var(--color-brand-primary-hover);  /* #1249d0 */
+}
+
+.wh-btn--primary:active {
+  background: #0f3fba;
+}
+
+/* Secondary — white fill, neutral border, dark label */
+.wh-btn--secondary {
+  background:  var(--color-bg-surface);          /* #ffffff */
+  border:      var(--border-width-default) solid var(--color-border-subtle); /* #e6e6e6 */
+  color:       var(--color-text-secondary);      /* #737373 */
+}
+
+.wh-btn--secondary:hover {
+  background: var(--color-bg-input-alt);
+}
+
+/* Ghost — transparent, no border */
+.wh-btn--ghost {
+  background: transparent;
+  color:      var(--color-text-secondary);
+}
+
+.wh-btn--ghost:hover {
+  background: var(--color-bg-hover);
+}
+
+/* Button icon */
+.wh-btn__icon {
+  width:    var(--layout-icon-size-md);          /* 24px */
+  height:   var(--layout-icon-size-md);
+  flex-shrink: 0;
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Search bar
+   ───────────────────────────────────────────── */
+
+.wh-search {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--space-4);                 /* 16px */
+  height:        var(--space-12);                /* 48px */
+  padding:       var(--space-2) var(--space-4);  /* 8px 16px */
+  background:    var(--color-bg-input-alt);      /* #f9f9f9 */
+  border:        var(--border-width-default) solid var(--color-border-default); /* #f2f2f2 */
+  border-radius: var(--radius-md);               /* 8px */
+  font-size:     var(--font-size-base);
+  color:         var(--color-text-secondary);
+}
+
+.wh-search__icon {
+  width:    var(--layout-icon-size-md);
+  height:   var(--layout-icon-size-md);
+  flex-shrink: 0;
+}
+
+.wh-search__input {
+  flex:        1;
+  border:      none;
+  background:  transparent;
+  font-family: var(--font-family-base);
+  font-size:   var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  color:       var(--color-text-secondary);
+  outline:     none;
+}
+
+.wh-search__input::placeholder {
+  color: var(--color-text-placeholder);          /* #a1a1a1 */
+}
+
+.wh-search__shortcut {
+  font-size:  var(--font-size-base);
+  color:      var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Form field
+   ───────────────────────────────────────────── */
+
+.wh-field {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-4);                /* 16px */
+  width:          100%;
+}
+
+.wh-field__label {
+  font-size:   var(--font-size-base);            /* 16px */
+  font-weight: var(--font-weight-medium);        /* 500 */
+  color:       var(--color-text-secondary);      /* #737373 */
+  line-height: var(--line-height-none);
+}
+
+.wh-field__input,
+.wh-field__select,
+.wh-field__textarea {
+  display:       flex;
+  align-items:   center;
+  width:         100%;
+  padding:       var(--space-4);                 /* 16px */
+  background:    var(--color-bg-input);          /* #fafafa */
+  border:        var(--border-width-default) solid var(--color-border-input); /* #e5e5e5 */
+  border-radius: var(--radius-md);               /* 8px */
+  font-family:   var(--font-family-base);
+  font-size:     var(--font-size-base);          /* 16px */
+  font-weight:   var(--font-weight-regular);     /* 400 */
+  color:         var(--color-text-primary);      /* #404040 */
+  outline:       none;
+  transition:    border-color var(--transition-base);
+}
+
+.wh-field__input::placeholder,
+.wh-field__textarea::placeholder {
+  color:       var(--color-text-placeholder);    /* #a1a1a1 */
+  font-weight: var(--font-weight-regular);
+}
+
+.wh-field__input:hover,
+.wh-field__select:hover,
+.wh-field__textarea:hover {
+  border-color: var(--color-border-input-hover); /* #155dfc */
+}
+
+.wh-field__input:focus,
+.wh-field__select:focus,
+.wh-field__textarea:focus {
+  border-color: var(--color-border-input-hover); /* #155dfc */
+  box-shadow:   0 0 0 3px var(--color-brand-primary-light); /* #eff6ff */
+}
+
+.wh-field__textarea {
+  min-height:   125px;
+  resize:       vertical;
+  line-height:  var(--line-height-normal);       /* 1.5 */
+  align-items:  flex-start;
+}
+
+/* Select with chevron */
+.wh-field__select {
+  appearance:        none;
+  -webkit-appearance: none;
+  background-image:  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%23737373' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right:     48px;
+  cursor:            pointer;
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Badge / Pill chip
+   ───────────────────────────────────────────── */
+
+.wh-badge {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  padding:        var(--space-3) var(--space-4); /* 12px 16px */
+  border-radius:  var(--radius-full);            /* pill */
+  border:         var(--border-width-default) solid;
+  font-size:      var(--font-size-base);         /* 16px */
+  font-weight:    var(--font-weight-regular);    /* 400 */
+  line-height:    var(--line-height-none);
+  white-space:    nowrap;
+}
+
+/* Active / Success variant */
+.wh-badge--active {
+  background:   var(--color-status-active-bg);   /* #f0fdf4 */
+  border-color: var(--color-status-active-border);/* #b9f8cf */
+  color:        var(--color-status-active-text);  /* #008236 */
+}
+
+/* Info / Category variant */
+.wh-badge--info {
+  background:   var(--color-status-info-bg);     /* #f0f9ff */
+  border-color: var(--color-status-info-border); /* #b8e6fe */
+  color:        var(--color-status-info-text);   /* #0069a8 */
+}
+
+/* Neutral / default variant */
+.wh-badge--neutral {
+  background:   var(--color-neutral-50);         /* #f9f9f9 */
+  border-color: var(--color-border-default);     /* #f2f2f2 */
+  color:        var(--color-text-secondary);     /* #737373 */
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Table
+   ───────────────────────────────────────────── */
+
+.wh-table {
+  width:           100%;
+  border-collapse: collapse;
+}
+
+/* Table header row */
+.wh-table__header {
+  background:  var(--color-bg-table-header);     /* #f9f9f9 */
+  border-top:  var(--border-width-default) solid var(--color-border-default);
+  border-bottom: var(--border-width-default) solid var(--color-border-default);
+  height:      44px;
+  position:    relative;
+}
+
+.wh-table__th {
+  padding:        0 var(--space-4);              /* 0 16px */
+  font-size:      var(--font-size-xs);           /* 12px */
+  font-weight:    var(--font-weight-medium);     /* 500 */
+  color:          var(--color-text-secondary);   /* #737373 */
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  line-height:    var(--line-height-none);
+  text-align:     left;
+  white-space:    nowrap;
+}
+
+.wh-table__th:first-child {
+  padding-left: var(--space-8);                  /* 32px */
+}
+
+/* Table body row */
+.wh-table__row {
+  background:   var(--color-bg-surface);         /* #ffffff */
+  border-bottom: var(--border-width-default) solid var(--color-border-default); /* #f2f2f2 */
+  height:       108px;
+  transition:   background var(--transition-fast);
+}
+
+.wh-table__row:hover {
+  background: var(--color-bg-hover);
+}
+
+.wh-table__td {
+  padding:      0 var(--space-4);
+  vertical-align: middle;
+}
+
+.wh-table__td:first-child {
+  padding-left: var(--space-8);                  /* 32px */
+}
+
+/* Cell: product name + description stacked vertically */
+.wh-table__cell-name {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-3);                /* 12px */
+}
+
+/* Cell: row action buttons container */
+.wh-table__cell-actions {
+  display:    flex;
+  align-items: center;
+  gap:        var(--space-4);                    /* 16px */
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Modal / Dialog panel
+   ───────────────────────────────────────────── */
+
+.wh-overlay {
+  position:        fixed;
+  inset:           0;
+  background:      var(--color-bg-overlay);      /* rgba(23,23,23,0.60) */
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  z-index:         var(--z-index-overlay);
+}
+
+.wh-modal {
+  background:    var(--color-bg-surface);        /* #ffffff */
+  border-radius: var(--radius-xl);              /* 16px */
+  width:         578px;
+  max-width:     calc(100vw - var(--space-8));
+  display:       flex;
+  flex-direction: column;
+  overflow:      hidden;
+  z-index:       var(--z-index-modal);
+  box-shadow:    var(--shadow-lg);
+}
+
+/* Modal header — title area */
+.wh-modal__header {
+  padding: var(--space-8);                       /* 32px */
+  flex-shrink: 0;
+}
+
+.wh-modal__title {
+  font-size:   var(--font-size-2xl);             /* 24px */
+  font-weight: var(--font-weight-semibold);      /* 600 */
+  color:       var(--color-text-secondary);      /* #737373 */
+  line-height: var(--line-height-none);
+}
+
+/* Modal divider */
+.wh-modal__divider {
+  height:     1px;
+  background: var(--color-border-divider);       /* #f2f2f2 */
+  flex-shrink: 0;
+}
+
+/* Modal body — scrollable content */
+.wh-modal__body {
+  padding:         var(--space-8);               /* 32px */
+  display:         flex;
+  flex-direction:  column;
+  gap:             var(--space-8);               /* 32px */
+  overflow-y:      auto;
+}
+
+/* Modal footer — action buttons */
+.wh-modal__footer {
+  padding:    0 var(--space-8) var(--space-8);   /* 0 32px 32px */
+  display:    flex;
+  gap:        var(--space-8);                    /* 32px */
+  flex-shrink: 0;
+}
+
+.wh-modal__footer .wh-btn {
+  flex: 1;                                       /* Equal width buttons */
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Avatar (user profile image)
+   ───────────────────────────────────────────── */
+
+.wh-avatar {
+  width:         var(--layout-icon-btn-size);    /* 40px */
+  height:        var(--layout-icon-btn-size);    /* 40px */
+  border-radius: 50%;
+  overflow:      hidden;
+  flex-shrink:   0;
+  display:       block;
+}
+
+.wh-avatar img {
+  width:  100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* ─────────────────────────────────────────────
+   COMPONENTS — Section header row
+   (title + subtitle + optional CTA)
+   ───────────────────────────────────────────── */
+
+.wh-section-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         var(--space-3) 0;             /* 12px 0 */
+}
+
+.wh-section-header__title {
+  font-size:   var(--font-size-2xl);             /* 24px */
+  font-weight: var(--font-weight-semibold);      /* 600 */
+  color:       var(--color-text-primary);        /* #404040 */
+  line-height: var(--line-height-none);
+}
+
+
+/* ─────────────────────────────────────────────
+   UTILITIES — Spacing helpers
+   ───────────────────────────────────────────── */
+
+.u-mt-0  { margin-top: var(--space-0);  }
+.u-mt-2  { margin-top: var(--space-2);  }
+.u-mt-4  { margin-top: var(--space-4);  }
+.u-mt-6  { margin-top: var(--space-6);  }
+.u-mt-8  { margin-top: var(--space-8);  }
+
+.u-mb-0  { margin-bottom: var(--space-0);  }
+.u-mb-4  { margin-bottom: var(--space-4);  }
+.u-mb-6  { margin-bottom: var(--space-6);  }
+.u-mb-8  { margin-bottom: var(--space-8);  }
+
+.u-gap-4  { gap: var(--space-4); }
+.u-gap-6  { gap: var(--space-6); }
+.u-gap-8  { gap: var(--space-8); }
+
+.u-flex         { display: flex; }
+.u-flex-col     { flex-direction: column; }
+.u-items-center { align-items: center; }
+.u-justify-between { justify-content: space-between; }
+.u-w-full       { width: 100%; }
+.u-shrink-0     { flex-shrink: 0; }
+
+
+/* ─────────────────────────────────────────────
+   UTILITIES — Visibility
+   ───────────────────────────────────────────── */
+
+.u-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE — simple breakpoints
+   ───────────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  .wh-sidebar {
+    width: 240px;
+  }
+  .wh-main {
+    margin-left: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .wh-sidebar {
+    display: none;
+  }
+  .wh-main {
+    margin-left: 0;
+    padding: var(--space-4);
+  }
+  .wh-topbar {
+    padding: 0 var(--space-4);
+  }
+}

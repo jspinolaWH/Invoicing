@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(find /mnt/c/Users/drasm/Desktop/Invoicing/invoicing -not -path */target* -not -path */.mvn* -not -path */.idea*)",
+      "Bash(ls -lh /mnt/c/Users/drasm/Desktop/Invoicing/Docs/steps/step-1*.md /mnt/c/Users/drasm/Desktop/Invoicing/Docs/steps/step-2*.md)",
+      "Bash(ls:*)",
+      "mcp__claude_ai_Figma__get_design_context",
+      "mcp__claude_ai_Figma__get_metadata",
+      "mcp__claude_ai_Figma__use_figma",
+      "Bash(./mvnw compile:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
