@@ -11,6 +11,8 @@ const navItems = [
       { label: 'Products', to: '/master-data/products' },
       { label: 'Invoice Number Series', to: '/master-data/invoice-number-series' },
       { label: 'Allocation Rules', to: '/master-data/allocation-rules' },
+      { label: 'Surcharge Config', to: '/master-data/surcharge-config' },
+      { label: 'Minimum Fee Config', to: '/master-data/minimum-fee-config' },
     ],
   },
   {
@@ -18,6 +20,21 @@ const navItems = [
     children: [
       { label: 'Billing Events', to: '/billing-events' },
       { label: 'Review Queue', to: '/billing-events/review-queue' },
+      { label: 'Billing Cycles', to: '/billing/cycles' },
+      { label: 'Billing Restrictions', to: '/billing/restrictions' },
+      { label: 'Seasonal Fees', to: '/billing/seasonal-fees' },
+    ],
+  },
+  {
+    label: 'Invoices',
+    children: [
+      { label: 'Generate Invoice', to: '/invoices/generate' },
+    ],
+  },
+  {
+    label: 'Shared Services',
+    children: [
+      { label: 'Property Groups', to: '/shared-services/property-groups' },
     ],
   },
   {

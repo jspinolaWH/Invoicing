@@ -17,6 +17,9 @@ public class Product extends BaseAuditEntity {
     @Column(nullable = false, unique = true)
     private String code;
 
+    @Column(name = "product_group_code", length = 100)
+    private String productGroupCode;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PricingUnit pricingUnit;

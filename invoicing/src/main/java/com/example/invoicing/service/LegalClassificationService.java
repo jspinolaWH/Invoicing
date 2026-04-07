@@ -39,6 +39,14 @@ public class LegalClassificationService {
         return evaluate(1L, customerType, productCode, regionCode, LegalClassification.PRIVATE_LAW);
     }
 
+    /**
+     * Classify a BillingEvent — convenience wrapper for InvoiceGenerationService.
+     */
+    public LegalClassification classify(com.example.invoicing.entity.billingevent.BillingEvent event) {
+        if (event == null) return LegalClassification.PRIVATE_LAW;
+        return classify(event.getCustomerNumber(), event.getProduct(), event.getMunicipalityId());
+    }
+
     private boolean matches(ClassificationRule rule, CustomerType customerType,
                              String productCode, String regionCode) {
         if (rule.getCustomerTypeCondition() != null && rule.getCustomerTypeCondition() != customerType) return false;

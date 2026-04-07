@@ -45,22 +45,22 @@
 ---
 
 ## Build Area 6 — Billing Configuration
-- [ ] STEP-23 — BillingCycle entity + frequency + next billing date
-- [ ] STEP-24 — BillingRestriction entity
-- [ ] STEP-25 — BundlingRule entity (SINGLE_LINE / SEPARATE)
-- [ ] STEP-26 — SurchargeConfig + BillingSurchargeService
-- [ ] STEP-27 — MinimumFeeConfig + MinimumFeeService
-- [ ] STEP-28 — SeasonalFeeConfig + nightly scheduler
+- [x] STEP-23 — BillingCycle entity + frequency + next billing date
+- [x] STEP-24 — BillingRestriction entity
+- [x] STEP-25 — BundlingRule entity (SINGLE_LINE / SEPARATE)
+- [x] STEP-26 — SurchargeConfig + BillingSurchargeService
+- [x] STEP-27 — MinimumFeeConfig + MinimumFeeService
+- [x] STEP-28 — SeasonalFeeConfig + nightly scheduler
 
 ---
 
 ## Build Area 7 — Invoice Generation Core
-- [ ] STEP-29 — Invoice entity + InvoiceLineItem entity + status lifecycle
-- [ ] STEP-30 — InvoiceBundlingService (events → line items per BundlingRule)
-- [ ] STEP-31 — LegalClassificationService (PUBLIC_LAW / PRIVATE_LAW)
-- [ ] STEP-32 — PropertyGroup + SharedServiceParticipant + 100% rule
-- [ ] STEP-33 — SharedServiceInvoicingService + retroactive redistribution
-- [ ] STEP-34 — InvoiceGenerationService (full orchestration pipeline)
+- [x] STEP-29 — Invoice entity + InvoiceLineItem entity + status lifecycle
+- [x] STEP-30 — InvoiceBundlingService (events → line items per BundlingRule)
+- [x] STEP-31 — LegalClassificationService (PUBLIC_LAW / PRIVATE_LAW)
+- [x] STEP-32 — PropertyGroup + SharedServiceParticipant + 100% rule
+- [x] STEP-33 — SharedServiceInvoicingService + retroactive redistribution
+- [x] STEP-34 — InvoiceGenerationService (full orchestration pipeline)
 
 ---
 
@@ -112,4 +112,4 @@
 
 ## Summary
 - Total steps: 56
-- Completed: 18 / 56
+- Completed: 34 / 56

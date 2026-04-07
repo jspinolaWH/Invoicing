@@ -2,8 +2,16 @@ package com.example.invoicing.config;
 
 import com.example.invoicing.accounting.costcenter.CostCenterCompositionConfig;
 import com.example.invoicing.accounting.costcenter.CostCenterCompositionConfigRepository;
+import com.example.invoicing.billingcycle.BillingCycle;
+import com.example.invoicing.billingcycle.BillingCycleRepository;
+import com.example.invoicing.billingcycle.BillingFrequency;
 import com.example.invoicing.driver.EventTypeConfig;
 import com.example.invoicing.driver.EventTypeConfigRepository;
+import com.example.invoicing.minimumfee.MinimumFeeConfig;
+import com.example.invoicing.minimumfee.MinimumFeeConfigRepository;
+import com.example.invoicing.minimumfee.PeriodType;
+import com.example.invoicing.surcharge.SurchargeConfig;
+import com.example.invoicing.surcharge.SurchargeConfigRepository;
 import com.example.invoicing.entity.account.AccountingAccount;
 import com.example.invoicing.entity.allocation.AccountingAllocationRule;
 import com.example.invoicing.entity.billingevent.BillingEvent;
@@ -57,6 +65,9 @@ public class DataSeeder implements CommandLineRunner {
     private final EventTypeConfigRepository eventTypeConfigRepository;
     private final AccountingAllocationRuleRepository allocationRuleRepository;
     private final CostCenterCompositionConfigRepository costCenterCompositionConfigRepository;
+    private final SurchargeConfigRepository surchargeConfigRepository;
+    private final BillingCycleRepository billingCycleRepository;
+    private final MinimumFeeConfigRepository minimumFeeConfigRepository;
 
     @Override
     public void run(String... args) {
@@ -72,6 +83,9 @@ public class DataSeeder implements CommandLineRunner {
         seedEventTypeConfigs();
         seedAllocationRules();
         seedCostCenterCompositionConfig();
+        seedSurchargeConfigs();
+        seedBillingCycles();
+        seedMinimumFeeConfigs();
     }
 
     // ─────────────────────────────────────────────
@@ -512,6 +526,77 @@ public class DataSeeder implements CommandLineRunner {
     // ─────────────────────────────────────────────
     //  Cost Center Composition Config
     // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+    //  Surcharge Configs
+    // ─────────────────────────────────────────────
+    private void seedSurchargeConfigs() {
+        if (surchargeConfigRepository.count() > 0) {
+            log.info("[Seeder] Surcharge configs already seeded — skipping.");
+            return;
+        }
+        List<SurchargeConfig> configs = java.util.List.of(
+            SurchargeConfig.builder().deliveryMethod(com.example.invoicing.entity.customer.DeliveryMethod.PAPER)
+                .amount(new java.math.BigDecimal("5.00")).description("Paper invoice surcharge")
+                .active(true).globalSurchargeEnabled(true).build(),
+            SurchargeConfig.builder().deliveryMethod(com.example.invoicing.entity.customer.DeliveryMethod.EMAIL)
+                .amount(new java.math.BigDecimal("2.00")).description("Email invoice surcharge")
+                .active(true).globalSurchargeEnabled(true).build(),
+            SurchargeConfig.builder().deliveryMethod(com.example.invoicing.entity.customer.DeliveryMethod.DIRECT_PAYMENT)
+                .amount(new java.math.BigDecimal("3.50")).description("Direct payment surcharge")
+                .active(true).globalSurchargeEnabled(true).build()
+        );
+        surchargeConfigRepository.saveAll(configs);
+        log.info("[Seeder] Seeded {} surcharge configs.", configs.size());
+    }
+
+    // ─────────────────────────────────────────────
+    //  Billing Cycles
+    // ─────────────────────────────────────────────
+    private void seedBillingCycles() {
+        if (billingCycleRepository.count() > 0) {
+            log.info("[Seeder] Billing cycles already seeded — skipping.");
+            return;
+        }
+        List<BillingCycle> cycles = java.util.List.of(
+            BillingCycle.builder().customerNumber("123456").frequency(BillingFrequency.MONTHLY)
+                .nextBillingDate(LocalDate.of(2026, 2, 1)).description("Monthly bin emptying")
+                .serviceType("CONTAINER_EMPTYING").active(true).build(),
+            BillingCycle.builder().customerNumber("987654321").frequency(BillingFrequency.MONTHLY)
+                .nextBillingDate(LocalDate.of(2026, 2, 1)).description("Monthly recycling collection")
+                .serviceType("RECYCLING").active(true).build(),
+            BillingCycle.builder().customerNumber("111222").frequency(BillingFrequency.QUARTERLY)
+                .nextBillingDate(LocalDate.of(2026, 4, 1)).description("Quarterly municipal waste services")
+                .serviceType("MUNICIPAL_WASTE").active(true).build(),
+            BillingCycle.builder().customerNumber("123456").frequency(BillingFrequency.ANNUAL)
+                .nextBillingDate(LocalDate.of(2026, 1, 1)).description("Annual base fee")
+                .serviceType("BASE_FEE").active(true).build()
+        );
+        billingCycleRepository.saveAll(cycles);
+        log.info("[Seeder] Seeded {} billing cycles.", cycles.size());
+    }
+
+    // ─────────────────────────────────────────────
+    //  Minimum Fee Configs
+    // ─────────────────────────────────────────────
+    private void seedMinimumFeeConfigs() {
+        if (minimumFeeConfigRepository.count() > 0) {
+            log.info("[Seeder] Minimum fee configs already seeded — skipping.");
+            return;
+        }
+        List<MinimumFeeConfig> configs = java.util.List.of(
+            MinimumFeeConfig.builder().customerType("RESIDENTIAL").netAmountThreshold(new java.math.BigDecimal("50.00"))
+                .periodType(PeriodType.ANNUAL).contractStartAdjustment(true).contractEndAdjustment(true)
+                .adjustmentProductCode("MIN_FEE_ADJ").description("Annual minimum fee for residential customers")
+                .active(true).build(),
+            MinimumFeeConfig.builder().customerType("BUSINESS").netAmountThreshold(new java.math.BigDecimal("200.00"))
+                .periodType(PeriodType.ANNUAL).contractStartAdjustment(true).contractEndAdjustment(true)
+                .adjustmentProductCode("MIN_FEE_ADJ").description("Annual minimum fee for business customers")
+                .active(true).build()
+        );
+        minimumFeeConfigRepository.saveAll(configs);
+        log.info("[Seeder] Seeded {} minimum fee configs.", configs.size());
+    }
+
     private void seedCostCenterCompositionConfig() {
         if (costCenterCompositionConfigRepository.count() > 0) {
             log.info("[Seeder] Cost center composition config already seeded — skipping.");
