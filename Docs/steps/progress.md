@@ -12,19 +12,19 @@
 ---
 
 ## Build Area 2 — Customer Billing Profile
-- [ ] STEP-06 — BillingProfile entity + delivery method + language
-- [ ] STEP-07 — EInvoiceAddress + manual lock flag
-- [ ] STEP-08 — ClassificationRule entity + LegalClassificationService
-- [ ] STEP-09 — BillingProfileValidationService + missing data checks
+- [x] STEP-06 — BillingProfile entity + delivery method + language
+- [x] STEP-07 — EInvoiceAddress + manual lock flag
+- [x] STEP-08 — ClassificationRule entity + LegalClassificationService
+- [x] STEP-09 — BillingProfileValidationService + missing data checks
 
 ---
 
 ## Build Area 3 — BillingEvent Core
-- [ ] STEP-10 — BillingEvent entity + all fields + schema
-- [ ] STEP-11 — Status state machine (IN_PROGRESS → SENT → COMPLETED/ERROR)
-- [ ] STEP-12 — Create BillingEvent (external source + manual)
-- [ ] STEP-13 — Edit BillingEvent + BillingEventAuditLog
-- [ ] STEP-14 — BillingEventValidationService (pre-flight, missing fields)
+- [x] STEP-10 — BillingEvent entity + all fields + schema
+- [x] STEP-11 — Status state machine (IN_PROGRESS → SENT → COMPLETED/ERROR)
+- [x] STEP-12 — Create BillingEvent (external source + manual)
+- [x] STEP-13 — Edit BillingEvent + BillingEventAuditLog
+- [x] STEP-14 — BillingEventValidationService (pre-flight, missing fields)
 
 ---
 
@@ -112,4 +112,4 @@
 
 ## Summary
 - Total steps: 56
-- Completed: 2 / 56
+- Completed: 14 / 56

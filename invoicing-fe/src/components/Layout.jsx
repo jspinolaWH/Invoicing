@@ -12,6 +12,25 @@ const navItems = [
       { label: 'Invoice Number Series', to: '/master-data/invoice-number-series' },
     ],
   },
+  {
+    label: 'Billing',
+    children: [
+      { label: 'Billing Events', to: '/billing-events' },
+    ],
+  },
+  {
+    label: 'Customers',
+    children: [
+      { label: 'Billing Profiles', to: '/customers' },
+    ],
+  },
+  {
+    label: 'Configuration',
+    children: [
+      { label: 'Classification Rules', to: '/config/classification-rules' },
+      { label: 'Validation Rules', to: '/config/validation-rules' },
+    ],
+  },
 ]
 
 export default function Layout() {

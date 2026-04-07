@@ -10,7 +10,10 @@
       "mcp__claude_ai_Figma__get_metadata",
       "mcp__claude_ai_Figma__use_figma",
       "Bash(./mvnw compile:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(mvn compile:*)",
+      "Bash(kill %1)",
+      "Bash(kill %2)"
     ]
   }
 }

@@ -400,3 +400,13 @@
   padding: var(--space-5) var(--space-8);
   border-top: var(--border-width-default) solid var(--color-border-divider);
 }
+
+.success-msg {
+  padding: var(--space-3) var(--space-4);
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: var(--radius-md);
+  color: #15803d;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}

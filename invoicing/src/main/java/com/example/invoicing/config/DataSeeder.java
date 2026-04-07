@@ -1,16 +1,27 @@
 package com.example.invoicing.config;
 
 import com.example.invoicing.entity.account.AccountingAccount;
+import com.example.invoicing.entity.billingevent.BillingEvent;
+import com.example.invoicing.entity.billingevent.BillingEventStatus;
+import com.example.invoicing.entity.classification.ClassificationRule;
+import com.example.invoicing.entity.classification.LegalClassification;
 import com.example.invoicing.entity.costcenter.CostCenter;
+import com.example.invoicing.entity.customer.*;
 import com.example.invoicing.entity.numberseries.InvoiceNumberSeries;
 import com.example.invoicing.entity.product.PricingUnit;
 import com.example.invoicing.entity.product.Product;
 import com.example.invoicing.entity.product.ProductTranslation;
+import com.example.invoicing.entity.validation.ValidationRule;
+import com.example.invoicing.entity.validation.ValidationRuleType;
 import com.example.invoicing.entity.vat.VatRate;
 import com.example.invoicing.repository.AccountingAccountRepository;
+import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.ClassificationRuleRepository;
 import com.example.invoicing.repository.CostCenterRepository;
+import com.example.invoicing.repository.CustomerBillingProfileRepository;
 import com.example.invoicing.repository.InvoiceNumberSeriesRepository;
 import com.example.invoicing.repository.ProductRepository;
+import com.example.invoicing.repository.ValidationRuleRepository;
 import com.example.invoicing.repository.VatRateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +44,10 @@ public class DataSeeder implements CommandLineRunner {
     private final CostCenterRepository costCenterRepository;
     private final ProductRepository productRepository;
     private final InvoiceNumberSeriesRepository invoiceNumberSeriesRepository;
+    private final CustomerBillingProfileRepository customerRepository;
+    private final ClassificationRuleRepository classificationRuleRepository;
+    private final ValidationRuleRepository validationRuleRepository;
+    private final BillingEventRepository billingEventRepository;
 
     @Override
     public void run(String... args) {
@@ -41,6 +56,10 @@ public class DataSeeder implements CommandLineRunner {
         seedCostCenters();
         seedProducts();
         seedInvoiceNumberSeries();
+        seedCustomers();
+        seedClassificationRules();
+        seedValidationRules();
+        seedBillingEvents();
     }
 
     // ─────────────────────────────────────────────
@@ -227,5 +246,187 @@ public class DataSeeder implements CommandLineRunner {
         s.setFormatPattern(formatPattern);
         s.setCurrentCounter(0L);
         return s;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Customers
+    // ─────────────────────────────────────────────
+    private void seedCustomers() {
+        if (customerRepository.count() > 0) {
+            log.info("[Seeder] Customers already seeded — skipping.");
+            return;
+        }
+
+        List<Customer> customers = List.of(
+            customer("Matti Virtanen", CustomerType.PRIVATE,
+                new BillingProfile("123456", DeliveryMethod.EMAIL,
+                    new BillingAddress("Mannerheimintie 1", "00100", "Helsinki", "FI", null, null, null),
+                    null, "fi", InvoicingMode.GROSS)),
+            customer("Helsinki Oy", CustomerType.BUSINESS,
+                new BillingProfile("987654321", DeliveryMethod.E_INVOICE,
+                    new BillingAddress("Aleksanterinkatu 52", "00100", "Helsinki", "FI", null, null, null),
+                    "FI12345678", "fi", InvoicingMode.NET)),
+            customer("Espoon kaupunki", CustomerType.MUNICIPALITY,
+                new BillingProfile("111222", DeliveryMethod.E_INVOICE,
+                    new BillingAddress("Espoonkatu 1", "02770", "Espoo", "FI", null, null, null),
+                    "FI02073311", "fi", InvoicingMode.GROSS)),
+            customer("Vantaa Municipality", CustomerType.MUNICIPALITY,
+                new BillingProfile("333444", DeliveryMethod.PAPER,
+                    new BillingAddress("Asematie 7", "01300", "Vantaa", "FI", null, null, null),
+                    "FI02068919", "fi", InvoicingMode.GROSS)),
+            customer("Keräys Finland Ab", CustomerType.BUSINESS,
+                new BillingProfile("555666777", DeliveryMethod.EMAIL,
+                    new BillingAddress("Teollisuuskatu 28", "00510", "Helsinki", "FI", null, null, null),
+                    "FI22334455", "sv", InvoicingMode.NET)),
+            customer("Turku Authority", CustomerType.AUTHORITY,
+                new BillingProfile("888999", DeliveryMethod.EMAIL,
+                    new BillingAddress("Yliopistonkatu 27a", "20100", "Turku", "FI", null, null, null),
+                    null, "fi", InvoicingMode.GROSS))
+        );
+
+        customerRepository.saveAll(customers);
+        log.info("[Seeder] Seeded {} customers.", customers.size());
+    }
+
+    private Customer customer(String name, CustomerType type, BillingProfile profile) {
+        Customer c = new Customer();
+        c.setName(name);
+        c.setCustomerType(type);
+        c.setBillingProfile(profile);
+        return c;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Classification Rules
+    // ─────────────────────────────────────────────
+    private void seedClassificationRules() {
+        if (classificationRuleRepository.count() > 0) {
+            log.info("[Seeder] Classification rules already seeded — skipping.");
+            return;
+        }
+
+        List<ClassificationRule> rules = List.of(
+            classificationRule(1L, 1, CustomerType.MUNICIPALITY, null, null,
+                LegalClassification.PUBLIC_LAW, "Municipality — always public law"),
+            classificationRule(1L, 2, CustomerType.AUTHORITY, null, null,
+                LegalClassification.PUBLIC_LAW, "Authority — always public law"),
+            classificationRule(1L, 3, CustomerType.BUSINESS, null, null,
+                LegalClassification.PRIVATE_LAW, "Business — private law"),
+            classificationRule(1L, 4, CustomerType.PRIVATE, null, null,
+                LegalClassification.PRIVATE_LAW, "Private customer — private law")
+        );
+
+        classificationRuleRepository.saveAll(rules);
+        log.info("[Seeder] Seeded {} classification rules.", rules.size());
+    }
+
+    private ClassificationRule classificationRule(Long companyId, int priority,
+            CustomerType customerTypeCondition, String productCode, String region,
+            LegalClassification result, String label) {
+        ClassificationRule r = new ClassificationRule();
+        r.setCompanyId(companyId);
+        r.setPriority(priority);
+        r.setCustomerTypeCondition(customerTypeCondition);
+        r.setProductCodeCondition(productCode);
+        r.setRegionCondition(region);
+        r.setResultClassification(result);
+        r.setLabel(label);
+        r.setActive(true);
+        return r;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Validation Rules
+    // ─────────────────────────────────────────────
+    private void seedValidationRules() {
+        if (validationRuleRepository.count() > 0) {
+            log.info("[Seeder] Validation rules already seeded — skipping.");
+            return;
+        }
+
+        List<ValidationRule> rules = List.of(
+            validationRule(1L, ValidationRuleType.MANDATORY_FIELD,
+                "BUSINESS_ID_MANDATORY",
+                "{\"field\":\"billingProfile.businessId\"}",
+                true, "Business ID is mandatory for all customers"),
+            validationRule(1L, ValidationRuleType.MANDATORY_FIELD,
+                "INVOICING_MODE_MANDATORY",
+                "{\"field\":\"billingProfile.invoicingMode\"}",
+                false, "Invoicing mode should be set (warning only)")
+        );
+
+        validationRuleRepository.saveAll(rules);
+        log.info("[Seeder] Seeded {} validation rules.", rules.size());
+    }
+
+    private ValidationRule validationRule(Long companyId, ValidationRuleType ruleType,
+            String ruleCode, String config, boolean blocking, String description) {
+        ValidationRule r = new ValidationRule();
+        r.setCompanyId(companyId);
+        r.setRuleType(ruleType);
+        r.setRuleCode(ruleCode);
+        r.setConfig(config);
+        r.setBlocking(blocking);
+        r.setActive(true);
+        r.setDescription(description);
+        return r;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Billing Events
+    // ─────────────────────────────────────────────
+    private void seedBillingEvents() {
+        if (billingEventRepository.count() > 0) {
+            log.info("[Seeder] Billing events already seeded — skipping.");
+            return;
+        }
+
+        List<Product> products = productRepository.findAll();
+        if (products.isEmpty()) {
+            log.warn("[Seeder] No products found — skipping billing event seeding.");
+            return;
+        }
+        Product waste240 = products.stream().filter(p -> "WASTE-COLLECTION-240L".equals(p.getCode())).findFirst().orElse(products.get(0));
+        Product waste660 = products.stream().filter(p -> "WASTE-COLLECTION-660L".equals(p.getCode())).findFirst().orElse(products.get(0));
+        Product transport = products.stream().filter(p -> "TRANSPORT-FEE".equals(p.getCode())).findFirst().orElse(products.get(0));
+        Product recycling = products.stream().filter(p -> "RECYCLING-PAPER".equals(p.getCode())).findFirst().orElse(products.get(0));
+        Product ecoFee    = products.stream().filter(p -> "ECO-FEE".equals(p.getCode())).findFirst().orElse(products.get(0));
+
+        List<BillingEvent> events = List.of(
+            billingEvent("123456", waste240,  java.math.BigDecimal.valueOf(12.50), java.math.BigDecimal.valueOf(4.80), java.math.BigDecimal.valueOf(0.50), java.math.BigDecimal.valueOf(1), java.math.BigDecimal.valueOf(0.24),  LocalDate.of(2025, 11, 5),  "MUN-01", "LOC-001", "ABC-123", BillingEventStatus.IN_PROGRESS, LegalClassification.PRIVATE_LAW,  "INTEGRATION"),
+            billingEvent("987654321", waste660, java.math.BigDecimal.valueOf(28.00), java.math.BigDecimal.valueOf(8.50), java.math.BigDecimal.valueOf(1.00), java.math.BigDecimal.valueOf(3), java.math.BigDecimal.valueOf(0.72),  LocalDate.of(2025, 11, 7),  "MUN-01", "LOC-002", "XYZ-456", BillingEventStatus.IN_PROGRESS, LegalClassification.PRIVATE_LAW,  "INTEGRATION"),
+            billingEvent("111222",    waste240,  java.math.BigDecimal.valueOf(12.50), java.math.BigDecimal.valueOf(4.80), java.math.BigDecimal.valueOf(0.50), java.math.BigDecimal.valueOf(1), java.math.BigDecimal.valueOf(0.24),  LocalDate.of(2025, 11, 3),  "MUN-02", "LOC-003", "DEF-789", BillingEventStatus.SENT,        LegalClassification.PUBLIC_LAW,   "INTEGRATION"),
+            billingEvent("333444",    transport, java.math.BigDecimal.valueOf(0.00),  java.math.BigDecimal.valueOf(45.00), java.math.BigDecimal.valueOf(0.00), java.math.BigDecimal.valueOf(2), java.math.BigDecimal.valueOf(0.00),  LocalDate.of(2025, 10, 28), "MUN-03", "LOC-004", "GHI-012", BillingEventStatus.COMPLETED,    LegalClassification.PUBLIC_LAW,   "INTEGRATION"),
+            billingEvent("555666777", recycling,  java.math.BigDecimal.valueOf(5.00),  java.math.BigDecimal.valueOf(2.50), java.math.BigDecimal.valueOf(0.25), java.math.BigDecimal.valueOf(120), java.math.BigDecimal.valueOf(120),  LocalDate.of(2025, 11, 10), "MUN-01", "LOC-005", "JKL-345", BillingEventStatus.ERROR,        LegalClassification.PRIVATE_LAW,  "INTEGRATION"),
+            billingEvent("888999",    ecoFee,     java.math.BigDecimal.valueOf(3.00),  java.math.BigDecimal.valueOf(0.00), java.math.BigDecimal.valueOf(1.50), java.math.BigDecimal.valueOf(1), java.math.BigDecimal.valueOf(0.10),  LocalDate.of(2025, 11, 12), "MUN-04", "LOC-006", null,      BillingEventStatus.IN_PROGRESS, LegalClassification.PUBLIC_LAW,   "MANUAL")
+        );
+
+        billingEventRepository.saveAll(events);
+        log.info("[Seeder] Seeded {} billing events.", events.size());
+    }
+
+    private BillingEvent billingEvent(String customerNumber, Product product,
+            java.math.BigDecimal wasteFee, java.math.BigDecimal transportFee, java.math.BigDecimal ecoFee,
+            java.math.BigDecimal quantity, java.math.BigDecimal weight,
+            LocalDate eventDate, String municipalityId, String locationId, String vehicleId,
+            BillingEventStatus status, LegalClassification classification, String origin) {
+        BillingEvent e = new BillingEvent();
+        e.setCustomerNumber(customerNumber);
+        e.setProduct(product);
+        e.setWasteFeePrice(wasteFee);
+        e.setTransportFeePrice(transportFee);
+        e.setEcoFeePrice(ecoFee);
+        e.setQuantity(quantity);
+        e.setWeight(weight);
+        e.setVatRate0(java.math.BigDecimal.ZERO);
+        e.setVatRate24(new java.math.BigDecimal("25.50"));
+        e.setEventDate(eventDate);
+        e.setMunicipalityId(municipalityId);
+        e.setLocationId(locationId);
+        e.setVehicleId(vehicleId);
+        e.setStatus(status);
+        e.setLegalClassification(classification);
+        e.setOrigin(origin);
+        return e;
     }
 }
