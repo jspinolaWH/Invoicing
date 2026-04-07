@@ -142,4 +142,20 @@ public interface BillingEventRepository extends JpaRepository<BillingEvent, Long
         @Param("requiresReview") Boolean requiresReview,
         Pageable pageable
     );
+
+    @Query("""
+        SELECT e FROM BillingEvent e
+        WHERE e.customerNumber = :customerNumber
+          AND e.eventDate >= :from
+          AND e.eventDate <= :to
+          AND e.excluded = false
+          AND (:productId IS NULL OR e.product.id = :productId)
+        ORDER BY e.eventDate ASC
+        """)
+    List<BillingEvent> findByCustomerAndPeriod(
+        @Param("customerNumber") String customerNumber,
+        @Param("from") LocalDate from,
+        @Param("to") LocalDate to,
+        @Param("productId") Long productId
+    );
 }

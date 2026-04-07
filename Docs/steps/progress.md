@@ -82,16 +82,16 @@
 ---
 
 ## Build Area 10 — Credit Notes
-- [ ] STEP-44 — CreditNoteService (full + partial credit)
-- [ ] STEP-45 — Batch credit notes + credit FINVOICE
-- [ ] STEP-46 — BilledEventCorrectionService (credit + copy to new invoice)
+- [x] STEP-44 — CreditNoteService (full + partial credit)
+- [x] STEP-45 — Batch credit notes + credit FINVOICE
+- [x] STEP-46 — BilledEventCorrectionService (credit + copy to new invoice)
 
 ---
 
 ## Build Area 11 — Retroactive Corrections
-- [ ] STEP-47 — RetroactivePriceAdjustmentService — preview phase
-- [ ] STEP-48 — RetroactivePriceAdjustmentService — apply phase + audit
-- [ ] STEP-49 — ServiceResponsibilityChangeService (preview + apply)
+- [x] STEP-47 — RetroactivePriceAdjustmentService — preview phase
+- [x] STEP-48 — RetroactivePriceAdjustmentService — apply phase + audit
+- [x] STEP-49 — ServiceResponsibilityChangeService (preview + apply)
 
 ---
 
@@ -112,4 +112,4 @@
 
 ## Summary
 - Total steps: 56
-- Completed: 43 / 56
+- Completed: 49 / 56

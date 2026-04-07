@@ -23,4 +23,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     Page<Invoice> findSentOrCompletedByCustomerId(@Param("customerId") Long customerId, Pageable pageable);
 
     Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
+
+    @Query("SELECT i FROM Invoice i WHERE i.customer.id = :customerId AND i.invoiceType = 'CREDIT_NOTE' ORDER BY i.invoiceDate DESC")
+    Page<Invoice> findCreditNotesByCustomerId(@Param("customerId") Long customerId, Pageable pageable);
 }

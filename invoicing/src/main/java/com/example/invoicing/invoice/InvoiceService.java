@@ -62,6 +62,10 @@ public class InvoiceService {
         return repository.findSentOrCompletedByCustomerId(customerId, pageable).map(this::toResponse);
     }
 
+    public Page<InvoiceResponse> findCreditNotesByCustomerId(Long customerId, Pageable pageable) {
+        return repository.findCreditNotesByCustomerId(customerId, pageable).map(this::toResponse);
+    }
+
     public InvoiceResponse toResponse(Invoice invoice) {
         List<InvoiceLineItemResponse> lineItems = invoice.getLineItems().stream()
             .map(li -> InvoiceLineItemResponse.builder()

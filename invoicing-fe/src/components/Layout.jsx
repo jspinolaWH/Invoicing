@@ -28,6 +28,7 @@ const navItems = [
   {
     label: 'Invoices',
     children: [
+      { label: 'Invoice List', to: '/invoices' },
       { label: 'Generate Invoice', to: '/invoices/generate' },
       { label: 'Invoice Runs', to: '/runs/new' },
     ],
@@ -49,6 +50,13 @@ const navItems = [
     children: [
       { label: 'Classification Rules', to: '/config/classification-rules' },
       { label: 'Validation Rules', to: '/config/validation-rules' },
+    ],
+  },
+  {
+    label: 'Retroactive',
+    children: [
+      { label: 'Price Adjustment', to: '/retroactive/price-adjustment' },
+      { label: 'Responsibility Change', to: '/retroactive/responsibility-change' },
     ],
   },
 ]

@@ -23,10 +23,15 @@ import SeasonalFeesPage from './pages/billing/SeasonalFeesPage'
 import BundlingRulesPage from './pages/customers/BundlingRulesPage'
 import InvoiceDetailPage from './pages/invoices/InvoiceDetailPage'
 import GenerateInvoicePage from './pages/invoices/GenerateInvoicePage'
+import CreditNoteForm from './pages/invoices/CreditNoteForm'
+import CorrectInvoiceForm from './pages/invoices/CorrectInvoiceForm'
+import InvoiceListPage from './pages/invoices/InvoiceListPage'
 import PropertyGroupsPage from './pages/sharedservices/PropertyGroupsPage'
 import InvoiceRunPage from './pages/runs/InvoiceRunPage'
 import InvoiceRunDetailPage from './pages/runs/InvoiceRunDetailPage'
 import SimulationResultsPage from './pages/runs/SimulationResultsPage'
+import PriceAdjustmentPage from './pages/retroactive/PriceAdjustmentPage'
+import ResponsibilityChangePage from './pages/retroactive/ResponsibilityChangePage'
 
 export default function App() {
   return (
@@ -55,12 +60,17 @@ export default function App() {
           <Route path="billing/restrictions" element={<BillingRestrictionsPage />} />
           <Route path="billing/seasonal-fees" element={<SeasonalFeesPage />} />
           <Route path="customers/:customerNumber/bundling-rules" element={<BundlingRulesPage />} />
+          <Route path="invoices" element={<InvoiceListPage />} />
           <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="invoices/:id/credit" element={<CreditNoteForm />} />
+          <Route path="invoices/:id/correct" element={<CorrectInvoiceForm />} />
           <Route path="invoices/generate" element={<GenerateInvoicePage />} />
           <Route path="shared-services/property-groups" element={<PropertyGroupsPage />} />
           <Route path="runs/new" element={<InvoiceRunPage />} />
           <Route path="runs/:id" element={<InvoiceRunDetailPage />} />
           <Route path="runs/simulation-results" element={<SimulationResultsPage />} />
+          <Route path="retroactive/price-adjustment" element={<PriceAdjustmentPage />} />
+          <Route path="retroactive/responsibility-change" element={<ResponsibilityChangePage />} />
         </Route>
       </Routes>
     </BrowserRouter>

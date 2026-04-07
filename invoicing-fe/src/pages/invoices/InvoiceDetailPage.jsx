@@ -34,7 +34,19 @@ export default function InvoiceDetailPage() {
         <div className="page-header-text">
           <h1>Invoice {invoice.invoiceNumber || `#${invoice.id}`}</h1>
         </div>
-        <button className="btn-secondary" onClick={() => navigate(-1)}>← Back</button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {(invoice.status === 'SENT' || invoice.status === 'COMPLETED') && (
+            <>
+              <button className="btn-secondary" onClick={() => navigate(`/invoices/${invoice.id}/credit`)}>
+                Issue Credit Note
+              </button>
+              <button className="btn-secondary" onClick={() => navigate(`/invoices/${invoice.id}/correct`)}>
+                Correct Invoice
+              </button>
+            </>
+          )}
+          <button className="btn-secondary" onClick={() => navigate(-1)}>← Back</button>
+        </div>
       </div>
 
       <InvoiceHeader invoice={invoice} />

@@ -128,4 +128,7 @@ public class BillingEvent extends BaseAuditEntity {
 
     @Column(length = 50)
     private String origin;
+
+    @Column(name = "corrected_from_event_id")
+    private Long correctedFromEventId;
 }

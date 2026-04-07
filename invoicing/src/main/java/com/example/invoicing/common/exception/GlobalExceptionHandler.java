@@ -59,4 +59,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
             .body(new ErrorResponse("INVALID_RUN_STATE", ex.getMessage()));
     }
+
+    @ExceptionHandler(com.example.invoicing.credit.CreditNoteValidationException.class)
+    public ResponseEntity<ErrorResponse> handleCreditNoteValidation(
+            com.example.invoicing.credit.CreditNoteValidationException ex) {
+        return ResponseEntity.badRequest()
+            .body(new ErrorResponse("CREDIT_NOTE_VALIDATION_ERROR", ex.getMessage()));
+    }
 }
