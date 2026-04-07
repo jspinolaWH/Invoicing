@@ -10,4 +10,10 @@ public interface EInvoiceAddressRepository extends JpaRepository<EInvoiceAddress
     Optional<EInvoiceAddress> findByCustomer_IdAndManuallyLockedFalse(Long customerId);
     @Query("SELECT e FROM EInvoiceAddress e WHERE e.manuallyLocked = true")
     List<EInvoiceAddress> findAllManuallyLocked();
+
+    @Query("SELECT e FROM EInvoiceAddress e WHERE e.registeredWithOperator = false AND e.manuallyLocked = false AND e.customer.billingProfile.deliveryMethod = 'E_INVOICE'")
+    List<EInvoiceAddress> findUnregistered();
+
+    @Query("SELECT e FROM EInvoiceAddress e WHERE e.registeredWithOperator = true AND (e.customer.billingProfile.deliveryMethod IS NULL OR e.customer.billingProfile.deliveryMethod <> 'E_INVOICE')")
+    List<EInvoiceAddress> findRegisteredButInactive();
 }

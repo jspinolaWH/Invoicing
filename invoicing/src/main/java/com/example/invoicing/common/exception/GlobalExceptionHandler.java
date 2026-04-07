@@ -66,4 +66,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
             .body(new ErrorResponse("CREDIT_NOTE_VALIDATION_ERROR", ex.getMessage()));
     }
+
+    @ExceptionHandler(com.example.invoicing.recall.CannotRecallException.class)
+    public ResponseEntity<ErrorResponse> handleCannotRecall(
+            com.example.invoicing.recall.CannotRecallException ex) {
+        return ResponseEntity.status(409).body(new ErrorResponse("CANNOT_RECALL", ex.getMessage()));
+    }
 }

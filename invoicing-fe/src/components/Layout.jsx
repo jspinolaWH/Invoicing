@@ -59,6 +59,19 @@ const navItems = [
       { label: 'Responsibility Change', to: '/retroactive/responsibility-change' },
     ],
   },
+  {
+    label: 'Integration',
+    children: [
+      { label: 'Billing Addr. Sync', to: '/integration/billing-sync' },
+      { label: 'E-Invoice Operator', to: '/integration/operator' },
+    ],
+  },
+  {
+    label: 'Authority',
+    children: [
+      { label: 'Invoice View', to: '/authority/invoices' },
+    ],
+  },
 ]
 
 export default function Layout() {

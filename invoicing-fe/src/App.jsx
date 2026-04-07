@@ -32,6 +32,9 @@ import InvoiceRunDetailPage from './pages/runs/InvoiceRunDetailPage'
 import SimulationResultsPage from './pages/runs/SimulationResultsPage'
 import PriceAdjustmentPage from './pages/retroactive/PriceAdjustmentPage'
 import ResponsibilityChangePage from './pages/retroactive/ResponsibilityChangePage'
+import BillingAddressSyncPage from './pages/integration/BillingAddressSyncPage'
+import OperatorManagementPage from './pages/integration/OperatorManagementPage'
+import AuthorityInvoiceViewPage from './pages/authority/AuthorityInvoiceViewPage'
 
 export default function App() {
   return (
@@ -71,6 +74,9 @@ export default function App() {
           <Route path="runs/simulation-results" element={<SimulationResultsPage />} />
           <Route path="retroactive/price-adjustment" element={<PriceAdjustmentPage />} />
           <Route path="retroactive/responsibility-change" element={<ResponsibilityChangePage />} />
+          <Route path="integration/billing-sync" element={<BillingAddressSyncPage />} />
+          <Route path="integration/operator" element={<OperatorManagementPage />} />
+          <Route path="authority/invoices" element={<AuthorityInvoiceViewPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -96,20 +96,20 @@
 ---
 
 ## Build Area 12 — Integration Layer
-- [ ] STEP-50 — ExternalInvoicingClient: FINVOICE transmission + status update
-- [ ] STEP-51 — Invoice image + attachment retrieval from external system
-- [ ] STEP-52 — Billing address sync (WasteHero as master)
-- [ ] STEP-53 — E-invoice operator integration (daily batch START/TERMINATE)
-- [ ] STEP-54 — Invoice recall
+- [x] STEP-50 — ExternalInvoicingClient: FINVOICE transmission + status update
+- [x] STEP-51 — Invoice image + attachment retrieval from external system
+- [x] STEP-52 — Billing address sync (WasteHero as master)
+- [x] STEP-53 — E-invoice operator integration (daily batch START/TERMINATE)
+- [x] STEP-54 — Invoice recall
 
 ---
 
 ## Build Area 13 — Authority Access
-- [ ] STEP-55 — AuthorityInvoiceViewController (read-only, AUTHORITY_VIEWER role)
-- [ ] STEP-56 — Authority invoice image retrieval
+- [x] STEP-55 — AuthorityInvoiceViewController (read-only, AUTHORITY_VIEWER role)
+- [x] STEP-56 — Authority invoice image retrieval
 
 ---
 
 ## Summary
 - Total steps: 56
-- Completed: 49 / 56
+- Completed: 56 / 56

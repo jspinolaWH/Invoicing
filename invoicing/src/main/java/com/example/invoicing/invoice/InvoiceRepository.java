@@ -26,4 +26,19 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     @Query("SELECT i FROM Invoice i WHERE i.customer.id = :customerId AND i.invoiceType = 'CREDIT_NOTE' ORDER BY i.invoiceDate DESC")
     Page<Invoice> findCreditNotesByCustomerId(@Param("customerId") Long customerId, Pageable pageable);
+
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE i.status IN ('SENT', 'COMPLETED')
+          AND (:customerId IS NULL OR i.customer.id = :customerId)
+          AND (:dateFrom IS NULL OR i.invoiceDate >= :dateFrom)
+          AND (:dateTo IS NULL OR i.invoiceDate <= :dateTo)
+        ORDER BY i.invoiceDate DESC
+        """)
+    Page<Invoice> findForAuthority(
+        @Param("customerId") Long customerId,
+        @Param("dateFrom") java.time.LocalDate dateFrom,
+        @Param("dateTo") java.time.LocalDate dateTo,
+        org.springframework.data.domain.Pageable pageable
+    );
 }

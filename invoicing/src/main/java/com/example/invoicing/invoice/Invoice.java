@@ -94,4 +94,10 @@ public class Invoice extends BaseAuditEntity {
     @Lob
     @Column(name = "finvoice_xml")
     private String finvoiceXml;
+
+    @Column(name = "external_reference", length = 100)
+    private String externalReference;
+
+    @Column(name = "transmitted_at")
+    private Instant transmittedAt;
 }

@@ -6,6 +6,7 @@ import InvoiceLineItemsTable from './components/InvoiceLineItemsTable'
 import InvoiceAmountSummary from './components/InvoiceAmountSummary'
 import InvoiceCustomTextPanel from './components/InvoiceCustomTextPanel'
 import InvoiceAttachmentsPanel from './components/InvoiceAttachmentsPanel'
+import InvoiceTransmitPanel from '../integration/InvoiceTransmitPanel'
 import '../masterdata/VatRatesPage.css'
 
 export default function InvoiceDetailPage() {
@@ -62,6 +63,13 @@ export default function InvoiceDetailPage() {
       <div style={{ marginTop: 'var(--space-5)' }}>
         <InvoiceAttachmentsPanel invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} />
       </div>
+
+      <InvoiceTransmitPanel
+        invoiceId={invoice.id}
+        invoiceStatus={invoice.status}
+        externalReference={invoice.externalReference}
+        onStatusChange={(newStatus) => setInvoice(prev => ({ ...prev, status: newStatus }))}
+      />
     </div>
   )
 }
