@@ -119,6 +119,7 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>Municipality</label><span>{event.municipalityId ?? '—'}</span></div>
             <div className="detail-field"><label>Accounting Account</label><span>{event.accountingAccount ? `${event.accountingAccount.code} — ${event.accountingAccount.name}` : '—'}</span></div>
             <div className="detail-field"><label>Cost Center</label><span>{event.costCenter?.compositeCode ?? '—'}</span></div>
+            <div className="detail-field"><label>Resolved Cost Centre</label><span>{event.resolvedCostCenterCode || '—'}</span></div>
             <div className="detail-field"><label>Project</label><span>{event.projectId ?? '—'}</span></div>
             <div className="detail-field"><label>Non-billable</label><span>{event.nonBillable ? 'Yes' : 'No'}</span></div>
             {event.officeReviewRequired && (
@@ -130,6 +131,22 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>Created</label><span>{formatTs(event.createdAt)} {event.createdBy ? `by ${event.createdBy}` : ''}</span></div>
             <div className="detail-field"><label>Last Modified</label><span>{formatTs(event.lastModifiedAt)} {event.lastModifiedBy ? `by ${event.lastModifiedBy}` : ''}</span></div>
           </div>
+          {(event.resolvedVatRateCode || event.calculatedAmountNet != null) && (
+            <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--color-bg-subtle, #f9fafb)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+              <strong style={{ display: 'block', marginBottom: 'var(--space-3)' }}>VAT Details</strong>
+              <div className="detail-grid">
+                <div className="detail-field"><label>VAT Rate Code</label><span>{event.resolvedVatRateCode ?? '—'}</span></div>
+                <div className="detail-field"><label>Effective Rate</label><span>{event.resolvedVatRatePercent != null ? `${event.resolvedVatRatePercent}%` : '—'}</span></div>
+                <div className="detail-field"><label>Reverse Charge</label><span>{event.reverseCharge ? <span style={{ color: 'var(--color-warning, #d97706)', fontWeight: 500 }}>Yes</span> : 'No'}</span></div>
+                {event.buyerVatNumber && (
+                  <div className="detail-field"><label>Buyer VAT #</label><span><code>{event.buyerVatNumber}</code></span></div>
+                )}
+                <div className="detail-field"><label>Net Amount</label><span>{event.calculatedAmountNet?.toFixed(2) ?? '—'}</span></div>
+                <div className="detail-field"><label>VAT Amount</label><span>{event.calculatedAmountVat?.toFixed(2) ?? '—'}</span></div>
+                <div className="detail-field"><label>Gross Amount</label><span>{event.calculatedAmountGross?.toFixed(2) ?? '—'}</span></div>
+              </div>
+            </div>
+          )}
           {event.comments && (
             <div style={{ marginTop: 'var(--space-6)' }}>
               <div className="detail-field"><label>Comments</label><span>{event.comments}</span></div>

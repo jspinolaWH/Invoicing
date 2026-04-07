@@ -14,6 +14,7 @@ import CreateBillingEventPage from './pages/billing/CreateBillingEventPage'
 import EditBillingEventPage from './pages/billing/EditBillingEventPage'
 import BillingEventDetailPage from './pages/billing/BillingEventDetailPage'
 import OfficeReviewQueuePage from './pages/billing/OfficeReviewQueuePage'
+import AllocationRulesPage from './pages/masterdata/AllocationRulesPage'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="master-data/cost-centers" element={<CostCentersPage />} />
           <Route path="master-data/products" element={<ProductsPage />} />
           <Route path="master-data/invoice-number-series" element={<InvoiceNumberSeriesPage />} />
+          <Route path="master-data/allocation-rules" element={<AllocationRulesPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="customers/:customerId/billing-profile" element={<BillingProfilePage />} />
           <Route path="config/classification-rules" element={<ClassificationRulesPage />} />

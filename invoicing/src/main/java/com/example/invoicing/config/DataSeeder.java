@@ -1,8 +1,11 @@
 package com.example.invoicing.config;
 
+import com.example.invoicing.accounting.costcenter.CostCenterCompositionConfig;
+import com.example.invoicing.accounting.costcenter.CostCenterCompositionConfigRepository;
 import com.example.invoicing.driver.EventTypeConfig;
 import com.example.invoicing.driver.EventTypeConfigRepository;
 import com.example.invoicing.entity.account.AccountingAccount;
+import com.example.invoicing.entity.allocation.AccountingAllocationRule;
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
 import com.example.invoicing.entity.classification.ClassificationRule;
@@ -17,6 +20,7 @@ import com.example.invoicing.entity.validation.ValidationRule;
 import com.example.invoicing.entity.validation.ValidationRuleType;
 import com.example.invoicing.entity.vat.VatRate;
 import com.example.invoicing.repository.AccountingAccountRepository;
+import com.example.invoicing.repository.AccountingAllocationRuleRepository;
 import com.example.invoicing.repository.BillingEventRepository;
 import com.example.invoicing.repository.ClassificationRuleRepository;
 import com.example.invoicing.repository.CostCenterRepository;
@@ -51,6 +55,8 @@ public class DataSeeder implements CommandLineRunner {
     private final ValidationRuleRepository validationRuleRepository;
     private final BillingEventRepository billingEventRepository;
     private final EventTypeConfigRepository eventTypeConfigRepository;
+    private final AccountingAllocationRuleRepository allocationRuleRepository;
+    private final CostCenterCompositionConfigRepository costCenterCompositionConfigRepository;
 
     @Override
     public void run(String... args) {
@@ -64,6 +70,8 @@ public class DataSeeder implements CommandLineRunner {
         seedValidationRules();
         seedBillingEvents();
         seedEventTypeConfigs();
+        seedAllocationRules();
+        seedCostCenterCompositionConfig();
     }
 
     // ─────────────────────────────────────────────
@@ -448,6 +456,79 @@ public class DataSeeder implements CommandLineRunner {
         eventTypeConfigRepository.saveAll(
             java.util.List.of(bioWaste, hazardous, extraEmptying));
         log.info("[Seeder] Seeded 3 event type configs.");
+    }
+
+    // ─────────────────────────────────────────────
+    //  Accounting Allocation Rules
+    // ─────────────────────────────────────────────
+    private void seedAllocationRules() {
+        if (allocationRuleRepository.count() > 0) {
+            log.info("[Seeder] Allocation rules already seeded — skipping.");
+            return;
+        }
+
+        List<Product> products = productRepository.findAll();
+        List<AccountingAccount> accounts = accountingAccountRepository.findAll();
+        if (products.isEmpty() || accounts.isEmpty()) {
+            log.warn("[Seeder] Products or accounts not found — skipping allocation rule seeding.");
+            return;
+        }
+
+        AccountingAccount waste    = accounts.stream().filter(a -> "3001".equals(a.getCode())).findFirst().orElse(null);
+        AccountingAccount transp   = accounts.stream().filter(a -> "3002".equals(a.getCode())).findFirst().orElse(null);
+        AccountingAccount ecoAcc   = accounts.stream().filter(a -> "3003".equals(a.getCode())).findFirst().orElse(null);
+        AccountingAccount rental   = accounts.stream().filter(a -> "3004".equals(a.getCode())).findFirst().orElse(null);
+        AccountingAccount industrial = accounts.stream().filter(a -> "4003".equals(a.getCode())).findFirst().orElse(null);
+
+        if (waste == null || transp == null || ecoAcc == null || rental == null || industrial == null) {
+            log.warn("[Seeder] Required accounts not found — skipping allocation rule seeding.");
+            return;
+        }
+
+        List<AccountingAllocationRule> rules = new java.util.ArrayList<>();
+        for (Product p : products) {
+            AccountingAccount account = switch (p.getCode()) {
+                case "TRANSPORT-FEE"       -> transp;
+                case "ECO-FEE"            -> ecoAcc;
+                case "CONTAINER-RENTAL-240L" -> rental;
+                case "HAZARDOUS-WASTE"    -> industrial;
+                default                   -> waste;
+            };
+            rules.add(AccountingAllocationRule.builder()
+                .product(p)
+                .region(null)
+                .municipality(null)
+                .accountingAccount(account)
+                .specificityScore(1)
+                .description("Default rule for " + p.getCode())
+                .active(true)
+                .build());
+        }
+
+        allocationRuleRepository.saveAll(rules);
+        log.info("[Seeder] Seeded {} allocation rules.", rules.size());
+    }
+
+    // ─────────────────────────────────────────────
+    //  Cost Center Composition Config
+    // ─────────────────────────────────────────────
+    private void seedCostCenterCompositionConfig() {
+        if (costCenterCompositionConfigRepository.count() > 0) {
+            log.info("[Seeder] Cost center composition config already seeded — skipping.");
+            return;
+        }
+
+        CostCenterCompositionConfig config = new CostCenterCompositionConfig();
+        config.setSeparator("-");
+        config.setSegmentOrder("PRODUCT,RECEPTION_POINT,SERVICE_RESPONSIBILITY");
+        config.setProductSegmentEnabled(true);
+        config.setReceptionPointSegmentEnabled(true);
+        config.setServiceResponsibilitySegmentEnabled(true);
+        config.setPublicLawCode("PL");
+        config.setPrivateLawCode("PR");
+
+        costCenterCompositionConfigRepository.save(config);
+        log.info("[Seeder] Seeded cost center composition config.");
     }
 
     private BillingEvent billingEvent(String customerNumber, Product product,

@@ -1,36 +1,47 @@
 package com.example.invoicing.entity.allocation;
 
+import com.example.invoicing.entity.BaseAuditEntity;
 import com.example.invoicing.entity.account.AccountingAccount;
-import com.example.invoicing.entity.costcenter.CostCenter;
 import com.example.invoicing.entity.product.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Stub entity — full implementation in Step 19 (AccountingAllocationRule).
- * Exists here so BillingEventService can reference it for compilation.
+ * Defines which AccountingAccount to use when billing a product in a given region/municipality.
+ * The most specific rule wins — determined by specificityScore ORDER BY DESC.
  */
 @Entity
 @Table(name = "accounting_allocation_rules")
-@Getter @Setter @NoArgsConstructor
-public class AccountingAllocationRule {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AccountingAllocationRule extends BaseAuditEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(name = "location_id", length = 100)
-    private String locationId;
+    @Column(length = 100)
+    private String region;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "accounting_account_id")
+    @Column(length = 100)
+    private String municipality;
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "accounting_account_id", nullable = false)
     private AccountingAccount accountingAccount;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cost_center_id")
-    private CostCenter costCenter;
+    /**
+     * Specificity score: 1 = product only, 2 = product+region, 3 = product+region+municipality.
+     * Computed by the service — not set by callers.
+     */
+    @Column(nullable = false)
+    private Integer specificityScore;
+
+    @Column(length = 255)
+    private String description;
+
+    @Column(nullable = false)
+    private boolean active = true;
 }

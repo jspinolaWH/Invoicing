@@ -37,10 +37,10 @@
 ---
 
 ## Build Area 5 — Accounting Allocation
-- [ ] STEP-19 — AccountingAllocationRule entity + specificity ordering
-- [ ] STEP-20 — AccountingAllocationService (product + region matching)
-- [ ] STEP-21 — CostCenterCompositionService (dynamic composite assembly)
-- [ ] STEP-22 — VatCalculationService (event-date VAT + reverse charge)
+- [x] STEP-19 — AccountingAllocationRule entity + specificity ordering
+- [x] STEP-20 — AccountingAllocationService (product + region matching)
+- [x] STEP-21 — CostCenterCompositionService (dynamic composite assembly)
+- [x] STEP-22 — VatCalculationService (event-date VAT + reverse charge)
 
 ---
 

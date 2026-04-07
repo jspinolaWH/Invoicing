@@ -10,6 +10,7 @@ const navItems = [
       { label: 'Cost Centers', to: '/master-data/cost-centers' },
       { label: 'Products', to: '/master-data/products' },
       { label: 'Invoice Number Series', to: '/master-data/invoice-number-series' },
+      { label: 'Allocation Rules', to: '/master-data/allocation-rules' },
     ],
   },
   {

@@ -1,5 +1,8 @@
 package com.example.invoicing.service;
 
+import com.example.invoicing.accounting.costcenter.CostCenterCompositionService;
+import com.example.invoicing.accounting.vat.VatCalculationResult;
+import com.example.invoicing.accounting.vat.VatCalculationService;
 import com.example.invoicing.entity.account.AccountingAccount;
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
@@ -40,6 +43,8 @@ public class BillingEventService {
     private final AccountingAccountRepository accountingAccountRepository;
     private final CostCenterRepository costCenterRepository;
     private final LegalClassificationService classificationService;
+    private final CostCenterCompositionService costCenterCompositionService;
+    private final VatCalculationService vatCalculationService;
 
     // -----------------------------------------------------------------------
     // CREATE — external source (integration / weighbridge)
@@ -269,10 +274,7 @@ public class BillingEventService {
 
     private void resolveAccountingDefaults(BillingEvent event, Product product, String locationId) {
         allocationRuleRepository.findBestMatchForProduct(product.getId(), locationId)
-            .ifPresent(rule -> {
-                event.setAccountingAccount(rule.getAccountingAccount());
-                event.setCostCenter(rule.getCostCenter());
-            });
+            .ifPresent(rule -> event.setAccountingAccount(rule.getAccountingAccount()));
     }
 
     private void mapCommonFields(BillingEvent event, BillingEventCreateRequest req, Product product) {
@@ -370,7 +372,17 @@ public class BillingEventService {
     }
 
     private BillingEventDetailResponse toDetailResponse(BillingEvent e) {
-        return BillingEventDetailResponse.builder()
+        String resolvedCostCenter = null;
+        try {
+            resolvedCostCenter = costCenterCompositionService.compose(e);
+        } catch (Exception ignored) {}
+
+        VatCalculationResult vatResult = null;
+        try {
+            vatResult = vatCalculationService.calculate(e);
+        } catch (Exception ignored) {}
+
+        BillingEventDetailResponse.BillingEventDetailResponseBuilder builder = BillingEventDetailResponse.builder()
             .id(e.getId())
             .eventDate(e.getEventDate())
             .product(e.getProduct() != null ? ProductSummaryDto.builder()
@@ -421,6 +433,19 @@ public class BillingEventService {
             .createdBy(e.getCreatedBy())
             .lastModifiedAt(e.getLastModifiedAt())
             .lastModifiedBy(e.getLastModifiedBy())
-            .build();
+            .resolvedCostCenterCode(resolvedCostCenter);
+
+        if (vatResult != null) {
+            builder
+                .resolvedVatRateCode(vatResult.getVatRateCode())
+                .resolvedVatRatePercent(vatResult.getEffectiveRatePercent())
+                .reverseCharge(vatResult.isReverseCharge())
+                .calculatedAmountNet(vatResult.getAmountNet())
+                .calculatedAmountVat(vatResult.getAmountVat())
+                .calculatedAmountGross(vatResult.getAmountGross())
+                .buyerVatNumber(vatResult.getBuyerVatNumber());
+        }
+
+        return builder.build();
     }
 }

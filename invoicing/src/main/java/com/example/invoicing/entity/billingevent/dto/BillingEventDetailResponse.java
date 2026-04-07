@@ -49,4 +49,14 @@ public class BillingEventDetailResponse {
     private String createdBy;
     private Instant lastModifiedAt;
     private String lastModifiedBy;
+    // Resolved cost centre (STEP-21)
+    private String resolvedCostCenterCode;
+    // VAT calculation (STEP-22)
+    private String resolvedVatRateCode;
+    private BigDecimal resolvedVatRatePercent;
+    private boolean reverseCharge;
+    private BigDecimal calculatedAmountNet;
+    private BigDecimal calculatedAmountVat;
+    private BigDecimal calculatedAmountGross;
+    private String buyerVatNumber;
 }
