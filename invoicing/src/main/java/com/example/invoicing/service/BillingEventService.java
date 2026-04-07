@@ -5,6 +5,8 @@ import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
 import com.example.invoicing.entity.billingevent.audit.BillingEventAuditLog;
 import com.example.invoicing.entity.billingevent.dto.*;
+import com.example.invoicing.entity.billingevent.dto.BulkExcludeFailure;
+import com.example.invoicing.entity.billingevent.dto.BulkExcludeResult;
 import com.example.invoicing.entity.classification.LegalClassification;
 import com.example.invoicing.entity.costcenter.CostCenter;
 import com.example.invoicing.entity.product.Product;
@@ -150,6 +152,89 @@ public class BillingEventService {
     }
 
     // -----------------------------------------------------------------------
+    // EXCLUSION
+    // -----------------------------------------------------------------------
+    public BillingEventResponse exclude(Long id, String exclusionReason, String currentUser) {
+        BillingEvent event = billingEventRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
+        statusService.assertMutable(event);
+        if (event.isExcluded()) {
+            throw new IllegalStateException("BillingEvent " + id + " is already excluded.");
+        }
+        event.setExcluded(true);
+        event.setExclusionReason(exclusionReason);
+        event.setExcludedBy(currentUser);
+        event.setExcludedAt(Instant.now());
+        billingEventRepository.save(event);
+        auditLogRepository.save(BillingEventAuditLog.builder()
+            .billingEventId(id).field("excluded")
+            .oldValue("false").newValue("true")
+            .changedBy(currentUser).changedAt(Instant.now())
+            .reason(exclusionReason).build());
+        return toResponse(event);
+    }
+
+    public BillingEventResponse reinstate(Long id, String reason, String currentUser) {
+        BillingEvent event = billingEventRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
+        if (!event.isExcluded()) {
+            throw new IllegalStateException("BillingEvent " + id + " is not excluded and cannot be reinstated.");
+        }
+        String previousReason = event.getExclusionReason();
+        event.setExcluded(false);
+        event.setExclusionReason(null);
+        event.setExcludedBy(null);
+        event.setExcludedAt(null);
+        billingEventRepository.save(event);
+        auditLogRepository.save(BillingEventAuditLog.builder()
+            .billingEventId(id).field("excluded")
+            .oldValue("true (reason: " + previousReason + ")").newValue("false")
+            .changedBy(currentUser).changedAt(Instant.now())
+            .reason(reason).build());
+        return toResponse(event);
+    }
+
+    public BulkExcludeResult bulkExclude(List<Long> eventIds, String exclusionReason, String currentUser) {
+        List<BillingEvent> events = billingEventRepository.findAllById(eventIds);
+        List<Long> succeeded = new ArrayList<>();
+        List<BulkExcludeFailure> failed = new ArrayList<>();
+        for (BillingEvent event : events) {
+            try {
+                statusService.assertMutable(event);
+                if (event.isExcluded()) {
+                    failed.add(new BulkExcludeFailure(event.getId(), "Already excluded"));
+                    continue;
+                }
+                event.setExcluded(true);
+                event.setExclusionReason(exclusionReason);
+                event.setExcludedBy(currentUser);
+                event.setExcludedAt(Instant.now());
+                succeeded.add(event.getId());
+            } catch (IllegalStateException ex) {
+                failed.add(new BulkExcludeFailure(event.getId(), ex.getMessage()));
+            }
+        }
+        billingEventRepository.saveAll(events.stream().filter(e -> succeeded.contains(e.getId())).toList());
+        auditLogRepository.saveAll(succeeded.stream()
+            .map(eid -> BillingEventAuditLog.builder()
+                .billingEventId(eid).field("excluded")
+                .oldValue("false").newValue("true")
+                .changedBy(currentUser).changedAt(Instant.now())
+                .reason(exclusionReason).build())
+            .toList());
+        return new BulkExcludeResult(succeeded, failed);
+    }
+
+    // -----------------------------------------------------------------------
+    // PENDING REVIEW QUERY
+    // -----------------------------------------------------------------------
+    @Transactional(readOnly = true)
+    public List<BillingEventResponse> findPendingReview() {
+        return billingEventRepository.findPendingOfficeReview()
+            .stream().map(this::toResponse).toList();
+    }
+
+    // -----------------------------------------------------------------------
     // QUERIES
     // -----------------------------------------------------------------------
     @Transactional(readOnly = true)
@@ -236,7 +321,7 @@ public class BillingEventService {
         setter.accept(newVal);
     }
 
-    private BillingEventResponse toResponse(BillingEvent e) {
+    public BillingEventResponse toResponse(BillingEvent e) {
         return BillingEventResponse.builder()
             .id(e.getId())
             .eventDate(e.getEventDate())

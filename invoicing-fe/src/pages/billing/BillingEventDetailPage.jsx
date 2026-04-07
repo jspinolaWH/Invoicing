@@ -5,6 +5,8 @@ import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
 import StatusTransitionPanel from '../../components/billing/StatusTransitionPanel'
 import AuditTrailTab from '../../components/billing/AuditTrailTab'
+import ExclusionModal from '../../components/billing/ExclusionModal'
+import TransferEventModal from '../../components/billing/TransferEventModal'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -12,6 +14,7 @@ const RELATED_TASKS = [
   { id: 'PD-299', label: '3.4.13 Billing event details', href: 'https://ioteelab.atlassian.net/browse/PD-299' },
   { id: 'PD-297', label: '3.4.15 Billing event status',  href: 'https://ioteelab.atlassian.net/browse/PD-297' },
   { id: 'PD-277', label: '3.4.36 Manual editing',        href: 'https://ioteelab.atlassian.net/browse/PD-277' },
+  { id: 'PD-318', label: '3.3.18 Editing billing events', href: 'https://ioteelab.atlassian.net/browse/PD-318' },
 ]
 
 const TABS = ['Details', 'Audit Trail', 'Status']
@@ -27,6 +30,8 @@ export default function BillingEventDetailPage() {
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Details')
+  const [exclusionModal, setExclusionModal] = useState(null) // 'exclude' | 'reinstate' | null
+  const [transferModal, setTransferModal] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -42,6 +47,8 @@ export default function BillingEventDetailPage() {
   if (!event) return <div className="error-msg">Event not found.</div>
 
   const canEdit = event.status === 'IN_PROGRESS' || event.status === 'ERROR'
+  const canExclude = !event.excluded && event.status !== 'SENT' && event.status !== 'COMPLETED'
+  const canTransfer = !event.excluded && event.status === 'IN_PROGRESS'
 
   return (
     <div className="page">
@@ -54,7 +61,22 @@ export default function BillingEventDetailPage() {
           </div>
           <p>{event.customerNumber} · {event.eventDate} · {event.product?.name ?? event.product?.code}</p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          {canExclude && (
+            <button className="btn-danger" onClick={() => setExclusionModal('exclude')}>
+              Exclude
+            </button>
+          )}
+          {event.excluded && (
+            <button className="btn-secondary" onClick={() => setExclusionModal('reinstate')}>
+              Reinstate
+            </button>
+          )}
+          {canTransfer && (
+            <button className="btn-secondary" onClick={() => setTransferModal(true)}>
+              Transfer
+            </button>
+          )}
           <button
             className="btn-secondary"
             disabled={!canEdit}
@@ -99,6 +121,12 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>Cost Center</label><span>{event.costCenter?.compositeCode ?? '—'}</span></div>
             <div className="detail-field"><label>Project</label><span>{event.projectId ?? '—'}</span></div>
             <div className="detail-field"><label>Non-billable</label><span>{event.nonBillable ? 'Yes' : 'No'}</span></div>
+            {event.officeReviewRequired && (
+              <div className="detail-field"><label>Review</label><span style={{ color: 'var(--color-warning, #d97706)', fontWeight: 500 }}>Pending office review</span></div>
+            )}
+            {event.reviewedAt && (
+              <div className="detail-field"><label>Reviewed</label><span>{formatTs(event.reviewedAt)} by {event.reviewedBy}</span></div>
+            )}
             <div className="detail-field"><label>Created</label><span>{formatTs(event.createdAt)} {event.createdBy ? `by ${event.createdBy}` : ''}</span></div>
             <div className="detail-field"><label>Last Modified</label><span>{formatTs(event.lastModifiedAt)} {event.lastModifiedBy ? `by ${event.lastModifiedBy}` : ''}</span></div>
           </div>
@@ -111,6 +139,11 @@ export default function BillingEventDetailPage() {
             <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 'var(--radius-md)' }}>
               <strong>Excluded</strong> — {event.exclusionReason ?? 'No reason provided'}
               {event.excludedBy && <span className="muted"> · by {event.excludedBy} at {formatTs(event.excludedAt)}</span>}
+            </div>
+          )}
+          {event.rejectionReason && (
+            <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 'var(--radius-md)' }}>
+              <strong>Rejected</strong> — {event.rejectionReason}
             </div>
           )}
         </div>
@@ -133,6 +166,24 @@ export default function BillingEventDetailPage() {
             <p className="muted">No manual transitions available for this status.</p>
           )}
         </div>
+      )}
+
+      {exclusionModal && (
+        <ExclusionModal
+          eventId={id}
+          mode={exclusionModal}
+          onSuccess={() => { setExclusionModal(null); load() }}
+          onClose={() => setExclusionModal(null)}
+        />
+      )}
+
+      {transferModal && (
+        <TransferEventModal
+          eventId={id}
+          currentCustomerNumber={event.customerNumber}
+          onSuccess={() => { setTransferModal(false); load() }}
+          onClose={() => setTransferModal(false)}
+        />
       )}
     </div>
   )

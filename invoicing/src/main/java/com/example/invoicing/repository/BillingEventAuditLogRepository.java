@@ -26,4 +26,27 @@ public interface BillingEventAuditLogRepository extends JpaRepository<BillingEve
     );
 
     List<BillingEventAuditLog> findByFieldOrderByChangedAtDesc(String field);
+
+    // -----------------------------------------------------------------------
+    // Mutation guard — audit logs are insert-only
+    // -----------------------------------------------------------------------
+    @Override
+    default void delete(BillingEventAuditLog entity) {
+        throw new UnsupportedOperationException("Audit log entries cannot be deleted.");
+    }
+
+    @Override
+    default void deleteById(Long id) {
+        throw new UnsupportedOperationException("Audit log entries cannot be deleted.");
+    }
+
+    @Override
+    default void deleteAll() {
+        throw new UnsupportedOperationException("Audit log entries cannot be deleted.");
+    }
+
+    @Override
+    default void deleteAll(Iterable<? extends BillingEventAuditLog> entities) {
+        throw new UnsupportedOperationException("Audit log entries cannot be deleted.");
+    }
 }

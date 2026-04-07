@@ -1,5 +1,7 @@
 package com.example.invoicing.config;
 
+import com.example.invoicing.driver.EventTypeConfig;
+import com.example.invoicing.driver.EventTypeConfigRepository;
 import com.example.invoicing.entity.account.AccountingAccount;
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
@@ -48,6 +50,7 @@ public class DataSeeder implements CommandLineRunner {
     private final ClassificationRuleRepository classificationRuleRepository;
     private final ValidationRuleRepository validationRuleRepository;
     private final BillingEventRepository billingEventRepository;
+    private final EventTypeConfigRepository eventTypeConfigRepository;
 
     @Override
     public void run(String... args) {
@@ -60,6 +63,7 @@ public class DataSeeder implements CommandLineRunner {
         seedClassificationRules();
         seedValidationRules();
         seedBillingEvents();
+        seedEventTypeConfigs();
     }
 
     // ─────────────────────────────────────────────
@@ -403,6 +407,47 @@ public class DataSeeder implements CommandLineRunner {
 
         billingEventRepository.saveAll(events);
         log.info("[Seeder] Seeded {} billing events.", events.size());
+    }
+
+    // ─────────────────────────────────────────────
+    //  Event Type Configs (for driver events)
+    // ─────────────────────────────────────────────
+    private void seedEventTypeConfigs() {
+        if (eventTypeConfigRepository.count() > 0) {
+            log.info("[Seeder] Event type configs already seeded — skipping.");
+            return;
+        }
+
+        EventTypeConfig bioWaste = new EventTypeConfig();
+        bioWaste.setEventTypeCode("BIO_WASTE_EMPTYING");
+        bioWaste.setRequiresOfficeReview(false);
+        bioWaste.setUnusualQuantityThreshold(new java.math.BigDecimal("10.00"));
+        bioWaste.setUnusualWeightThreshold(new java.math.BigDecimal("500.00"));
+        bioWaste.setUnusualPriceThreshold(new java.math.BigDecimal("200.00"));
+        bioWaste.setReviewIfUnknownLocation(true);
+        bioWaste.setDescription("Bio waste container emptying — standard driver event");
+
+        EventTypeConfig hazardous = new EventTypeConfig();
+        hazardous.setEventTypeCode("HAZARDOUS_WASTE_PICKUP");
+        hazardous.setRequiresOfficeReview(true);
+        hazardous.setUnusualQuantityThreshold(null);
+        hazardous.setUnusualWeightThreshold(null);
+        hazardous.setUnusualPriceThreshold(null);
+        hazardous.setReviewIfUnknownLocation(true);
+        hazardous.setDescription("Hazardous waste pickup — always requires office review");
+
+        EventTypeConfig extraEmptying = new EventTypeConfig();
+        extraEmptying.setEventTypeCode("EXTRA_EMPTYING");
+        extraEmptying.setRequiresOfficeReview(false);
+        extraEmptying.setUnusualQuantityThreshold(new java.math.BigDecimal("5.00"));
+        extraEmptying.setUnusualWeightThreshold(new java.math.BigDecimal("250.00"));
+        extraEmptying.setUnusualPriceThreshold(new java.math.BigDecimal("150.00"));
+        extraEmptying.setReviewIfUnknownLocation(true);
+        extraEmptying.setDescription("Extra emptying requested by customer");
+
+        eventTypeConfigRepository.saveAll(
+            java.util.List.of(bioWaste, hazardous, extraEmptying));
+        log.info("[Seeder] Seeded 3 event type configs.");
     }
 
     private BillingEvent billingEvent(String customerNumber, Product product,

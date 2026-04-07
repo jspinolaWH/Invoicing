@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getBillingEvents, validateBillingEvents } from '../../api/billingEvents'
+import {
+  getBillingEvents, validateBillingEvents,
+  bulkExcludeBillingEvents, bulkTransferBillingEvents,
+} from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
 import ValidationReportModal from '../../components/ValidationReportModal'
+import ExclusionModal from '../../components/billing/ExclusionModal'
+import TransferEventModal from '../../components/billing/TransferEventModal'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -29,12 +34,15 @@ export default function BillingEventsPage() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [successMsg, setSuccessMsg] = useState(null)
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [selectedIds, setSelectedIds] = useState([])
   const [validateModalOpen, setValidateModalOpen] = useState(false)
   const [validationReport, setValidationReport] = useState(null)
   const [validating, setValidating] = useState(false)
+  const [bulkExcludeOpen, setBulkExcludeOpen] = useState(false)
+  const [bulkTransferOpen, setBulkTransferOpen] = useState(false)
 
   const [filters, setFilters] = useState({
     customerNumber: '', status: '', municipalityId: '',
@@ -44,6 +52,7 @@ export default function BillingEventsPage() {
   const load = async (pg = 0) => {
     setLoading(true)
     setError(null)
+    setSuccessMsg(null)
     try {
       const params = { page: pg, size: 20 }
       if (filters.customerNumber) params.customerNumber = filters.customerNumber
@@ -86,6 +95,20 @@ export default function BillingEventsPage() {
     } finally {
       setValidating(false)
     }
+  }
+
+  const handleBulkExcludeSuccess = (result) => {
+    setBulkExcludeOpen(false)
+    const s = result?.succeeded?.length ?? 0
+    const f = result?.failed?.length ?? 0
+    setSuccessMsg(`${s} excluded${f > 0 ? `, ${f} skipped` : ''}.`)
+    load(page)
+  }
+
+  const handleBulkTransferSuccess = () => {
+    setBulkTransferOpen(false)
+    setSuccessMsg('Bulk transfer completed.')
+    load(page)
   }
 
   return (
@@ -137,11 +160,26 @@ export default function BillingEventsPage() {
           disabled={selectedIds.length === 0 || validating}
           onClick={handleValidate}
         >
-          {validating ? 'Validating…' : `Validate Selected (${selectedIds.length})`}
+          {validating ? 'Validating…' : `Validate (${selectedIds.length})`}
+        </button>
+        <button
+          className="btn-danger"
+          disabled={selectedIds.length === 0}
+          onClick={() => setBulkExcludeOpen(true)}
+        >
+          Exclude Selected
+        </button>
+        <button
+          className="btn-secondary"
+          disabled={selectedIds.length === 0}
+          onClick={() => setBulkTransferOpen(true)}
+        >
+          Transfer Selected
         </button>
       </div>
 
       {error && <div className="error-msg">{error}</div>}
+      {successMsg && <div className="success-msg">{successMsg}</div>}
 
       {loading ? (
         <div className="loading">Loading billing events…</div>
@@ -193,7 +231,11 @@ export default function BillingEventsPage() {
                       </span>
                     )}
                   </td>
-                  <td><StatusBadge status={evt.status} /></td>
+                  <td>
+                    {evt.excluded
+                      ? <span className="origin-badge" style={{ color: '#6b7280', borderColor: '#9ca3af' }}>Excluded</span>
+                      : <StatusBadge status={evt.status} />}
+                  </td>
                   <td><span className="origin-badge">{evt.origin ?? '—'}</span></td>
                   <td>
                     <div className="actions">
@@ -228,6 +270,139 @@ export default function BillingEventsPage() {
           onClose={() => { setValidateModalOpen(false); setValidationReport(null) }}
         />
       )}
+
+      {bulkExcludeOpen && (
+        <BulkExcludeModal
+          eventIds={selectedIds}
+          onSuccess={handleBulkExcludeSuccess}
+          onClose={() => setBulkExcludeOpen(false)}
+        />
+      )}
+
+      {bulkTransferOpen && (
+        <BulkTransferModal
+          eventIds={selectedIds}
+          onSuccess={handleBulkTransferSuccess}
+          onClose={() => setBulkTransferOpen(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------
+// Inline bulk modals (kept local — used only here)
+// -----------------------------------------------------------------------
+function BulkExcludeModal({ eventIds, onSuccess, onClose }) {
+  const [reason, setReason] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const handleSubmit = async () => {
+    if (!reason.trim()) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await bulkExcludeBillingEvents(eventIds, reason)
+      onSuccess(res.data)
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Bulk exclusion failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Exclude {eventIds.length} Events</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
+          <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+            Exclusion Reason <span style={{ color: 'var(--color-icon-danger)' }}>*</span>
+          </label>
+          <textarea
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            rows={4}
+            style={{ width: '100%', padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical', boxSizing: 'border-box' }}
+            placeholder="Required"
+          />
+          <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>SENT or COMPLETED events will be skipped automatically.</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button onClick={handleSubmit} disabled={!reason.trim() || loading} className="btn-danger">
+            {loading ? 'Excluding…' : `Exclude ${eventIds.length} Events`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BulkTransferModal({ eventIds, onSuccess, onClose }) {
+  const [targetCustomerNumber, setTargetCustomerNumber] = useState('')
+  const [reason, setReason] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const isValid = /^\d{6,9}$/.test(targetCustomerNumber) && reason.trim()
+
+  const handleSubmit = async () => {
+    if (!isValid) return
+    setLoading(true)
+    setError(null)
+    try {
+      await bulkTransferBillingEvents({ eventIds, targetCustomerNumber, reason })
+      onSuccess()
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Bulk transfer failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Transfer {eventIds.length} Events</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label>Target Customer Number <span style={{ color: 'var(--color-icon-danger)' }}>*</span></label>
+            <input
+              type="text"
+              value={targetCustomerNumber}
+              onChange={e => setTargetCustomerNumber(e.target.value)}
+              placeholder="6–9 digit customer number"
+            />
+          </div>
+          <div className="field">
+            <label>Reason <span style={{ color: 'var(--color-icon-danger)' }}>*</span></label>
+            <textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              rows={3}
+              style={{ width: '100%', padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical', boxSizing: 'border-box' }}
+              placeholder="Required"
+            />
+          </div>
+          <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>SENT or COMPLETED events will be skipped automatically.</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button onClick={handleSubmit} disabled={!isValid || loading} className="btn-primary">
+            {loading ? 'Transferring…' : `Transfer ${eventIds.length} Events`}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

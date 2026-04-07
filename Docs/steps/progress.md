@@ -29,10 +29,10 @@
 ---
 
 ## Build Area 4 — Exclusion, Transfer, Driver Events
-- [ ] STEP-15 — Exclude + reinstate + bulk exclude
-- [ ] STEP-16 — Transfer single + bulk (with audit log)
-- [ ] STEP-17 — Driver event submission + office review + approve/reject
-- [ ] STEP-18 — BillingEventAuditLog queries + audit trail endpoints
+- [x] STEP-15 — Exclude + reinstate + bulk exclude
+- [x] STEP-16 — Transfer single + bulk (with audit log)
+- [x] STEP-17 — Driver event submission + office review + approve/reject
+- [x] STEP-18 — BillingEventAuditLog queries + audit trail endpoints
 
 ---
 
@@ -112,4 +112,4 @@
 
 ## Summary
 - Total steps: 56
-- Completed: 14 / 56
+- Completed: 18 / 56

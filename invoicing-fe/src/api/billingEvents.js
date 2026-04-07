@@ -23,3 +23,30 @@ export const getAuditLog = (id) =>
 
 export const validateBillingEvents = (eventIds) =>
   axios.post('/api/v1/billing-events/validate', { eventIds })
+
+// Exclusion
+export const excludeBillingEvent = (id, exclusionReason) =>
+  axios.post(`/api/v1/billing-events/${id}/exclude`, { exclusionReason })
+
+export const reinstateBillingEvent = (id, reason) =>
+  axios.post(`/api/v1/billing-events/${id}/reinstate`, { reason })
+
+export const bulkExcludeBillingEvents = (eventIds, exclusionReason) =>
+  axios.post('/api/v1/billing-events/bulk-exclude', { eventIds, exclusionReason })
+
+// Transfer
+export const transferBillingEvent = (id, data) =>
+  axios.post(`/api/v1/billing-events/${id}/transfer`, data)
+
+export const bulkTransferBillingEvents = (data) =>
+  axios.post('/api/v1/billing-events/bulk-transfer', data)
+
+// Office review
+export const getPendingReview = () =>
+  axios.get('/api/v1/billing-events/pending-review')
+
+export const approveBillingEvent = (id) =>
+  axios.post(`/api/v1/billing-events/${id}/approve`)
+
+export const rejectBillingEvent = (id, rejectionReason) =>
+  axios.post(`/api/v1/billing-events/${id}/reject`, { rejectionReason })

@@ -13,6 +13,7 @@ import BillingEventsPage from './pages/billing/BillingEventsPage'
 import CreateBillingEventPage from './pages/billing/CreateBillingEventPage'
 import EditBillingEventPage from './pages/billing/EditBillingEventPage'
 import BillingEventDetailPage from './pages/billing/BillingEventDetailPage'
+import OfficeReviewQueuePage from './pages/billing/OfficeReviewQueuePage'
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="billing-events/new" element={<CreateBillingEventPage />} />
           <Route path="billing-events/:id" element={<BillingEventDetailPage />} />
           <Route path="billing-events/:id/edit" element={<EditBillingEventPage />} />
+          <Route path="billing-events/review-queue" element={<OfficeReviewQueuePage />} />
         </Route>
       </Routes>
     </BrowserRouter>

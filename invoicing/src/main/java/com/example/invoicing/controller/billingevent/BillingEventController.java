@@ -1,12 +1,16 @@
 package com.example.invoicing.controller.billingevent;
 
+import com.example.invoicing.driver.DriverEventService;
+import com.example.invoicing.driver.dto.RejectEventRequest;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
-import com.example.invoicing.entity.billingevent.audit.BillingEventAuditLog;
+import com.example.invoicing.entity.billingevent.audit.AuditLogQueryService;
+import com.example.invoicing.entity.billingevent.audit.dto.AuditLogEntryResponse;
 import com.example.invoicing.entity.billingevent.dto.*;
+import com.example.invoicing.entity.billingevent.transfer.dto.*;
 import com.example.invoicing.entity.validation.ValidationReport;
-import com.example.invoicing.repository.BillingEventAuditLogRepository;
 import com.example.invoicing.service.BillingEventService;
 import com.example.invoicing.service.BillingEventStatusService;
+import com.example.invoicing.service.BillingEventTransferService;
 import com.example.invoicing.service.BillingEventValidationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +31,9 @@ public class BillingEventController {
     private final BillingEventService billingEventService;
     private final BillingEventStatusService statusService;
     private final BillingEventValidationService validationService;
-    private final BillingEventAuditLogRepository auditLogRepository;
+    private final BillingEventTransferService transferService;
+    private final DriverEventService driverEventService;
+    private final AuditLogQueryService auditLogQueryService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -85,9 +91,93 @@ public class BillingEventController {
         return billingEventService.findById(id);
     }
 
+    // -----------------------------------------------------------------------
+    // EXCLUSION
+    // -----------------------------------------------------------------------
+    @PostMapping("/{id}/exclude")
+    public BillingEventResponse exclude(
+        @PathVariable Long id,
+        @Valid @RequestBody ExcludeEventRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return billingEventService.exclude(id, request.getExclusionReason(), user);
+    }
+
+    @PostMapping("/{id}/reinstate")
+    public BillingEventResponse reinstate(
+        @PathVariable Long id,
+        @Valid @RequestBody ReinstateEventRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return billingEventService.reinstate(id, request.getReason(), user);
+    }
+
+    @PostMapping("/bulk-exclude")
+    public BulkExcludeResult bulkExclude(
+        @Valid @RequestBody BulkExcludeRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return billingEventService.bulkExclude(request.getEventIds(), request.getExclusionReason(), user);
+    }
+
+    // -----------------------------------------------------------------------
+    // TRANSFER
+    // -----------------------------------------------------------------------
+    @PostMapping("/{id}/transfer")
+    public TransferResult transfer(
+        @PathVariable Long id,
+        @Valid @RequestBody TransferEventRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return transferService.transfer(id, request, user);
+    }
+
+    @PostMapping("/bulk-transfer")
+    public BulkTransferResult bulkTransfer(
+        @Valid @RequestBody BulkTransferRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return transferService.bulkTransfer(request, user);
+    }
+
+    // -----------------------------------------------------------------------
+    // OFFICE REVIEW
+    // -----------------------------------------------------------------------
+    @GetMapping("/pending-review")
+    public List<BillingEventResponse> getPendingReview() {
+        return billingEventService.findPendingReview();
+    }
+
+    @PostMapping("/{id}/approve")
+    public BillingEventResponse approve(
+        @PathVariable Long id,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return driverEventService.approveReview(id, user);
+    }
+
+    @PostMapping("/{id}/reject")
+    public BillingEventResponse reject(
+        @PathVariable Long id,
+        @Valid @RequestBody RejectEventRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return driverEventService.rejectReview(id, request.getRejectionReason(), user);
+    }
+
+    // -----------------------------------------------------------------------
+    // AUDIT LOG
+    // -----------------------------------------------------------------------
     @GetMapping("/{id}/audit-log")
-    public List<BillingEventAuditLog> getAuditLog(@PathVariable Long id) {
-        return auditLogRepository.findByBillingEventIdOrderByChangedAtDesc(id);
+    public List<AuditLogEntryResponse> getAuditLog(@PathVariable Long id) {
+        return auditLogQueryService.getChangeHistoryForEvent(id);
     }
 
     @PostMapping("/validate")

@@ -16,6 +16,7 @@ const navItems = [
     label: 'Billing',
     children: [
       { label: 'Billing Events', to: '/billing-events' },
+      { label: 'Review Queue', to: '/billing-events/review-queue' },
     ],
   },
   {
