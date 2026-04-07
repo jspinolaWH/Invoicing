@@ -24,11 +24,13 @@ public class BillingProfileService {
 
     @Transactional
     public BillingProfileResponse updateBillingProfile(Long customerId, BillingProfileRequest request) {
-        if (runLockRepo.existsByCustomerId(customerId)) {
+        Customer customer = findCustomer(customerId);
+        String customerNumber = customer.getBillingProfile() != null
+            ? customer.getBillingProfile().getCustomerIdNumber() : null;
+        if (customerNumber != null && runLockRepo.existsByCustomerNumber(customerNumber)) {
             throw new BillingRunLockException(
                 "Invoice processing in progress. Address changes cannot be made during this time.");
         }
-        Customer customer = findCustomer(customerId);
         customer.setBillingProfile(request.toBillingProfile());
         Customer saved = customerRepo.save(customer);
         eventPublisher.publishEvent(new BillingAddressChangedEvent(this, customerId));

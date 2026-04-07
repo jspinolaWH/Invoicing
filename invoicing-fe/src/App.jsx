@@ -24,6 +24,9 @@ import BundlingRulesPage from './pages/customers/BundlingRulesPage'
 import InvoiceDetailPage from './pages/invoices/InvoiceDetailPage'
 import GenerateInvoicePage from './pages/invoices/GenerateInvoicePage'
 import PropertyGroupsPage from './pages/sharedservices/PropertyGroupsPage'
+import InvoiceRunPage from './pages/runs/InvoiceRunPage'
+import InvoiceRunDetailPage from './pages/runs/InvoiceRunDetailPage'
+import SimulationResultsPage from './pages/runs/SimulationResultsPage'
 
 export default function App() {
   return (
@@ -55,6 +58,9 @@ export default function App() {
           <Route path="invoices/:id" element={<InvoiceDetailPage />} />
           <Route path="invoices/generate" element={<GenerateInvoicePage />} />
           <Route path="shared-services/property-groups" element={<PropertyGroupsPage />} />
+          <Route path="runs/new" element={<InvoiceRunPage />} />
+          <Route path="runs/:id" element={<InvoiceRunDetailPage />} />
+          <Route path="runs/simulation-results" element={<SimulationResultsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

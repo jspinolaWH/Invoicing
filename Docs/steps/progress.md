@@ -65,19 +65,19 @@
 ---
 
 ## Build Area 8 — FINVOICE Builder
-- [ ] STEP-35 — FinvoiceBuilderService core (seller/buyer, rows, VAT, language)
-- [ ] STEP-36 — FINVOICE advanced (multi-account splits, mixed VAT, reverse charge)
-- [ ] STEP-37 — Attachment handling (≤10 files, ≤1MB, base64, SHA1, PDF/A)
+- [x] STEP-35 — FinvoiceBuilderService core (seller/buyer, rows, VAT, language)
+- [x] STEP-36 — FINVOICE advanced (multi-account splits, mixed VAT, reverse charge)
+- [x] STEP-37 — Attachment handling (≤10 files, ≤1MB, base64, SHA1, PDF/A)
 
 ---
 
 ## Build Area 9 — Invoice Run + Simulation
-- [ ] STEP-38 — InvoiceRun entity + filter criteria + validation report
-- [ ] STEP-39 — ActiveRunLock + InvoiceRunLockService (423 Locked)
-- [ ] STEP-40 — InvoiceSimulationService (full pipeline, no side effects)
-- [ ] STEP-41 — InvoiceRunService (batch orchestration)
-- [ ] STEP-42 — InvoiceValidationEngine (MANDATORY_FIELD, PRICE_CONSISTENCY, QUANTITY_THRESHOLD, CLASSIFICATION)
-- [ ] STEP-43 — InvoiceCancellationService + scheduled send
+- [x] STEP-38 — InvoiceRun entity + filter criteria + validation report
+- [x] STEP-39 — ActiveRunLock + InvoiceRunLockService (423 Locked)
+- [x] STEP-40 — InvoiceSimulationService (full pipeline, no side effects)
+- [x] STEP-41 — InvoiceRunService (batch orchestration)
+- [x] STEP-42 — InvoiceValidationEngine (MANDATORY_FIELD, PRICE_CONSISTENCY, QUANTITY_THRESHOLD, CLASSIFICATION)
+- [x] STEP-43 — InvoiceCancellationService + scheduled send
 
 ---
 
@@ -112,4 +112,4 @@
 
 ## Summary
 - Total steps: 56
-- Completed: 34 / 56
+- Completed: 43 / 56

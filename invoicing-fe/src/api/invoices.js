@@ -6,3 +6,4 @@ export const updateInvoiceText = (id, customText) => axios.patch(`/api/v1/invoic
 export const bulkUpdateInvoiceText = (invoiceIds, customText) => axios.post('/api/v1/invoices/bulk-text', { invoiceIds, customText })
 export const removeSurcharge = (id) => axios.post(`/api/v1/invoices/${id}/remove-surcharge`)
 export const previewInvoice = (data) => axios.post('/api/v1/invoices/preview', data)
+export const getFinvoiceXml = (id) => axios.get(`/api/v1/invoices/${id}/finvoice-xml`, { responseType: 'text' })

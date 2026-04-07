@@ -13,7 +13,8 @@
       "Bash(npm run:*)",
       "Bash(mvn compile:*)",
       "Bash(kill %1)",
-      "Bash(kill %2)"
+      "Bash(kill %2)",
+      "Bash(/mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/resources/application.properties:*)"
     ]
   }
 }

@@ -2,16 +2,10 @@ package com.example.invoicing.invoice.dto;
 
 import lombok.*;
 
-import java.time.Instant;
-
-@Data @Builder
-public class InvoiceAttachmentResponse {
-    private Long id;
-    private Long invoiceId;
+@Data
+public class BatchAttachmentRequest {
     private String attachmentIdentifier;
     private String filename;
     private String mimeType;
-    private long sizeBytes;
     private String securityClass;
-    private Instant createdAt;
 }

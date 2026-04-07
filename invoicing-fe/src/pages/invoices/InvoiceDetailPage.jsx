@@ -5,6 +5,7 @@ import InvoiceHeader from './components/InvoiceHeader'
 import InvoiceLineItemsTable from './components/InvoiceLineItemsTable'
 import InvoiceAmountSummary from './components/InvoiceAmountSummary'
 import InvoiceCustomTextPanel from './components/InvoiceCustomTextPanel'
+import InvoiceAttachmentsPanel from './components/InvoiceAttachmentsPanel'
 import '../masterdata/VatRatesPage.css'
 
 export default function InvoiceDetailPage() {
@@ -46,24 +47,9 @@ export default function InvoiceDetailPage() {
       <h3 style={{ marginTop: 'var(--space-5)', marginBottom: 'var(--space-3)' }}>Custom Text</h3>
       <InvoiceCustomTextPanel invoice={invoice} onUpdated={setInvoice} />
 
-      {invoice.attachments && invoice.attachments.length > 0 && (
-        <>
-          <h3 style={{ marginTop: 'var(--space-5)', marginBottom: 'var(--space-3)' }}>Attachments</h3>
-          <table className="data-table">
-            <thead><tr><th>Filename</th><th>Type</th><th>Size</th><th>Identifier</th></tr></thead>
-            <tbody>
-              {invoice.attachments.map(a => (
-                <tr key={a.id}>
-                  <td>{a.filename}</td>
-                  <td><code>{a.mimeType}</code></td>
-                  <td>{(a.sizeBytes / 1024).toFixed(1)} KB</td>
-                  <td><code>{a.attachmentIdentifier}</code></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+      <div style={{ marginTop: 'var(--space-5)' }}>
+        <InvoiceAttachmentsPanel invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} />
+      </div>
     </div>
   )
 }

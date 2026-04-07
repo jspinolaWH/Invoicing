@@ -29,6 +29,7 @@ const navItems = [
     label: 'Invoices',
     children: [
       { label: 'Generate Invoice', to: '/invoices/generate' },
+      { label: 'Invoice Runs', to: '/runs/new' },
     ],
   },
   {

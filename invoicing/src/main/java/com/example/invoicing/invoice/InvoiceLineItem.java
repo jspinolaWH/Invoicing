@@ -60,6 +60,11 @@ public class InvoiceLineItem extends BaseAuditEntity {
     @Column(name = "line_order")
     private Integer lineOrder;
 
+    @ElementCollection
+    @CollectionTable(name = "invoice_line_ledger_entries",
+        joinColumns = @JoinColumn(name = "line_item_id"))
+    private java.util.List<AccountingLedgerEntry> ledgerEntries = new java.util.ArrayList<>();
+
     /** Transient — used by the generation pipeline only, not persisted. */
     @Transient
     private BillingEvent sourceEvent;

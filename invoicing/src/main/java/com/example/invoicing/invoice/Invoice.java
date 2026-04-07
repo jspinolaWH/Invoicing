@@ -90,4 +90,8 @@ public class Invoice extends BaseAuditEntity {
 
     @Column(name = "scheduled_send_at")
     private Instant scheduledSendAt;
+
+    @Lob
+    @Column(name = "finvoice_xml")
+    private String finvoiceXml;
 }
