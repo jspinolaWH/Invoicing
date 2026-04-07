@@ -1,8 +1,8 @@
 package com.example.invoicing.service;
 
-import com.example.invoicing.accounting.costcenter.CostCenterCompositionService;
-import com.example.invoicing.accounting.vat.VatCalculationResult;
-import com.example.invoicing.accounting.vat.VatCalculationService;
+import com.example.invoicing.service.CostCenterCompositionService;
+import com.example.invoicing.entity.vat.VatCalculationResult;
+import com.example.invoicing.service.VatCalculationService;
 import com.example.invoicing.entity.account.AccountingAccount;
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;

@@ -1,6 +1,6 @@
 package com.example.invoicing.integration;
 
-import com.example.invoicing.invoice.Invoice;
+import com.example.invoicing.entity.invoice.Invoice;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

@@ -1,7 +1,7 @@
 package com.example.invoicing.entity.invoicerun;
 
 import com.example.invoicing.entity.BaseAuditEntity;
-import com.example.invoicing.invoice.Invoice;
+import com.example.invoicing.entity.invoice.Invoice;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,6 +1,6 @@
 package com.example.invoicing.common.exception;
 
-import com.example.invoicing.run.CustomerLockedException;
+import com.example.invoicing.common.exception.CustomerLockedException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,30 +46,30 @@ public class GlobalExceptionHandler {
                 "Invoice processing in progress. Address changes cannot be made during this time."));
     }
 
-    @ExceptionHandler(com.example.invoicing.cancellation.CannotCancelException.class)
+    @ExceptionHandler(com.example.invoicing.common.exception.CannotCancelException.class)
     public ResponseEntity<ErrorResponse> handleCannotCancel(
-            com.example.invoicing.cancellation.CannotCancelException ex) {
+            com.example.invoicing.common.exception.CannotCancelException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(new ErrorResponse("CANNOT_CANCEL", ex.getMessage()));
     }
 
-    @ExceptionHandler(com.example.invoicing.run.InvalidRunStateException.class)
+    @ExceptionHandler(com.example.invoicing.common.exception.InvalidRunStateException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRunState(
-            com.example.invoicing.run.InvalidRunStateException ex) {
+            com.example.invoicing.common.exception.InvalidRunStateException ex) {
         return ResponseEntity.badRequest()
             .body(new ErrorResponse("INVALID_RUN_STATE", ex.getMessage()));
     }
 
-    @ExceptionHandler(com.example.invoicing.credit.CreditNoteValidationException.class)
+    @ExceptionHandler(com.example.invoicing.common.exception.CreditNoteValidationException.class)
     public ResponseEntity<ErrorResponse> handleCreditNoteValidation(
-            com.example.invoicing.credit.CreditNoteValidationException ex) {
+            com.example.invoicing.common.exception.CreditNoteValidationException ex) {
         return ResponseEntity.badRequest()
             .body(new ErrorResponse("CREDIT_NOTE_VALIDATION_ERROR", ex.getMessage()));
     }
 
-    @ExceptionHandler(com.example.invoicing.recall.CannotRecallException.class)
+    @ExceptionHandler(com.example.invoicing.common.exception.CannotRecallException.class)
     public ResponseEntity<ErrorResponse> handleCannotRecall(
-            com.example.invoicing.recall.CannotRecallException ex) {
+            com.example.invoicing.common.exception.CannotRecallException ex) {
         return ResponseEntity.status(409).body(new ErrorResponse("CANNOT_RECALL", ex.getMessage()));
     }
 }

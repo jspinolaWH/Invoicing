@@ -1,7 +1,7 @@
 package com.example.invoicing.controller.billingevent;
 
-import com.example.invoicing.driver.DriverEventService;
-import com.example.invoicing.driver.dto.RejectEventRequest;
+import com.example.invoicing.service.DriverEventService;
+import com.example.invoicing.entity.driver.dto.RejectEventRequest;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
 import com.example.invoicing.entity.billingevent.audit.AuditLogQueryService;
 import com.example.invoicing.entity.billingevent.audit.dto.AuditLogEntryResponse;
