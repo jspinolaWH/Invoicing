@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { getCostCenters, createCostCenter, updateCostCenter, deleteCostCenter } from '../../api/costCenters'
+import RelatedTasks from '../../components/RelatedTasks'
 import './VatRatesPage.css'
+
+const RELATED_TASKS = [
+  { id: 'PD-295', label: '3.4.17 Account and cost center data', href: 'https://ioteelab.atlassian.net/browse/PD-295' },
+  { id: 'PD-296', label: '3.4.16 Cost centers and accounts', href: 'https://ioteelab.atlassian.net/browse/PD-296' },
+]
 
 const emptyForm = { productSegment: '', receptionSegment: '', responsibilitySegment: '', description: '' }
 const emptyErrors = { productSegment: '', receptionSegment: '', responsibilitySegment: '' }
@@ -140,6 +146,7 @@ export default function CostCentersPage() {
         </div>
         <button className="btn-primary" onClick={openAdd}>+ Add Cost Center</button>
       </div>
+      <RelatedTasks tasks={RELATED_TASKS} />
 
       {error && <div className="error-msg">{error}</div>}
 

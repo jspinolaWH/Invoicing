@@ -6,8 +6,8 @@
 - [x] STEP-01 — Foundation setup + VAT Rates
 - [x] STEP-02 — Accounting Accounts
 - [x] STEP-03 — Cost Centers
-- [ ] STEP-04 — Products + Translations
-- [ ] STEP-05 — Invoice Number Series
+- [x] STEP-04 — Products + Translations
+- [x] STEP-05 — Invoice Number Series
 
 ---
 

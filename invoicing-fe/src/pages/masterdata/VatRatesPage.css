@@ -7,7 +7,69 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Related Tasks ── */
+.related-tasks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.related-tasks-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  white-space: nowrap;
+}
+
+.related-tasks-list {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.task-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 24px;
+  padding: 0 var(--space-3);
+  background: var(--color-bg-surface);
+  border: var(--border-width-default) solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.task-badge--link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--transition-base), color var(--transition-base);
+}
+
+.task-badge--link:hover {
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+}
+
+.task-badge-id {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand-primary);
+}
+
+.task-badge--link:hover .task-badge-id {
+  color: inherit;
+}
+
+.task-badge-sep {
+  color: var(--color-border-default);
 }
 
 .page-header-text h1 {

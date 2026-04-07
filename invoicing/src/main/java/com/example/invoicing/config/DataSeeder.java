@@ -2,9 +2,15 @@ package com.example.invoicing.config;
 
 import com.example.invoicing.entity.account.AccountingAccount;
 import com.example.invoicing.entity.costcenter.CostCenter;
+import com.example.invoicing.entity.numberseries.InvoiceNumberSeries;
+import com.example.invoicing.entity.product.PricingUnit;
+import com.example.invoicing.entity.product.Product;
+import com.example.invoicing.entity.product.ProductTranslation;
 import com.example.invoicing.entity.vat.VatRate;
 import com.example.invoicing.repository.AccountingAccountRepository;
 import com.example.invoicing.repository.CostCenterRepository;
+import com.example.invoicing.repository.InvoiceNumberSeriesRepository;
+import com.example.invoicing.repository.ProductRepository;
 import com.example.invoicing.repository.VatRateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,12 +31,16 @@ public class DataSeeder implements CommandLineRunner {
     private final VatRateRepository vatRateRepository;
     private final AccountingAccountRepository accountingAccountRepository;
     private final CostCenterRepository costCenterRepository;
+    private final ProductRepository productRepository;
+    private final InvoiceNumberSeriesRepository invoiceNumberSeriesRepository;
 
     @Override
     public void run(String... args) {
         seedVatRates();
         seedAccountingAccounts();
         seedCostCenters();
+        seedProducts();
+        seedInvoiceNumberSeries();
     }
 
     // ─────────────────────────────────────────────
@@ -135,5 +145,87 @@ public class DataSeeder implements CommandLineRunner {
         cc.setCompositeCode(product.toUpperCase().trim() + "-" + reception.toUpperCase().trim() + "-" + responsibility.toUpperCase().trim());
         cc.setDescription(description);
         return cc;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Products
+    // ─────────────────────────────────────────────
+    private void seedProducts() {
+        if (productRepository.count() > 0) {
+            log.info("[Seeder] Products already seeded — skipping.");
+            return;
+        }
+
+        List<Product> products = List.of(
+            product("WASTE-COLLECTION-240L", PricingUnit.PCS, false,
+                "Jätteen keräys 240L", "Sopinsamling 240L", "Waste Collection 240L"),
+            product("WASTE-COLLECTION-660L", PricingUnit.PCS, false,
+                "Jätteen keräys 660L", "Sopinsamling 660L", "Waste Collection 660L"),
+            product("RECYCLING-PAPER", PricingUnit.KG, false,
+                "Paperinkeräys", "Pappersinsamling", "Paper Recycling"),
+            product("RECYCLING-CARDBOARD", PricingUnit.KG, false,
+                "Kartonginkeräys", "Kartongsinsamling", "Cardboard Recycling"),
+            product("HAZARDOUS-WASTE", PricingUnit.TON, true,
+                "Vaarallinen jäte", "Farligt avfall", "Hazardous Waste"),
+            product("TRANSPORT-FEE", PricingUnit.HOUR, false,
+                "Kuljetusmaksu", "Transportavgift", "Transport Fee"),
+            product("CONTAINER-RENTAL-240L", PricingUnit.PCS, false,
+                "Astianvuokra 240L", "Kärlavgift 240L", "Container Rental 240L"),
+            product("ECO-FEE", PricingUnit.PCS, false,
+                "Ympäristömaksu", "Miljöavgift", "Eco Fee")
+        );
+
+        productRepository.saveAll(products);
+        log.info("[Seeder] Seeded {} products.", products.size());
+    }
+
+    private Product product(String code, PricingUnit unit, boolean reverseCharge,
+                            String nameFi, String nameSv, String nameEn) {
+        Product p = new Product();
+        p.setCode(code.toUpperCase().trim());
+        p.setPricingUnit(unit);
+        p.setReverseChargeVat(reverseCharge);
+
+        p.getTranslations().add(translation(p, "fi", nameFi));
+        p.getTranslations().add(translation(p, "sv", nameSv));
+        p.getTranslations().add(translation(p, "en", nameEn));
+
+        return p;
+    }
+
+    private ProductTranslation translation(Product product, String locale, String name) {
+        ProductTranslation t = new ProductTranslation();
+        t.setProduct(product);
+        t.setLocale(locale);
+        t.setName(name);
+        return t;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Invoice Number Series
+    // ─────────────────────────────────────────────
+    private void seedInvoiceNumberSeries() {
+        if (invoiceNumberSeriesRepository.count() > 0) {
+            log.info("[Seeder] Invoice number series already seeded — skipping.");
+            return;
+        }
+
+        List<InvoiceNumberSeries> series = List.of(
+            numberSeries("MAIN_2026",   "INV", "{PREFIX}-{YEAR}-{COUNTER:06d}"),
+            numberSeries("CREDIT_2026", "CR",  "{PREFIX}-{YEAR}-{COUNTER:06d}"),
+            numberSeries("PROFORMA_2026", "PRO", "{PREFIX}-{YEAR}-{COUNTER:06d}")
+        );
+
+        invoiceNumberSeriesRepository.saveAll(series);
+        log.info("[Seeder] Seeded {} invoice number series.", series.size());
+    }
+
+    private InvoiceNumberSeries numberSeries(String name, String prefix, String formatPattern) {
+        InvoiceNumberSeries s = new InvoiceNumberSeries();
+        s.setName(name);
+        s.setPrefix(prefix.toUpperCase().trim());
+        s.setFormatPattern(formatPattern);
+        s.setCurrentCounter(0L);
+        return s;
     }
 }

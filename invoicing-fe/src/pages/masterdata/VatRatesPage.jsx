@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { getVatRates, createVatRate, updateVatRate, deleteVatRate } from '../../api/vatRates'
+import RelatedTasks from '../../components/RelatedTasks'
 import './VatRatesPage.css'
+
+const RELATED_TASKS = [
+  { id: 'PD-310', label: '3.4.2 FINVOICE data', href: 'https://ioteelab.atlassian.net/browse/PD-310' },
+  { id: 'PD-309', label: '3.4.3 Invoice numbering sequence determination', href: 'https://ioteelab.atlassian.net/browse/PD-309' },
+]
 
 const emptyForm = { code: '', rate: '', validFrom: '', validTo: '' }
 const emptyErrors = { code: '', rate: '', validFrom: '' }
@@ -139,6 +145,7 @@ export default function VatRatesPage() {
         </div>
         <button className="btn-primary" onClick={openAdd}>+ Add VAT Rate</button>
       </div>
+      <RelatedTasks tasks={RELATED_TASKS} />
 
       <div className="filter-bar">
         <label>Filter by event date:</label>
