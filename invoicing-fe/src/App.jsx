@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter as BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import VatRatesPage from './pages/masterdata/VatRatesPage'
 import AccountingAccountsPage from './pages/masterdata/AccountingAccountsPage'
