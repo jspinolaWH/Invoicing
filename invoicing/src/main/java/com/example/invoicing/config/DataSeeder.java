@@ -49,7 +49,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-@Profile("!prod")   // never runs in production
+@Profile({"dev", "seed"})
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
