@@ -1,0 +1,281 @@
+/* ═══════════════════════════════════════════
+   WasteHero Outer Shell
+   Wraps the Invoicing app with a static WasteHero
+   chrome (topbar + left sidebar). All nav links
+   route to /404.
+   ═══════════════════════════════════════════ */
+
+/* ── Shell z-index: above inner Layout's fixed sidebar (300) ── */
+:root {
+  --wh-shell-z: 400;
+  --wh-shell-topbar-height: 60px;
+  --wh-shell-sidebar-width: 230px;
+}
+
+/* ── Topbar ── */
+.wh-shell__topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--wh-shell-topbar-height);
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-5);
+  z-index: var(--wh-shell-z);
+  gap: var(--space-4);
+}
+
+/* Brand / logo area */
+.wh-shell__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.wh-shell__logo-mark {
+  width: 32px;
+  height: 32px;
+  background: var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  flex-shrink: 0;
+}
+
+.wh-shell__brand-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.wh-shell__topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border-default);
+  flex-shrink: 0;
+}
+
+.wh-shell__breadcrumb {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.wh-shell__topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* Center search bar */
+.wh-shell__topbar-center {
+  flex: 1;
+  max-width: 360px;
+}
+
+.wh-shell__search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
+  background: #f5f5f5;
+  border: 1px solid #ebebeb;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
+.wh-shell__search-placeholder {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-placeholder);
+}
+
+/* Right icons */
+.wh-shell__topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.wh-shell__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.wh-shell__icon-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.wh-shell__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-brand-primary);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+/* ── Left sidebar ── */
+.wh-shell__sidebar {
+  position: fixed;
+  top: var(--wh-shell-topbar-height);
+  left: 0;
+  width: var(--wh-shell-sidebar-width);
+  height: calc(100vh - var(--wh-shell-topbar-height));
+  background: #ffffff;
+  border-right: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  overflow-y: auto;
+  z-index: var(--wh-shell-z);
+}
+
+/* Sidebar search */
+.wh-shell__sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
+  background: #f5f5f5;
+  border: 1px solid #ebebeb;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+  flex-shrink: 0;
+}
+
+.wh-shell__sidebar-search span {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+}
+
+/* Nav section */
+.wh-shell__nav-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Section group item (top-level) — rendered as <button> */
+.wh-shell__nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: none;
+  background: none;
+  font-family: var(--font-family-base);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.wh-shell__nav-item:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.wh-shell__nav-item-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.wh-shell__nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--color-icon-secondary, #737373);
+}
+
+.wh-shell__nav-label {
+  font-weight: var(--font-weight-medium);
+}
+
+/* Chevron — rotates when open */
+.wh-shell__nav-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+  transition: transform 200ms ease;
+}
+
+.wh-shell__nav-chevron--open {
+  transform: rotate(180deg);
+}
+
+/* Children container */
+.wh-shell__nav-children {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--space-1);
+}
+
+/* Child items */
+.wh-shell__nav-child {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 var(--space-3) 0 calc(var(--space-3) + 20px + var(--space-3));
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.wh-shell__nav-child:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* ── Main content area ── */
+.wh-shell__main {
+  margin-top: var(--wh-shell-topbar-height);
+  margin-left: var(--wh-shell-sidebar-width);
+  min-height: calc(100vh - var(--wh-shell-topbar-height));
+  background: var(--color-bg-page);
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════
+   The inner Invoicing layout (.inv-topbar,
+   .inv-subnav, .inv-content) reads the shell's
+   CSS variables directly — no overrides needed.
+   ══════════════════════════════════════════════ */

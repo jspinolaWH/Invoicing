@@ -1,5 +1,8 @@
 import { HashRouter as BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import WasteHeroShell from './components/WasteHeroShell'
+import NotFoundPage from './pages/NotFoundPage'
+import SettingsPage from './pages/SettingsPage'
 import VatRatesPage from './pages/masterdata/VatRatesPage'
 import AccountingAccountsPage from './pages/masterdata/AccountingAccountsPage'
 import CostCentersPage from './pages/masterdata/CostCentersPage'
@@ -35,13 +38,19 @@ import ResponsibilityChangePage from './pages/retroactive/ResponsibilityChangePa
 import BillingAddressSyncPage from './pages/integration/BillingAddressSyncPage'
 import OperatorManagementPage from './pages/integration/OperatorManagementPage'
 import AuthorityInvoiceViewPage from './pages/authority/AuthorityInvoiceViewPage'
+import PdOverviewPage from './pages/pd/PdOverviewPage'
+import MasterDataHubPage from './pages/masterdata/MasterDataHubPage'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route element={<WasteHeroShell />}>
+        <Route path="404" element={<NotFoundPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/master-data/vat-rates" replace />} />
+          <Route index element={<Navigate to="/master-data" replace />} />
+          <Route path="master-data" element={<MasterDataHubPage />} />
           <Route path="master-data/vat-rates" element={<VatRatesPage />} />
           <Route path="master-data/accounting-accounts" element={<AccountingAccountsPage />} />
           <Route path="master-data/cost-centers" element={<CostCentersPage />} />
@@ -77,6 +86,8 @@ export default function App() {
           <Route path="integration/billing-sync" element={<BillingAddressSyncPage />} />
           <Route path="integration/operator" element={<OperatorManagementPage />} />
           <Route path="authority/invoices" element={<AuthorityInvoiceViewPage />} />
+          <Route path="pd-overview" element={<PdOverviewPage />} />
+        </Route>
         </Route>
       </Routes>
     </BrowserRouter>

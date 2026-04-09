@@ -163,3 +163,44 @@
   color: var(--color-text-secondary);
   margin-top: var(--space-2);
 }
+
+/* ── Stat strip ── */
+.stat-strip {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  min-width: 110px;
+  gap: var(--space-1);
+  font-family: inherit;
+  text-align: left;
+  transition: box-shadow var(--transition-base), filter var(--transition-base);
+}
+
+.stat-card:not([title*="display"]):hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  filter: brightness(0.97);
+}
+
+.stat-count {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  font-weight: var(--font-weight-medium);
+}

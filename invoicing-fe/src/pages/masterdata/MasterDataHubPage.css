@@ -1,0 +1,63 @@
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-2);
+}
+
+.hub-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  background: var(--color-bg-surface);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.hub-card:hover {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 4px 12px rgba(21, 93, 252, 0.08);
+  text-decoration: none;
+}
+
+.hub-card-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--color-brand-primary-light);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-brand-primary);
+  flex-shrink: 0;
+}
+
+.hub-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hub-card-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-top: var(--space-4);
+}
+
+.hub-card-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-2);
+  line-height: var(--line-height-normal);
+  flex: 1;
+}
+
+.hub-card-cta {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-brand-primary);
+  margin-top: var(--space-5);
+}

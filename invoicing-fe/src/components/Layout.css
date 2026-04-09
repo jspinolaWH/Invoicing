@@ -1,80 +1,188 @@
-.layout {
-  display: flex;
-  min-height: 100vh;
-  background: var(--color-bg-page);
+/* ═══════════════════════════════════════════════════════
+   Invoicing Inner Layout
+   Positioned inside the WasteHero outer shell, which
+   contributes:
+     --wh-shell-topbar-height  (default 60px)
+     --wh-shell-sidebar-width  (default 230px)
+
+   Structure
+   ─────────
+   .inv-layout
+     header.inv-topbar   (fixed, 44px, spans WH sidebar→right)
+     nav.inv-subnav      (fixed, 180px wide, below topbar)
+     main.inv-content    (in-flow, margin clears topbar + subnav)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Heights / widths used throughout ── */
+:root {
+  --inv-topbar-height: 44px;
+  --inv-subnav-width:  180px;
 }
 
-/* ── Sidebar ── */
-.sidebar {
-  width: var(--layout-sidebar-width);
-  background: var(--color-bg-sidebar);
-  border-right: var(--border-width-default) solid var(--color-border-default);
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
+/* ── Base wrapper ── */
+.inv-layout {
+  /* sits inside .wh-shell__main which already has margin-top and margin-left */
+}
+
+/* ══════════════════════════════════════════
+   Inner Topbar
+   ══════════════════════════════════════════ */
+.inv-topbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  z-index: var(--z-index-fixed);
-  overflow-y: auto;
+  top:    var(--wh-shell-topbar-height, 0px);   /* flush under outer WH topbar */
+  left:   var(--wh-shell-sidebar-width, 0px);   /* flush right of outer WH sidebar */
+  right:  0;
+  height: var(--inv-topbar-height);
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border-default);
+  display: flex;
+  align-items: stretch;
+  padding: 0 var(--space-5);
+  gap: var(--space-3);
+  z-index: 200;                                 /* below WH shell (400), above page */
 }
 
-.sidebar-brand {
-  height: var(--layout-topbar-height);
+/* Module brand link */
+.inv-brand {
   display: flex;
   align-items: center;
-  padding: 0 var(--space-6);
-  border-bottom: var(--border-width-default) solid var(--color-border-default);
-  font-size: var(--font-size-lg);
+  gap: var(--space-2);
+  text-decoration: none;
+  flex-shrink: 0;
+  color: var(--color-text-primary);
+}
+
+.inv-brand__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-brand-primary);
+}
+
+.inv-brand__name {
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+/* Vertical separator */
+.inv-topbar__sep {
+  width: 1px;
+  background: var(--color-border-default);
+  margin: var(--space-2) 0;
   flex-shrink: 0;
 }
 
-.nav-group {
-  padding: var(--space-6) 0 var(--space-2);
+/* Section tabs row */
+.inv-topbar__tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
 }
 
-.nav-group-label {
-  padding: 0 var(--space-6) var(--space-2);
+.inv-tab {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color var(--transition-base), border-color var(--transition-base);
+  /* Pull border down to overlay the container's border-bottom */
+  margin-bottom: -1px;
+}
+
+.inv-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.inv-tab--active {
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-medium);
+  border-bottom-color: var(--color-brand-primary);
+}
+
+/* ══════════════════════════════════════════
+   Section Sub-nav (left panel)
+   ══════════════════════════════════════════ */
+.inv-subnav {
+  position: fixed;
+  top:    calc(var(--wh-shell-topbar-height, 0px) + var(--inv-topbar-height));
+  left:   var(--wh-shell-sidebar-width, 0px);
+  width:  var(--inv-subnav-width);
+  height: calc(100vh - var(--wh-shell-topbar-height, 0px) - var(--inv-topbar-height));
+  background: #ffffff;
+  border-right: 1px solid var(--color-border-default);
+  padding: var(--space-4) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  overflow-y: auto;
+  z-index: 199;
+}
+
+/* Section label at top of sub-nav */
+.inv-subnav__section-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
   color: var(--color-text-secondary);
+  padding: 0 var(--space-3);
+  margin: 0 0 var(--space-2);
 }
 
-.nav-item {
+/* Sub-nav link */
+.inv-subnav__item {
   display: flex;
   align-items: center;
-  height: 44px;
-  padding: 0 var(--space-6);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-regular);
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   text-decoration: none;
+  border-radius: var(--radius-md);
   transition: background var(--transition-base), color var(--transition-base);
-  border-radius: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.nav-item:hover {
+.inv-subnav__item:hover {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
-  text-decoration: none;
 }
 
-.nav-item.active {
+.inv-subnav__item.active {
+  background: var(--color-brand-primary-light);
   color: var(--color-brand-primary);
   font-weight: var(--font-weight-medium);
-  background: var(--color-brand-primary-light);
 }
 
-/* ── Main content ── */
-.main-content {
-  flex: 1;
-  margin-left: var(--layout-sidebar-width);
-  min-height: 100vh;
-  padding: var(--space-8);
+/* Empty state hint */
+.inv-subnav__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  padding: var(--space-3);
+  margin: 0;
+  font-style: italic;
+}
+
+/* ══════════════════════════════════════════
+   Main Content Area
+   ══════════════════════════════════════════ */
+.inv-content {
+  margin-top:  var(--inv-topbar-height);   /* clear the inner topbar */
+  margin-left: var(--inv-subnav-width);    /* clear the sub-nav */
+  padding:     var(--space-8);
+  min-height:  calc(
+    100vh
+    - var(--wh-shell-topbar-height, 0px)
+    - var(--inv-topbar-height)
+  );
   background: var(--color-bg-page);
 }

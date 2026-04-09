@@ -48,6 +48,7 @@ export default function BillingEventsPage() {
     customerNumber: '', status: '', municipalityId: '',
     dateFrom: '', dateTo: '', excluded: '',
   })
+  const [statusCounts, setStatusCounts] = useState(null)
 
   const load = async (pg = 0) => {
     setLoading(true)
@@ -73,7 +74,28 @@ export default function BillingEventsPage() {
     }
   }
 
-  useEffect(() => { load(0) }, [])
+  const loadStatusCounts = async () => {
+    try {
+      const [inProgress, sent, completed, error, excluded] = await Promise.all([
+        getBillingEvents({ status: 'IN_PROGRESS', size: 1, page: 0 }),
+        getBillingEvents({ status: 'SENT',        size: 1, page: 0 }),
+        getBillingEvents({ status: 'COMPLETED',   size: 1, page: 0 }),
+        getBillingEvents({ status: 'ERROR',        size: 1, page: 0 }),
+        getBillingEvents({ excluded: 'true',       size: 1, page: 0 }),
+      ])
+      setStatusCounts({
+        IN_PROGRESS: inProgress.data.totalElements ?? 0,
+        SENT:        sent.data.totalElements ?? 0,
+        COMPLETED:   completed.data.totalElements ?? 0,
+        ERROR:        error.data.totalElements ?? 0,
+        EXCLUDED:    excluded.data.totalElements ?? 0,
+      })
+    } catch {
+      setStatusCounts({ IN_PROGRESS: 0, SENT: 0, COMPLETED: 0, ERROR: 0, EXCLUDED: 0 })
+    }
+  }
+
+  useEffect(() => { load(0); loadStatusCounts() }, [])
 
   const handleFilter = (e) => { e.preventDefault(); load(0) }
 
@@ -124,6 +146,11 @@ export default function BillingEventsPage() {
       </div>
 
       <RelatedTasks tasks={RELATED_TASKS} />
+
+      <StatStrip counts={statusCounts} onStatusClick={(status) => {
+        setFilters(f => ({ ...f, status }))
+        load(0)
+      }} />
 
       <form className="filter-bar" onSubmit={handleFilter}>
         <input
@@ -286,6 +313,36 @@ export default function BillingEventsPage() {
           onClose={() => setBulkTransferOpen(false)}
         />
       )}
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------
+// Stat strip
+// -----------------------------------------------------------------------
+const STAT_CONFIG = [
+  { key: 'IN_PROGRESS', label: 'In Progress', color: '#92400e', bg: '#fffbeb', border: '#fcd34d' },
+  { key: 'SENT',        label: 'Sent',        color: 'var(--color-status-info-text)',   bg: 'var(--color-status-info-bg)',   border: 'var(--color-status-info-border)'   },
+  { key: 'COMPLETED',   label: 'Completed',   color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)' },
+  { key: 'ERROR',       label: 'Error',       color: '#b91c1c', bg: '#fff1f2', border: '#fecdd3' },
+  { key: 'EXCLUDED',    label: 'Excluded',    color: 'var(--color-text-secondary)', bg: 'var(--color-bg-table-header)', border: 'var(--color-border-subtle)', noClick: true },
+]
+
+function StatStrip({ counts, onStatusClick }) {
+  return (
+    <div className="stat-strip">
+      {STAT_CONFIG.map(({ key, label, color, bg, border, noClick }) => (
+        <button
+          key={key}
+          className="stat-card"
+          style={{ borderColor: border, background: bg, cursor: noClick ? 'default' : 'pointer' }}
+          onClick={() => !noClick && onStatusClick(key)}
+          title={noClick ? 'Excluded events (display only)' : `Filter by ${label}`}
+        >
+          <span className="stat-count" style={{ color }}>{counts === null ? '—' : counts[key]}</span>
+          <span className="stat-label">{label}</span>
+        </button>
+      ))}
     </div>
   )
 }

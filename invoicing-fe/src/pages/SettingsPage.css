@@ -1,0 +1,283 @@
+/* ═══════════════════════════════════════════
+   Settings Page
+   ═══════════════════════════════════════════ */
+
+.sp-page {
+  display: flex;
+  min-height: calc(100vh - var(--wh-shell-topbar-height, 60px));
+  background: var(--color-bg-page);
+}
+
+/* ── Left profile panel ── */
+.sp-profile {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border-default);
+  padding: var(--space-8) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  height: calc(100vh - var(--wh-shell-topbar-height, 60px));
+  overflow-y: auto;
+}
+
+.sp-profile__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-brand-primary);
+  color: #fff;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+  flex-shrink: 0;
+}
+
+.sp-profile__greeting {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.sp-profile__name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: var(--space-1) 0 var(--space-1);
+}
+
+.sp-profile__edit-link {
+  font-size: var(--font-size-xs);
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  margin-bottom: 0;
+}
+
+.sp-profile__edit-link:hover {
+  text-decoration: underline;
+}
+
+.sp-profile__divider {
+  width: 100%;
+  height: 1px;
+  background: var(--color-border-default);
+  margin: var(--space-5) 0;
+}
+
+.sp-profile__section-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-2);
+}
+
+.sp-profile__company-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-1);
+}
+
+.sp-profile__company-domain,
+.sp-profile__company-address {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-1);
+}
+
+.sp-profile__projects-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: var(--space-3);
+}
+
+.sp-profile__add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: background var(--transition-base), border-color var(--transition-base);
+}
+
+.sp-profile__add-btn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-input-hover);
+  color: var(--color-text-primary);
+}
+
+.sp-profile__projects-empty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-style: italic;
+}
+
+/* ── Main content ── */
+.sp-content {
+  flex: 1;
+  padding: var(--space-8);
+  overflow-y: auto;
+}
+
+/* Search */
+.sp-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--color-bg-input-alt);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  max-width: 420px;
+  margin-bottom: var(--space-8);
+  color: var(--color-text-secondary);
+}
+
+.sp-search {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-base);
+  color: var(--color-text-primary);
+}
+
+.sp-search::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* Section */
+.sp-section {
+  margin-bottom: var(--space-8);
+}
+
+.sp-section__title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
+}
+
+/* Card grid */
+.sp-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+/* Card */
+.sp-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: #ffffff;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.sp-card:hover {
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+/* Invoicing card — highlighted */
+.sp-card--invoicing {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.sp-card--invoicing:hover {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 2px 12px rgba(21, 93, 252, 0.12);
+}
+
+/* Card icon */
+.sp-card__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sp-card__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Card body */
+.sp-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.sp-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.sp-card__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.sp-card--invoicing .sp-card__title {
+  color: var(--color-brand-primary);
+}
+
+.sp-card__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--space-2);
+  background: var(--color-brand-primary);
+  color: #fff;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.sp-card__desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Empty state */
+.sp-empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--space-12) 0;
+  text-align: center;
+}
