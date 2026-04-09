@@ -1,0 +1,186 @@
+/* ── PD-177 Test seed panel ── */
+.orq-seed-panel {
+  border: 1px dashed #d0d0d0;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-6);
+  background: #fafafa;
+}
+
+.orq-seed-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.orq-seed-panel__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.orq-seed-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-2);
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  color: #854d0e;
+  flex-shrink: 0;
+}
+
+.orq-seed-panel__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.orq-seed-panel__desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.orq-seed-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.orq-seed-panel__toggle {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: none;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-base);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.orq-seed-panel__toggle:hover {
+  background: var(--color-bg-hover);
+}
+
+/* Seed button */
+.orq-seed-btn {
+  height: 34px;
+  padding: 0 var(--space-4);
+  border: 1px dashed #a3a3a3;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-base), color var(--transition-base), background var(--transition-base);
+}
+
+.orq-seed-btn:hover:not(:disabled) {
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+  background: var(--color-brand-primary-light);
+}
+
+.orq-seed-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Result message */
+.orq-seed-panel__result {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.orq-seed-panel__result--ok {
+  background: #f0fdf4;
+  border: 1px solid #b9f8cf;
+  color: #008236;
+}
+
+.orq-seed-panel__result--err {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+/* Fields table */
+.orq-seed-panel__fields {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--color-border-default);
+  padding-top: var(--space-4);
+}
+
+.orq-seed-panel__fields-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-3);
+}
+
+.orq-seed-fields-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.orq-seed-fields-table th {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-table-header);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.orq-seed-fields-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.orq-seed-fields-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* How badge */
+.orq-how-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.orq-how-badge--sent   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.orq-how-badge--auto   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.orq-how-badge--manual { background: #fefce8; color: #a16207; border: 1px solid #fde68a; }
+
+.orq-seed-fields-table code {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 11px;
+  background: var(--color-neutral-100);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 3px;
+  padding: 1px 4px;
+  color: var(--color-text-primary);
+}
