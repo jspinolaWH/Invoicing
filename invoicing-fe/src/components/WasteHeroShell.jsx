@@ -80,6 +80,7 @@ export default function WasteHeroShell() {
   const breadcrumb = location.pathname === '/settings' ? 'Settings' : 'Dashboard'
 
   const [expanded, setExpanded] = useState(() => new Set(['Customers', 'Tickets']))
+  const [bannerVisible, setBannerVisible] = useState(true)
 
   function toggle(label) {
     setExpanded((prev) => {
@@ -128,6 +129,56 @@ export default function WasteHeroShell() {
           <Link to="/404" className="wh-shell__avatar" title="Profile">JD</Link>
         </div>
       </header>
+
+      {/* ── Render free-tier notice ── */}
+      {bannerVisible && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          width: '320px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          padding: '12px 14px',
+          background: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '10px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+          fontSize: '13px',
+          color: '#374151',
+          zIndex: 'calc(var(--wh-shell-z) + 10)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <strong style={{ fontSize: '13px', color: '#111827' }}>API on Render free tier</strong>
+            <button
+              onClick={() => setBannerVisible(false)}
+              style={{
+                marginLeft: 'auto',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#9ca3af',
+                padding: '2px',
+                lineHeight: 1,
+                flexShrink: 0,
+              }}
+              title="Dismiss"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <p style={{ margin: 0, lineHeight: '1.5', color: '#6b7280' }}>
+            If no data loads or the status is stuck on loading, the server may be cold-starting. Wait up to <strong style={{ color: '#374151' }}>5 minutes</strong> and refresh.
+          </p>
+        </div>
+      )}
 
       {/* ── Left sidebar ── */}
       <nav className="wh-shell__sidebar">
