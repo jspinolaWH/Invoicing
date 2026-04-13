@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createManualBillingEvent } from '../../api/billingEvents'
-import { getProducts } from '../../api/products'
+import { getInvoicingProducts } from '../../api/products'
 import { useResolvedVatRate } from '../../hooks/useResolvedVatRate'
 import RelatedTasks from '../../components/RelatedTasks'
 import '../masterdata/VatRatesPage.css'
@@ -22,18 +22,34 @@ export default function CreateBillingEventPage() {
     eventDate: '', productId: '', wasteFeePrice: '', transportFeePrice: '',
     ecoFeePrice: '', quantity: '', weight: '', customerNumber: '',
     vehicleId: '', driverId: '', locationId: '', municipalityId: '', comments: '',
+    contractor: '', direction: '', sharedServiceGroupPercentage: '',
   })
   const [fieldErrors, setFieldErrors] = useState({})
 
   const vatRates = useResolvedVatRate(form.productId, form.eventDate)
 
   useEffect(() => {
-    getProducts().then(r => setProducts(r.data)).catch(() => {})
+    getInvoicingProducts().then(r => setProducts(r.data)).catch(() => {})
   }, [])
 
   const set = (field) => (e) => {
     setForm(f => ({ ...f, [field]: e.target.value }))
     setFieldErrors(fe => ({ ...fe, [field]: null }))
+  }
+
+  const handleProductChange = (e) => {
+    const productId = e.target.value
+    const selected = products.find(p => String(p.id) === String(productId))
+    setForm(f => ({
+      ...f,
+      productId,
+      ...(selected && {
+        wasteFeePrice:     selected.defaultWasteFee     ?? f.wasteFeePrice,
+        transportFeePrice: selected.defaultTransportFee ?? f.transportFeePrice,
+        ecoFeePrice:       selected.defaultEcoFee       ?? f.ecoFeePrice,
+      }),
+    }))
+    setFieldErrors(fe => ({ ...fe, productId: null, wasteFeePrice: null, transportFeePrice: null, ecoFeePrice: null }))
   }
 
   const validate = () => {
@@ -65,6 +81,9 @@ export default function CreateBillingEventPage() {
         ecoFeePrice: Number(form.ecoFeePrice),
         quantity: Number(form.quantity),
         weight: Number(form.weight),
+        contractor: form.contractor || null,
+        direction: form.direction || null,
+        sharedServiceGroupPercentage: form.sharedServiceGroupPercentage !== '' ? Number(form.sharedServiceGroupPercentage) : null,
       })
       navigate(`/billing-events/${res.data.id}`)
     } catch (err) {
@@ -103,13 +122,13 @@ export default function CreateBillingEventPage() {
             </div>
             <div className="field">
               <label>Product <span className="required">*</span></label>
-              <select value={form.productId} onChange={set('productId')}
+              <select value={form.productId} onChange={handleProductChange}
                 style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}
                 className={fieldErrors.productId ? 'input-error' : ''}>
                 <option value="">Select product…</option>
                 {products.map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.translations?.find(t => t.locale === 'en')?.name ?? p.code}
+                    {p.nameFi ?? p.nameEn ?? p.code}
                   </option>
                 ))}
               </select>
@@ -206,6 +225,32 @@ export default function CreateBillingEventPage() {
             <label>Comments <span className="optional">(optional)</span></label>
             <textarea value={form.comments} onChange={set('comments')}
               style={{ width: '100%', minHeight: 80, padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical' }} />
+          </div>
+        </div>
+
+        {/* Section 6 — Additional Details */}
+        <div className="form-section">
+          <div className="form-section-title">Additional Details</div>
+          <div className="form-row">
+            <div className="field">
+              <label>Contractor <span className="optional">(optional)</span></label>
+              <input value={form.contractor} onChange={set('contractor')} />
+            </div>
+            <div className="field">
+              <label>Direction <span className="optional">(optional)</span></label>
+              <select value={form.direction} onChange={set('direction')}
+                style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}>
+                <option value="">— Select —</option>
+                <option value="INBOUND">INBOUND</option>
+                <option value="OUTBOUND">OUTBOUND</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
+            <div className="field">
+              <label>Shared Collection Group % <span className="optional">(optional)</span></label>
+              <input type="number" min="0" max="100" step="0.01" value={form.sharedServiceGroupPercentage} onChange={set('sharedServiceGroupPercentage')} />
+            </div>
           </div>
         </div>
 

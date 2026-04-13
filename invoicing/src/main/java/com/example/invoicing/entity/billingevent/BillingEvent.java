@@ -82,6 +82,10 @@ public class BillingEvent extends BaseAuditEntity {
     @Column(name = "shared_service_group_percentage", precision = 5, scale = 2)
     private BigDecimal sharedServiceGroupPercentage;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private BillingEventDirection direction;
+
     @Column(name = "shared_service_group_id", length = 100)
     private String sharedServiceGroupId;
 

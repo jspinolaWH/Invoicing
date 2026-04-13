@@ -25,6 +25,7 @@ export default function EditBillingEventPage() {
     eventDate: '', productId: '', wasteFeePrice: '', transportFeePrice: '',
     ecoFeePrice: '', quantity: '', weight: '', customerNumber: '',
     vehicleId: '', driverId: '', locationId: '', municipalityId: '', comments: '', reason: '',
+    contractor: '', direction: '', sharedServiceGroupPercentage: '',
   })
 
   useEffect(() => {
@@ -48,6 +49,9 @@ export default function EditBillingEventPage() {
           municipalityId: e.municipalityId ?? '',
           comments: e.comments ?? '',
           reason: '',
+          contractor: e.contractor ?? '',
+          direction: e.direction ?? '',
+          sharedServiceGroupPercentage: e.sharedServiceGroupPercentage ?? '',
         })
       })
       .catch(() => setError('Failed to load event.'))
@@ -79,6 +83,11 @@ export default function EditBillingEventPage() {
       if (form.locationId !== (event.locationId ?? '')) payload.locationId = form.locationId
       if (form.municipalityId !== (event.municipalityId ?? '')) payload.municipalityId = form.municipalityId
       if (form.comments !== (event.comments ?? '')) payload.comments = form.comments
+      if (form.contractor !== (event.contractor ?? '')) payload.contractor = form.contractor
+      if (form.direction !== (event.direction ?? '')) payload.direction = form.direction || null
+      if (String(form.sharedServiceGroupPercentage) !== String(event.sharedServiceGroupPercentage ?? '')) {
+        payload.sharedServiceGroupPercentage = form.sharedServiceGroupPercentage !== '' ? Number(form.sharedServiceGroupPercentage) : null
+      }
       await updateBillingEvent(id, payload)
       navigate(`/billing-events/${id}`)
     } catch (err) {
@@ -228,6 +237,31 @@ export default function EditBillingEventPage() {
           <div className="field">
             <textarea value={form.comments} onChange={set('comments')} disabled={!isMutable}
               style={{ width: '100%', minHeight: 80, padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical' }} />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <div className="form-section-title">Additional Details</div>
+          <div className="form-row">
+            <div className="field">
+              <label>Contractor <span className="optional">(optional)</span></label>
+              <input value={form.contractor} onChange={set('contractor')} disabled={!isMutable} />
+            </div>
+            <div className="field">
+              <label>Direction <span className="optional">(optional)</span></label>
+              <select value={form.direction} onChange={set('direction')} disabled={!isMutable}
+                style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}>
+                <option value="">— Select —</option>
+                <option value="INBOUND">INBOUND</option>
+                <option value="OUTBOUND">OUTBOUND</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
+            <div className="field">
+              <label>Shared Collection Group % <span className="optional">(optional)</span></label>
+              <input type="number" min="0" max="100" step="0.01" value={form.sharedServiceGroupPercentage} onChange={set('sharedServiceGroupPercentage')} disabled={!isMutable} />
+            </div>
           </div>
         </div>
 

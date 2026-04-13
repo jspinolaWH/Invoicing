@@ -7,6 +7,7 @@ const FIELD_LABELS = {
   vehicleId: 'Vehicle', driverId: 'Driver', customerNumber: 'Customer #',
   contractor: 'Contractor', locationId: 'Location', municipalityId: 'Municipality',
   sharedServiceGroupId: 'Shared Service Group', sharedServiceGroupPct: 'Shared Service %',
+  direction: 'Direction', sharedServiceGroupPercentage: 'Shared Collection Group %',
   comments: 'Comments', product: 'Product', excluded: 'Excluded', status: 'Status',
 }
 

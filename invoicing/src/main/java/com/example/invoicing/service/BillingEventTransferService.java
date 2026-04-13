@@ -1,9 +1,11 @@
 package com.example.invoicing.service;
 
 import com.example.invoicing.entity.billingevent.BillingEvent;
+import com.example.invoicing.entity.billingevent.audit.BillingEventAuditLog;
 import com.example.invoicing.entity.billingevent.transfer.BillingEventTransferLog;
 import com.example.invoicing.entity.billingevent.transfer.BillingEventTransferLogRepository;
 import com.example.invoicing.entity.billingevent.transfer.dto.*;
+import com.example.invoicing.repository.BillingEventAuditLogRepository;
 import com.example.invoicing.repository.BillingEventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class BillingEventTransferService {
 
     private final BillingEventRepository billingEventRepository;
     private final BillingEventTransferLogRepository transferLogRepository;
+    private final BillingEventAuditLogRepository auditLogRepository;
     private final BillingEventStatusService statusService;
 
     public TransferResult transfer(Long eventId, TransferEventRequest request, String currentUser) {
@@ -49,6 +52,21 @@ public class BillingEventTransferService {
             .reason(request.getReason())
             .build());
 
+        List<BillingEventAuditLog> auditEntries = new ArrayList<>();
+        auditEntries.add(BillingEventAuditLog.builder()
+            .billingEventId(eventId).field("customerNumber")
+            .oldValue(previousCustomer).newValue(request.getTargetCustomerNumber())
+            .changedBy(currentUser).changedAt(Instant.now())
+            .reason(request.getReason()).build());
+        if (request.getTargetPropertyId() != null) {
+            auditEntries.add(BillingEventAuditLog.builder()
+                .billingEventId(eventId).field("locationId")
+                .oldValue(previousProperty).newValue(request.getTargetPropertyId())
+                .changedBy(currentUser).changedAt(Instant.now())
+                .reason(request.getReason()).build());
+        }
+        auditLogRepository.saveAll(auditEntries);
+
         return new TransferResult(eventId, previousCustomer, request.getTargetCustomerNumber(), true, null);
     }
 
@@ -56,6 +74,9 @@ public class BillingEventTransferService {
         List<BillingEvent> events = billingEventRepository.findAllById(request.getEventIds());
         List<Long> succeeded = new ArrayList<>();
         List<BulkTransferFailure> failed = new ArrayList<>();
+
+        List<BillingEventTransferLog> transferLogs = new ArrayList<>();
+        List<BillingEventAuditLog> auditEntries = new ArrayList<>();
 
         for (BillingEvent event : events) {
             try {
@@ -70,7 +91,7 @@ public class BillingEventTransferService {
                 }
                 succeeded.add(event.getId());
 
-                transferLogRepository.save(BillingEventTransferLog.builder()
+                transferLogs.add(BillingEventTransferLog.builder()
                     .billingEventId(event.getId())
                     .sourceCustomerNumber(previousCustomer)
                     .targetCustomerNumber(request.getTargetCustomerNumber())
@@ -81,6 +102,19 @@ public class BillingEventTransferService {
                     .reason(request.getReason())
                     .build());
 
+                auditEntries.add(BillingEventAuditLog.builder()
+                    .billingEventId(event.getId()).field("customerNumber")
+                    .oldValue(previousCustomer).newValue(request.getTargetCustomerNumber())
+                    .changedBy(currentUser).changedAt(Instant.now())
+                    .reason(request.getReason()).build());
+                if (request.getTargetPropertyId() != null) {
+                    auditEntries.add(BillingEventAuditLog.builder()
+                        .billingEventId(event.getId()).field("locationId")
+                        .oldValue(previousProperty).newValue(request.getTargetPropertyId())
+                        .changedBy(currentUser).changedAt(Instant.now())
+                        .reason(request.getReason()).build());
+                }
+
             } catch (IllegalStateException ex) {
                 failed.add(new BulkTransferFailure(event.getId(), ex.getMessage()));
             }
@@ -89,6 +123,8 @@ public class BillingEventTransferService {
         billingEventRepository.saveAll(events.stream()
             .filter(e -> succeeded.contains(e.getId()))
             .toList());
+        transferLogRepository.saveAll(transferLogs);
+        auditLogRepository.saveAll(auditEntries);
 
         return new BulkTransferResult(succeeded, failed);
     }

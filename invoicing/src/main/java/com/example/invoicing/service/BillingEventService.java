@@ -98,6 +98,9 @@ public class BillingEventService {
         event.setLocationId(req.getLocationId());
         event.setMunicipalityId(req.getMunicipalityId());
         event.setComments(req.getComments());
+        event.setContractor(req.getContractor());
+        event.setDirection(req.getDirection());
+        event.setSharedServiceGroupPercentage(req.getSharedServiceGroupPercentage());
 
         resolveAccountingDefaults(event, product, req.getLocationId());
         resolveVatRates(event, req.getEventDate());
@@ -146,6 +149,7 @@ public class BillingEventService {
         applyIfChanged(id, "municipalityId",         req.getMunicipalityId(),         event.getMunicipalityId(),         event::setMunicipalityId,         currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "sharedServiceGroupId",   req.getSharedServiceGroupId(),   event.getSharedServiceGroupId(),   event::setSharedServiceGroupId,   currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "sharedServiceGroupPct",  req.getSharedServiceGroupPercentage(), event.getSharedServiceGroupPercentage(), event::setSharedServiceGroupPercentage, currentUser, req.getReason(), auditEntries);
+        applyIfChanged(id, "direction",              req.getDirection(),              event.getDirection(),              event::setDirection,              currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "comments",               req.getComments(),               event.getComments(),               event::setComments,               currentUser, req.getReason(), auditEntries);
 
         billingEventRepository.save(event);
@@ -348,6 +352,7 @@ public class BillingEventService {
             .municipalityId(e.getMunicipalityId())
             .sharedServiceGroupId(e.getSharedServiceGroupId())
             .sharedServiceGroupPercentage(e.getSharedServiceGroupPercentage())
+            .direction(e.getDirection())
             .comments(e.getComments())
             .status(e.getStatus())
             .excluded(e.isExcluded())
@@ -406,6 +411,7 @@ public class BillingEventService {
             .municipalityId(e.getMunicipalityId())
             .sharedServiceGroupId(e.getSharedServiceGroupId())
             .sharedServiceGroupPercentage(e.getSharedServiceGroupPercentage())
+            .direction(e.getDirection())
             .comments(e.getComments())
             .status(e.getStatus())
             .excluded(e.isExcluded())

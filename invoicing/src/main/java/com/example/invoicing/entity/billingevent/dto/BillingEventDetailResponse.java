@@ -1,5 +1,6 @@
 package com.example.invoicing.entity.billingevent.dto;
 
+import com.example.invoicing.entity.billingevent.BillingEventDirection;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
 import com.example.invoicing.entity.classification.LegalClassification;
 import lombok.Builder;
@@ -29,6 +30,7 @@ public class BillingEventDetailResponse {
     private String municipalityId;
     private String sharedServiceGroupId;
     private BigDecimal sharedServiceGroupPercentage;
+    private BillingEventDirection direction;
     private String comments;
     private BillingEventStatus status;
     private boolean excluded;

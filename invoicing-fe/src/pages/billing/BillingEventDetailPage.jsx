@@ -117,6 +117,9 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>Driver</label><span>{event.driverId ?? '—'}</span></div>
             <div className="detail-field"><label>Location</label><span>{event.locationId ?? '—'}</span></div>
             <div className="detail-field"><label>Municipality</label><span>{event.municipalityId ?? '—'}</span></div>
+            <div className="detail-field"><label>Contractor</label><span>{event.contractor ?? '—'}</span></div>
+            <div className="detail-field"><label>Direction</label><span>{event.direction ?? '—'}</span></div>
+            <div className="detail-field"><label>Shared Collection Group %</label><span>{event.sharedServiceGroupPercentage != null ? `${event.sharedServiceGroupPercentage}%` : '—'}</span></div>
             <div className="detail-field"><label>Accounting Account</label><span>{event.accountingAccount ? `${event.accountingAccount.code} — ${event.accountingAccount.name}` : '—'}</span></div>
             <div className="detail-field"><label>Cost Center</label><span>{event.costCenter?.compositeCode ?? '—'}</span></div>
             <div className="detail-field"><label>Resolved Cost Centre</label><span>{event.resolvedCostCenterCode || '—'}</span></div>

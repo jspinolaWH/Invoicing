@@ -1,5 +1,6 @@
 package com.example.invoicing.entity.billingevent.dto;
 
+import com.example.invoicing.entity.billingevent.BillingEventDirection;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -27,5 +28,6 @@ public class BillingEventUpdateRequest {
     private String municipalityId;
     private String sharedServiceGroupId;
     private BigDecimal sharedServiceGroupPercentage;
+    private BillingEventDirection direction;
     private String comments;
 }

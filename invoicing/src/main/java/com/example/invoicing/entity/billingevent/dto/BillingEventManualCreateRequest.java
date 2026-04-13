@@ -1,5 +1,6 @@
 package com.example.invoicing.entity.billingevent.dto;
 
+import com.example.invoicing.entity.billingevent.BillingEventDirection;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -42,4 +43,7 @@ public class BillingEventManualCreateRequest {
     private String locationId;
     private String municipalityId;
     private String comments;
+    private String contractor;
+    private BillingEventDirection direction;
+    private BigDecimal sharedServiceGroupPercentage;
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,21 @@ public class Product extends BaseAuditEntity {
 
     @Column(nullable = false)
     private boolean reverseChargeVat;
+
+    @Column(name = "default_waste_fee", precision = 19, scale = 4)
+    private BigDecimal defaultWasteFee;
+
+    @Column(name = "default_transport_fee", precision = 19, scale = 4)
+    private BigDecimal defaultTransportFee;
+
+    @Column(name = "default_eco_fee", precision = 19, scale = 4)
+    private BigDecimal defaultEcoFee;
+
+    @Column(name = "vat_rate", precision = 5, scale = 2)
+    private BigDecimal vatRate;
+
+    @Column(name = "is_active")
+    private Boolean active = true;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductTranslation> translations = new ArrayList<>();

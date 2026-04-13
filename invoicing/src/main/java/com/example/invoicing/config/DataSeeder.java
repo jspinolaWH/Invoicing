@@ -196,46 +196,54 @@ public class DataSeeder implements CommandLineRunner {
     //  Products
     // ─────────────────────────────────────────────
     private void seedProducts() {
-        if (productRepository.count() > 0) {
-            log.info("[Seeder] Products already seeded — skipping.");
-            return;
-        }
+        record Spec(String code, PricingUnit unit, boolean reverseCharge,
+                    String nameFi, String nameSv, String nameEn,
+                    double wasteFee, double transportFee, double ecoFee, double vatRate) {}
 
-        List<Product> products = List.of(
-            product("WASTE-COLLECTION-240L", PricingUnit.PCS, false,
-                "Jätteen keräys 240L", "Sopinsamling 240L", "Waste Collection 240L"),
-            product("WASTE-COLLECTION-660L", PricingUnit.PCS, false,
-                "Jätteen keräys 660L", "Sopinsamling 660L", "Waste Collection 660L"),
-            product("RECYCLING-PAPER", PricingUnit.KG, false,
-                "Paperinkeräys", "Pappersinsamling", "Paper Recycling"),
-            product("RECYCLING-CARDBOARD", PricingUnit.KG, false,
-                "Kartonginkeräys", "Kartongsinsamling", "Cardboard Recycling"),
-            product("HAZARDOUS-WASTE", PricingUnit.TON, true,
-                "Vaarallinen jäte", "Farligt avfall", "Hazardous Waste"),
-            product("TRANSPORT-FEE", PricingUnit.HOUR, false,
-                "Kuljetusmaksu", "Transportavgift", "Transport Fee"),
-            product("CONTAINER-RENTAL-240L", PricingUnit.PCS, false,
-                "Astianvuokra 240L", "Kärlavgift 240L", "Container Rental 240L"),
-            product("ECO-FEE", PricingUnit.PCS, false,
-                "Ympäristömaksu", "Miljöavgift", "Eco Fee")
+        List<Spec> specs = List.of(
+            new Spec("WASTE-COLLECTION-240L",  PricingUnit.PCS,  false, "Jätteenkeräys 240L",   "Sopinsamling 240L",   "Waste Collection 240L",     12.00,  8.50,  1.20, 25.5),
+            new Spec("WASTE-COLLECTION-660L",  PricingUnit.PCS,  false, "Jätteenkeräys 660L",   "Sopinsamling 660L",   "Waste Collection 660L",     28.00, 12.00,  2.50, 25.5),
+            new Spec("WASTE-COLLECTION-4000L", PricingUnit.PCS,  false, "Jätteenkeräys 4000L",  "Sopinsamling 4000L",  "Waste Collection 4000L",    85.00, 35.00,  6.00, 25.5),
+            new Spec("RECYCLING-PAPER",        PricingUnit.KG,   false, "Paperinkierrätys",     "Pappersinsamling",    "Paper Recycling",            0.00,  0.12,  0.00,  0.0),
+            new Spec("RECYCLING-CARDBOARD",    PricingUnit.KG,   false, "Kartonkikierrätys",    "Kartongsinsamling",   "Cardboard Recycling",        0.00,  0.10,  0.00,  0.0),
+            new Spec("RECYCLING-GLASS",        PricingUnit.KG,   false, "Lasinkierrätys",       "Glasinsamling",       "Glass Recycling",            0.05,  0.08,  0.00,  0.0),
+            new Spec("HAZARDOUS-WASTE",        PricingUnit.TON,  true,  "Vaarallinen jäte",     "Farligt avfall",      "Hazardous Waste",          320.00, 85.00, 15.00, 25.5),
+            new Spec("BIOWASTE-COLLECTION",    PricingUnit.PCS,  false, "Biojätteenkeräys",     "Biostoffinsamling",   "Biowaste Collection",       18.00,  9.00,  1.50, 25.5),
+            new Spec("CONTAINER-RENTAL-240L",  PricingUnit.PCS,  false, "Astianvuokraus 240L",  "Kärlavgift 240L",    "Container Rental 240L",      3.50,  0.00,  0.00, 25.5),
+            new Spec("CONTAINER-RENTAL-660L",  PricingUnit.PCS,  false, "Astianvuokraus 660L",  "Kärlavgift 660L",    "Container Rental 660L",      8.00,  0.00,  0.00, 25.5),
+            new Spec("TRANSPORT-FEE",          PricingUnit.HOUR, false, "Kuljetusmaksu",        "Transportavgift",     "Transport Fee",              0.00, 75.00,  0.00, 25.5),
+            new Spec("ECO-FEE",                PricingUnit.PCS,  false, "Ympäristömaksu",       "Miljöavgift",         "Eco Fee",                    0.00,  0.00,  2.50, 25.5),
+            new Spec("LAND-RENT",              PricingUnit.PCS,  false, "Maavuokra",            "Markhyra",            "Land Rent",                150.00,  0.00,  0.00, 25.5),
+            new Spec("EXPERT-WORK",            PricingUnit.HOUR, false, "Asiantuntijatyö",      "Expertarbete",        "Expert Work",                0.00,  0.00,  0.00, 25.5),
+            new Spec("BULKY-WASTE",            PricingUnit.PCS,  false, "Suurjätteenkeräys",    "Skrymmeföremål",     "Bulky Waste Collection",    45.00, 20.00,  3.00, 25.5)
         );
 
-        productRepository.saveAll(products);
-        log.info("[Seeder] Seeded {} products.", products.size());
-    }
+        int created = 0, updated = 0;
+        for (Spec s : specs) {
+            Product p = productRepository.findByCode(s.code()).orElse(null);
+            boolean isNew = (p == null);
+            if (isNew) p = new Product();
 
-    private Product product(String code, PricingUnit unit, boolean reverseCharge,
-                            String nameFi, String nameSv, String nameEn) {
-        Product p = new Product();
-        p.setCode(code.toUpperCase().trim());
-        p.setPricingUnit(unit);
-        p.setReverseChargeVat(reverseCharge);
+            p.setCode(s.code());
+            p.setPricingUnit(s.unit());
+            p.setReverseChargeVat(s.reverseCharge());
+            p.setDefaultWasteFee(BigDecimal.valueOf(s.wasteFee()));
+            p.setDefaultTransportFee(BigDecimal.valueOf(s.transportFee()));
+            p.setDefaultEcoFee(BigDecimal.valueOf(s.ecoFee()));
+            p.setVatRate(BigDecimal.valueOf(s.vatRate()));
+            p.setActive(true);
 
-        p.getTranslations().add(translation(p, "fi", nameFi));
-        p.getTranslations().add(translation(p, "sv", nameSv));
-        p.getTranslations().add(translation(p, "en", nameEn));
-
-        return p;
+            if (isNew) {
+                p.getTranslations().add(translation(p, "fi", s.nameFi()));
+                p.getTranslations().add(translation(p, "sv", s.nameSv()));
+                p.getTranslations().add(translation(p, "en", s.nameEn()));
+                created++;
+            } else {
+                updated++;
+            }
+            productRepository.save(p);
+        }
+        log.info("[Seeder] Products: {} created, {} updated with pricing defaults.", created, updated);
     }
 
     private ProductTranslation translation(Product product, String locale, String name) {

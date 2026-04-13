@@ -14,4 +14,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT DISTINCT p FROM Product p JOIN p.translations t WHERE t.locale = :locale")
     List<Product> findByLocale(@Param("locale") String locale);
+
+    @Query("SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.translations WHERE p.active = true ORDER BY p.code")
+    List<Product> findAllActive();
 }
