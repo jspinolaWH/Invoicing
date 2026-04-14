@@ -41,6 +41,13 @@ export const transferBillingEvent = (id, data) =>
 export const bulkTransferBillingEvents = (data) =>
   axios.post('/api/v1/billing-events/bulk-transfer', data)
 
+// Credit & Transfer (SENT / COMPLETED events)
+export const creditTransferBillingEvent = (id, data) =>
+  axios.post(`/api/v1/billing-events/${id}/credit-transfer`, data)
+
+export const getCreditTransferLink = (id) =>
+  axios.get(`/api/v1/billing-events/${id}/credit-transfer`)
+
 // Office review
 export const getPendingReview = () =>
   axios.get('/api/v1/billing-events/pending-review')

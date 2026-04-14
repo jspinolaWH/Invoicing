@@ -20,6 +20,7 @@ const RELATED_TASKS = [
   { id: 'PD-277', label: '3.4.36 Manual editing',             href: 'https://ioteelab.atlassian.net/browse/PD-277' },
   { id: 'PD-271', label: '3.4.42 Automatic checks',           href: 'https://ioteelab.atlassian.net/browse/PD-271' },
   { id: 'PD-278', label: '3.4.35 Error listing',              href: 'https://ioteelab.atlassian.net/browse/PD-278' },
+  { id: 'PD-275', label: '3.4.x Credit & Transfer',           href: 'https://ioteelab.atlassian.net/browse/PD-275' },
 ]
 
 const STATUSES = ['IN_PROGRESS', 'SENT', 'COMPLETED', 'ERROR']

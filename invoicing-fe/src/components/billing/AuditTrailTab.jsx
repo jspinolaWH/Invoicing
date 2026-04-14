@@ -9,6 +9,7 @@ const FIELD_LABELS = {
   sharedServiceGroupId: 'Shared Service Group', sharedServiceGroupPct: 'Shared Service %',
   direction: 'Direction', sharedServiceGroupPercentage: 'Shared Collection Group %',
   comments: 'Comments', product: 'Product', excluded: 'Excluded', status: 'Status',
+  creditOf: 'Credit Of Event', creditedBy: 'Credited By Event',
 }
 
 function formatDate(iso) {

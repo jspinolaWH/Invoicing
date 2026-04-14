@@ -6,8 +6,12 @@ import com.example.invoicing.entity.billingevent.BillingEventStatus;
 import com.example.invoicing.entity.billingevent.audit.AuditLogQueryService;
 import com.example.invoicing.entity.billingevent.audit.dto.AuditLogEntryResponse;
 import com.example.invoicing.entity.billingevent.dto.*;
+import com.example.invoicing.entity.billingevent.credit.dto.CreditTransferLinkResponse;
+import com.example.invoicing.entity.billingevent.credit.dto.CreditTransferRequest;
+import com.example.invoicing.entity.billingevent.credit.dto.CreditTransferResult;
 import com.example.invoicing.entity.billingevent.transfer.dto.*;
 import com.example.invoicing.entity.validation.ValidationReport;
+import com.example.invoicing.service.BillingEventCreditTransferService;
 import com.example.invoicing.service.BillingEventService;
 import com.example.invoicing.service.BillingEventStatusService;
 import com.example.invoicing.service.BillingEventTransferService;
@@ -32,6 +36,7 @@ public class BillingEventController {
     private final BillingEventStatusService statusService;
     private final BillingEventValidationService validationService;
     private final BillingEventTransferService transferService;
+    private final BillingEventCreditTransferService creditTransferService;
     private final DriverEventService driverEventService;
     private final AuditLogQueryService auditLogQueryService;
 
@@ -143,6 +148,27 @@ public class BillingEventController {
     ) {
         String user = currentUser != null ? currentUser : "system";
         return transferService.bulkTransfer(request, user);
+    }
+
+    // -----------------------------------------------------------------------
+    // CREDIT & TRANSFER (SENT / COMPLETED events)
+    // -----------------------------------------------------------------------
+    @PostMapping("/{id}/credit-transfer")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreditTransferResult creditTransfer(
+        @PathVariable Long id,
+        @Valid @RequestBody CreditTransferRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return creditTransferService.creditAndTransfer(id, request, user);
+    }
+
+    @GetMapping("/{id}/credit-transfer")
+    public CreditTransferLinkResponse getCreditTransferLink(@PathVariable Long id) {
+        return creditTransferService.findLink(id)
+            .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                "No credit-transfer link found for event " + id));
     }
 
     // -----------------------------------------------------------------------

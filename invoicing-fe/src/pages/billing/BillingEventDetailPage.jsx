@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getBillingEvent } from '../../api/billingEvents'
+import { getBillingEvent, getCreditTransferLink } from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
 import StatusTransitionPanel from '../../components/billing/StatusTransitionPanel'
 import AuditTrailTab from '../../components/billing/AuditTrailTab'
 import ExclusionModal from '../../components/billing/ExclusionModal'
 import TransferEventModal from '../../components/billing/TransferEventModal'
+import CreditTransferModal from '../../components/billing/CreditTransferModal'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -15,6 +16,7 @@ const RELATED_TASKS = [
   { id: 'PD-297', label: '3.4.15 Billing event status',  href: 'https://ioteelab.atlassian.net/browse/PD-297' },
   { id: 'PD-277', label: '3.4.36 Manual editing',        href: 'https://ioteelab.atlassian.net/browse/PD-277' },
   { id: 'PD-318', label: '3.3.18 Editing billing events', href: 'https://ioteelab.atlassian.net/browse/PD-318' },
+  { id: 'PD-275', label: '3.4.x Credit & Transfer',      href: 'https://ioteelab.atlassian.net/browse/PD-275' },
 ]
 
 const TABS = ['Details', 'Audit Trail', 'Status']
@@ -32,6 +34,8 @@ export default function BillingEventDetailPage() {
   const [activeTab, setActiveTab] = useState('Details')
   const [exclusionModal, setExclusionModal] = useState(null) // 'exclude' | 'reinstate' | null
   const [transferModal, setTransferModal] = useState(false)
+  const [creditTransferModal, setCreditTransferModal] = useState(false)
+  const [creditTransferLink, setCreditTransferLink] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -41,7 +45,13 @@ export default function BillingEventDetailPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [id])
+  const loadLink = () => {
+    getCreditTransferLink(id)
+      .then(r => setCreditTransferLink(r.data))
+      .catch(() => setCreditTransferLink(null))
+  }
+
+  useEffect(() => { load(); loadLink() }, [id])
 
   if (loading) return <div className="loading">Loading event…</div>
   if (!event) return <div className="error-msg">Event not found.</div>
@@ -49,6 +59,12 @@ export default function BillingEventDetailPage() {
   const canEdit = event.status === 'IN_PROGRESS' || event.status === 'ERROR'
   const canExclude = !event.excluded && event.status !== 'SENT' && event.status !== 'COMPLETED'
   const canTransfer = !event.excluded && event.status === 'IN_PROGRESS'
+  const canCreditTransfer = !event.excluded && (event.status === 'SENT' || event.status === 'COMPLETED')
+
+  // Determine the role of this event in any credit-transfer chain
+  const isOriginal = creditTransferLink && creditTransferLink.originalEventId === event.id
+  const isCredit   = creditTransferLink && creditTransferLink.creditEventId   === event.id
+  const isTransfer = creditTransferLink && creditTransferLink.newEventId      === event.id
 
   return (
     <div className="page">
@@ -77,6 +93,11 @@ export default function BillingEventDetailPage() {
               Transfer
             </button>
           )}
+          {canCreditTransfer && !isOriginal && (
+            <button className="btn-secondary" onClick={() => setCreditTransferModal(true)}>
+              Credit &amp; Transfer
+            </button>
+          )}
           <button
             className="btn-secondary"
             disabled={!canEdit}
@@ -90,6 +111,45 @@ export default function BillingEventDetailPage() {
       </div>
 
       <RelatedTasks tasks={RELATED_TASKS} />
+
+      {/* Credit-transfer chain banners */}
+      {isOriginal && (
+        <div style={{ padding: 'var(--space-3) var(--space-4)', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <span>A credit &amp; transfer was issued for this event.</span>
+          <button className="btn-secondary" style={{ padding: '2px 10px', fontSize: 13 }}
+            onClick={() => navigate(`/billing-events/${creditTransferLink.creditEventId}`)}>
+            View Credit Event #{creditTransferLink.creditEventId}
+          </button>
+          <button className="btn-secondary" style={{ padding: '2px 10px', fontSize: 13 }}
+            onClick={() => navigate(`/billing-events/${creditTransferLink.newEventId}`)}>
+            View Transfer Event #{creditTransferLink.newEventId}
+          </button>
+        </div>
+      )}
+
+      {isCredit && (
+        <div style={{ padding: 'var(--space-3) var(--space-4)', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <span>This event is a credit reversal.</span>
+          <button className="btn-secondary" style={{ padding: '2px 10px', fontSize: 13 }}
+            onClick={() => navigate(`/billing-events/${creditTransferLink.originalEventId}`)}>
+            View Original Event #{creditTransferLink.originalEventId}
+          </button>
+        </div>
+      )}
+
+      {isTransfer && (
+        <div style={{ padding: 'var(--space-3) var(--space-4)', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <span>This event was created via Credit &amp; Transfer.</span>
+          <button className="btn-secondary" style={{ padding: '2px 10px', fontSize: 13 }}
+            onClick={() => navigate(`/billing-events/${creditTransferLink.originalEventId}`)}>
+            View Original Event #{creditTransferLink.originalEventId}
+          </button>
+          <button className="btn-secondary" style={{ padding: '2px 10px', fontSize: 13 }}
+            onClick={() => navigate(`/billing-events/${creditTransferLink.creditEventId}`)}>
+            View Credit Event #{creditTransferLink.creditEventId}
+          </button>
+        </div>
+      )}
 
       <div className="tab-bar">
         {TABS.map(t => (
@@ -203,6 +263,14 @@ export default function BillingEventDetailPage() {
           currentCustomerNumber={event.customerNumber}
           onSuccess={() => { setTransferModal(false); load() }}
           onClose={() => setTransferModal(false)}
+        />
+      )}
+
+      {creditTransferModal && (
+        <CreditTransferModal
+          event={event}
+          onSuccess={() => { setCreditTransferModal(false); load(); loadLink() }}
+          onClose={() => setCreditTransferModal(false)}
         />
       )}
     </div>
