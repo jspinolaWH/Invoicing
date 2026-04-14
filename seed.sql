@@ -118,12 +118,45 @@ INSERT INTO invoice_number_series (name, prefix, format_pattern, current_counter
 -- CUSTOMERS
 -- ─────────────────────────────────────────────
 INSERT INTO customers (name, customer_type, customer_id_number, delivery_method, street_address, postal_code, city, country_code, business_id, language_code, invoicing_mode, created_by, created_at, last_modified_by, last_modified_at) VALUES
-  ('Matti Virtanen',    'PRIVATE',      '123456',    'EMAIL',     'Mannerheimintie 1',   '00100', 'Helsinki', 'FI', NULL,          'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
-  ('Helsinki Oy',       'BUSINESS',     '987654321', 'E_INVOICE', 'Aleksanterinkatu 52', '00100', 'Helsinki', 'FI', 'FI12345678',  'fi', 'NET',   'system', NOW(), 'system', NOW()),
-  ('Espoon kaupunki',   'MUNICIPALITY', '111222',    'E_INVOICE', 'Espoonkatu 1',        '02770', 'Espoo',    'FI', 'FI02073311',  'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
-  ('Vantaa Municipality','MUNICIPALITY','333444',    'PAPER',     'Asematie 7',          '01300', 'Vantaa',   'FI', 'FI02068919',  'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
-  ('Keräys Finland Ab', 'BUSINESS',     '555666777', 'EMAIL',     'Teollisuuskatu 28',   '00510', 'Helsinki', 'FI', 'FI22334455',  'sv', 'NET',   'system', NOW(), 'system', NOW()),
-  ('Turku Authority',   'AUTHORITY',    '888999',    'EMAIL',     'Yliopistonkatu 27a',  '20100', 'Turku',    'FI', NULL,          'fi', 'GROSS', 'system', NOW(), 'system', NOW());
+  ('Matti Virtanen',         'PRIVATE',      '123456',    'EMAIL',     'Mannerheimintie 1',      '00100', 'Helsinki', 'FI', NULL,          'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Helsinki Oy',            'BUSINESS',     '987654321', 'E_INVOICE', 'Aleksanterinkatu 52',    '00100', 'Helsinki', 'FI', 'FI12345678',  'fi', 'NET',   'system', NOW(), 'system', NOW()),
+  ('Espoon kaupunki',        'MUNICIPALITY', '111222',    'E_INVOICE', 'Espoonkatu 1',           '02770', 'Espoo',    'FI', 'FI02073311',  'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Vantaa Municipality',    'MUNICIPALITY', '333444',    'PAPER',     'Asematie 7',             '01300', 'Vantaa',   'FI', 'FI02068919',  'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Keräys Finland Ab',      'BUSINESS',     '555666777', 'EMAIL',     'Teollisuuskatu 28',      '00510', 'Helsinki', 'FI', 'FI22334455',  'sv', 'NET',   'system', NOW(), 'system', NOW()),
+  ('Turku Authority',        'AUTHORITY',    '888999',    'EMAIL',     'Yliopistonkatu 27a',     '20100', 'Turku',    'FI', NULL,          'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Liisa Korhonen',         'PRIVATE',      '246810',    'EMAIL',     'Hämeentie 14',           '00530', 'Helsinki', 'FI', NULL,          'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Tampereen Jätehuolto',   'BUSINESS',     '112233445', 'E_INVOICE', 'Satakunnankatu 18',      '33200', 'Tampere',  'FI', 'FI33445566',  'fi', 'NET',   'system', NOW(), 'system', NOW()),
+  ('Jyväskylä kaupunki',     'MUNICIPALITY', '776655',    'E_INVOICE', 'Vapaudenkatu 32',        '40100', 'Jyväskylä','FI', 'FI17321436',  'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Antti Leinonen',         'PRIVATE',      '918273',    'PAPER',     'Puistokatu 5',           '20200', 'Turku',    'FI', NULL,          'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Oulu Recycle Ab',        'BUSINESS',     '334455667', 'EMAIL',     'Kauppurienkatu 22',      '90100', 'Oulu',     'FI', 'FI44556677',  'fi', 'NET',   'system', NOW(), 'system', NOW()),
+  ('Pirkkalan kunta',        'MUNICIPALITY', '654321',    'E_INVOICE', 'Pirkkalaistentie 1',     '33960', 'Pirkkala', 'FI', 'FI02393050',  'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('SuomiWaste Oy',          'BUSINESS',     '223344556', 'EMAIL',     'Lautatarhankatu 6',      '00580', 'Helsinki', 'FI', 'FI55667788',  'fi', 'NET',   'system', NOW(), 'system', NOW()),
+  ('Kari Mäkinen',           'PRIVATE',      '741852',    'PAPER',     'Länsimäentie 44',        '00750', 'Helsinki', 'FI', NULL,          'fi', 'GROSS', 'system', NOW(), 'system', NOW()),
+  ('Lahden kaupunki',        'MUNICIPALITY', '369258',    'E_INVOICE', 'Harjukatu 33',           '15100', 'Lahti',    'FI', 'FI01634422',  'fi', 'GROSS', 'system', NOW(), 'system', NOW());
+
+-- ─────────────────────────────────────────────
+-- PROPERTIES
+-- ─────────────────────────────────────────────
+INSERT INTO properties (property_id, street_address, city, postal_code, customer_number, created_by, created_at, last_modified_by, last_modified_at) VALUES
+  ('PROP-HEL-001', 'Mannerheimintie 1',       'Helsinki',  '00100', '123456',    'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-002', 'Aleksanterinkatu 52',      'Helsinki',  '00100', '987654321', 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-003', 'Hämeentie 14',             'Helsinki',  '00530', '246810',    'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-004', 'Teollisuuskatu 28',        'Helsinki',  '00510', '555666777', 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-005', 'Lautatarhankatu 6',        'Helsinki',  '00580', '223344556', 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-006', 'Länsimäentie 44',          'Helsinki',  '00750', '741852',    'system', NOW(), 'system', NOW()),
+  ('PROP-ESP-001', 'Espoonkatu 1',             'Espoo',     '02770', '111222',    'system', NOW(), 'system', NOW()),
+  ('PROP-ESP-002', 'Otaniementie 9',           'Espoo',     '02150', '111222',    'system', NOW(), 'system', NOW()),
+  ('PROP-VAN-001', 'Asematie 7',              'Vantaa',    '01300', '333444',    'system', NOW(), 'system', NOW()),
+  ('PROP-VAN-002', 'Tikkurilantie 12',         'Vantaa',    '01370', '333444',    'system', NOW(), 'system', NOW()),
+  ('PROP-TRE-001', 'Satakunnankatu 18',        'Tampere',   '33200', '112233445', 'system', NOW(), 'system', NOW()),
+  ('PROP-TRE-002', 'Hämeenkatu 41',            'Tampere',   '33200', '112233445', 'system', NOW(), 'system', NOW()),
+  ('PROP-TKU-001', 'Yliopistonkatu 27a',       'Turku',     '20100', '888999',    'system', NOW(), 'system', NOW()),
+  ('PROP-TKU-002', 'Puistokatu 5',             'Turku',     '20200', '918273',    'system', NOW(), 'system', NOW()),
+  ('PROP-OUL-001', 'Kauppurienkatu 22',        'Oulu',      '90100', '334455667', 'system', NOW(), 'system', NOW()),
+  ('PROP-OUL-002', 'Hallituskatu 18',          'Oulu',      '90100', '334455667', 'system', NOW(), 'system', NOW()),
+  ('PROP-JYV-001', 'Vapaudenkatu 32',          'Jyväskylä', '40100', '776655',    'system', NOW(), 'system', NOW()),
+  ('PROP-LAH-001', 'Harjukatu 33',             'Lahti',     '15100', '369258',    'system', NOW(), 'system', NOW()),
+  ('PROP-PIR-001', 'Pirkkalaistentie 1',       'Pirkkala',  '33960', '654321',    'system', NOW(), 'system', NOW());
 
 -- ─────────────────────────────────────────────
 -- CLASSIFICATION RULES

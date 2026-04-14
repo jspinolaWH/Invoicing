@@ -15,4 +15,14 @@ public interface CustomerBillingProfileRepository extends JpaRepository<Customer
     List<Customer> findByBillingProfile_DeliveryMethod(DeliveryMethod deliveryMethod);
 
     java.util.Optional<Customer> findByBillingProfile_CustomerIdNumber(String customerIdNumber);
+
+    @Query("""
+        SELECT c FROM Customer c
+        WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :q, '%'))
+           OR LOWER(c.billingProfile.customerIdNumber) LIKE LOWER(CONCAT('%', :q, '%'))
+           OR LOWER(c.billingProfile.billingAddress.streetAddress) LIKE LOWER(CONCAT('%', :q, '%'))
+        """)
+    org.springframework.data.domain.Page<Customer> search(
+        @org.springframework.data.repository.query.Param("q") String q,
+        org.springframework.data.domain.Pageable pageable);
 }
