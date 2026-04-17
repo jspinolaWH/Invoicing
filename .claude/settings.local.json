@@ -28,7 +28,6 @@
       "Bash(__NEW_LINE_3a16e2e81c216c91__ for:*)",
       "Bash(__NEW_LINE_b521b62e5969d453__ for:*)",
       "Bash(__NEW_LINE_dc75af371a1133c9__ for:*)",
-      "Bash(*)",
       "Bash(__NEW_LINE_0f0ee22725b967ec__ cat:*)",
       "Read(//mnt/c/Users/drasm/Desktop/Invoicing/invoicing-fe/$BASE/cancellation/**)",
       "Bash(__NEW_LINE_6fffb34279693e09__ cat:*)",
@@ -51,7 +50,10 @@
       "Bash(__NEW_LINE_5e592c7f2c8af15c__ sed:*)",
       "Bash(sed -i 's/import com\\\\.example\\\\.invoicing\\\\.accounting\\\\.costcenter\\\\.CostCenterCompositionConfigRepository;/import com.example.invoicing.repository.CostCenterCompositionConfigRepository;/' \"$BASE\")",
       "Bash(sed -i 's/import com\\\\.example\\\\.invoicing\\\\.billingcycle\\\\.BillingCycle;/import com.example.invoicing.entity.billingcycle.BillingCycle;/' \"$BASE\")",
-      "Bash(sed -i 's/import com\\\\.example\\\\.invoicing\\\\.billingcycle\\\\.BillingCycleRepository;/import com.example.invoicing.repository.BillingCycleRepository;/' \"$BASE\")"
+      "Bash(sed -i 's/import com\\\\.example\\\\.invoicing\\\\.billingcycle\\\\.BillingCycleRepository;/import com.example.invoicing.repository.BillingCycleRepository;/' \"$BASE\")",
+      "mcp__claude_ai_Atlassian__getJiraIssue",
+      "Bash(find *)",
+      "Bash(xargs cat *)"
     ]
   }
 }

@@ -135,4 +135,13 @@ public class BillingEvent extends BaseAuditEntity {
 
     @Column(name = "corrected_from_event_id")
     private Long correctedFromEventId;
+
+    @Column(name = "waste_type", length = 100)
+    private String wasteType;
+
+    @Column(name = "receiving_site", length = 255)
+    private String receivingSite;
+
+    @Column(name = "transmission_error_reason", columnDefinition = "TEXT")
+    private String transmissionErrorReason;
 }

@@ -26,6 +26,7 @@ export default function EditBillingEventPage() {
     ecoFeePrice: '', quantity: '', weight: '', customerNumber: '',
     vehicleId: '', driverId: '', locationId: '', municipalityId: '', comments: '', reason: '',
     contractor: '', direction: '', sharedServiceGroupPercentage: '',
+    wasteType: '', receivingSite: '',
   })
 
   useEffect(() => {
@@ -52,6 +53,8 @@ export default function EditBillingEventPage() {
           contractor: e.contractor ?? '',
           direction: e.direction ?? '',
           sharedServiceGroupPercentage: e.sharedServiceGroupPercentage ?? '',
+          wasteType: e.wasteType ?? '',
+          receivingSite: e.receivingSite ?? '',
         })
       })
       .catch(() => setError('Failed to load event.'))
@@ -88,6 +91,8 @@ export default function EditBillingEventPage() {
       if (String(form.sharedServiceGroupPercentage) !== String(event.sharedServiceGroupPercentage ?? '')) {
         payload.sharedServiceGroupPercentage = form.sharedServiceGroupPercentage !== '' ? Number(form.sharedServiceGroupPercentage) : null
       }
+      if (form.wasteType !== (event.wasteType ?? '')) payload.wasteType = form.wasteType || null
+      if (form.receivingSite !== (event.receivingSite ?? '')) payload.receivingSite = form.receivingSite || null
       await updateBillingEvent(id, payload)
       navigate(`/billing-events/${id}`)
     } catch (err) {
@@ -237,6 +242,20 @@ export default function EditBillingEventPage() {
           <div className="field">
             <textarea value={form.comments} onChange={set('comments')} disabled={!isMutable}
               style={{ width: '100%', minHeight: 80, padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical' }} />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <div className="form-section-title">Waste Classification</div>
+          <div className="form-row">
+            <div className="field">
+              <label>Waste Type <span className="optional">(optional)</span></label>
+              <input value={form.wasteType} onChange={set('wasteType')} disabled={!isMutable} placeholder="e.g. MIXED_WASTE, PAPER, BIO_WASTE" />
+            </div>
+            <div className="field">
+              <label>Receiving Site <span className="optional">(optional)</span></label>
+              <input value={form.receivingSite} onChange={set('receivingSite')} disabled={!isMutable} placeholder="e.g. Ämmässuo Waste Treatment Centre" />
+            </div>
           </div>
         </div>
 

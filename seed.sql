@@ -137,26 +137,38 @@ INSERT INTO customers (name, customer_type, customer_id_number, delivery_method,
 -- ─────────────────────────────────────────────
 -- PROPERTIES
 -- ─────────────────────────────────────────────
-INSERT INTO properties (property_id, street_address, city, postal_code, customer_number, created_by, created_at, last_modified_by, last_modified_at) VALUES
-  ('PROP-HEL-001', 'Mannerheimintie 1',       'Helsinki',  '00100', '123456',    'system', NOW(), 'system', NOW()),
-  ('PROP-HEL-002', 'Aleksanterinkatu 52',      'Helsinki',  '00100', '987654321', 'system', NOW(), 'system', NOW()),
-  ('PROP-HEL-003', 'Hämeentie 14',             'Helsinki',  '00530', '246810',    'system', NOW(), 'system', NOW()),
-  ('PROP-HEL-004', 'Teollisuuskatu 28',        'Helsinki',  '00510', '555666777', 'system', NOW(), 'system', NOW()),
-  ('PROP-HEL-005', 'Lautatarhankatu 6',        'Helsinki',  '00580', '223344556', 'system', NOW(), 'system', NOW()),
-  ('PROP-HEL-006', 'Länsimäentie 44',          'Helsinki',  '00750', '741852',    'system', NOW(), 'system', NOW()),
-  ('PROP-ESP-001', 'Espoonkatu 1',             'Espoo',     '02770', '111222',    'system', NOW(), 'system', NOW()),
-  ('PROP-ESP-002', 'Otaniementie 9',           'Espoo',     '02150', '111222',    'system', NOW(), 'system', NOW()),
-  ('PROP-VAN-001', 'Asematie 7',              'Vantaa',    '01300', '333444',    'system', NOW(), 'system', NOW()),
-  ('PROP-VAN-002', 'Tikkurilantie 12',         'Vantaa',    '01370', '333444',    'system', NOW(), 'system', NOW()),
-  ('PROP-TRE-001', 'Satakunnankatu 18',        'Tampere',   '33200', '112233445', 'system', NOW(), 'system', NOW()),
-  ('PROP-TRE-002', 'Hämeenkatu 41',            'Tampere',   '33200', '112233445', 'system', NOW(), 'system', NOW()),
-  ('PROP-TKU-001', 'Yliopistonkatu 27a',       'Turku',     '20100', '888999',    'system', NOW(), 'system', NOW()),
-  ('PROP-TKU-002', 'Puistokatu 5',             'Turku',     '20200', '918273',    'system', NOW(), 'system', NOW()),
-  ('PROP-OUL-001', 'Kauppurienkatu 22',        'Oulu',      '90100', '334455667', 'system', NOW(), 'system', NOW()),
-  ('PROP-OUL-002', 'Hallituskatu 18',          'Oulu',      '90100', '334455667', 'system', NOW(), 'system', NOW()),
-  ('PROP-JYV-001', 'Vapaudenkatu 32',          'Jyväskylä', '40100', '776655',    'system', NOW(), 'system', NOW()),
-  ('PROP-LAH-001', 'Harjukatu 33',             'Lahti',     '15100', '369258',    'system', NOW(), 'system', NOW()),
-  ('PROP-PIR-001', 'Pirkkalaistentie 1',       'Pirkkala',  '33960', '654321',    'system', NOW(), 'system', NOW());
+INSERT INTO properties (property_id, street_address, city, postal_code, customer_number, country_code, country, municipality_code, building_classification, number_of_apartments, building_status, building_identifier, building_type, construction_year, usage_type, number_of_floors, total_area, address_valid_from, address_valid_to, oldest_resident_year, created_by, created_at, last_modified_by, last_modified_at) VALUES
+  ('PROP-HEL-001', 'Mannerheimintie 1',   'Helsinki',  '00100', '123456',    'FI', 'Finland', '091', 'DETACHED_HOUSE',      1,  'COMPLETED',        'PRT-1234567890', 'RESIDENTIAL',  1965, 'SINGLE_FAMILY',      2,  120.50, '1965-01-01', NULL,         1938, 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-002', 'Aleksanterinkatu 52', 'Helsinki',  '00100', '987654321', 'FI', 'Finland', '091', 'COMPANY',             0,  'COMPLETED',        'PRT-2345678901', 'COMMERCIAL',   1989, 'OFFICE',             8,  2450.00, '1989-06-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-003', 'Hämeentie 14',        'Helsinki',  '00530', '246810',    'FI', 'Finland', '091', 'HOUSING_ASSOCIATION', 12, 'COMPLETED',        'PRT-3456789012', 'RESIDENTIAL',  1972, 'APARTMENT_BUILDING', 5,  780.00, '1972-03-15', NULL,         1945, 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-004', 'Teollisuuskatu 28',   'Helsinki',  '00510', '555666777', 'FI', 'Finland', '091', 'COMPANY',             0,  'COMPLETED',        'PRT-4567890123', 'INDUSTRIAL',   2001, 'WAREHOUSE',          1,  5000.00, '2001-09-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-005', 'Lautatarhankatu 6',   'Helsinki',  '00580', '223344556', 'FI', 'Finland', '091', 'HOUSING_ASSOCIATION', 24, 'COMPLETED',        'PRT-5678901234', 'RESIDENTIAL',  1998, 'APARTMENT_BUILDING', 7,  1680.00, '1998-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-HEL-006', 'Länsimäentie 44',     'Helsinki',  '00750', '741852',    'FI', 'Finland', '091', 'DETACHED_HOUSE',      1,  'COMPLETED',        'PRT-6789012345', 'RESIDENTIAL',  1988, 'SINGLE_FAMILY',      2,  165.00, '1988-07-01', NULL,         1950, 'system', NOW(), 'system', NOW()),
+  ('PROP-ESP-001', 'Espoonkatu 1',        'Espoo',     '02770', '111222',    'FI', 'Finland', '049', 'MUNICIPAL_SERVICE_OPERATION', 0, 'COMPLETED', 'PRT-7890123456', 'MUNICIPAL',    1995, 'OFFICE',             3,  890.00, '1995-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-ESP-002', 'Otaniementie 9',      'Espoo',     '02150', '111222',    'FI', 'Finland', '049', 'COMPANY',             0,  'COMPLETED',        'PRT-8901234567', 'COMMERCIAL',   2010, 'RESEARCH',           4,  3200.00, '2010-04-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-VAN-001', 'Asematie 7',          'Vantaa',    '01300', '333444',    'FI', 'Finland', '092', 'MUNICIPAL_SERVICE_OPERATION', 0, 'COMPLETED', 'PRT-9012345678', 'MUNICIPAL',    1985, 'OFFICE',             2,  640.00, '1985-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-VAN-002', 'Tikkurilantie 12',    'Vantaa',    '01370', '333444',    'FI', 'Finland', '092', 'HOUSING_ASSOCIATION', 18, 'COMPLETED',        'PRT-0123456789', 'RESIDENTIAL',  2003, 'APARTMENT_BUILDING', 6,  1260.00, '2003-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-TRE-001', 'Satakunnankatu 18',   'Tampere',   '33200', '112233445', 'FI', 'Finland', '837', 'COMPANY',             0,  'COMPLETED',        'PRT-1122334455', 'INDUSTRIAL',   2005, 'LOGISTICS',          2,  8000.00, '2005-06-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-TRE-002', 'Hämeenkatu 41',       'Tampere',   '33200', '112233445', 'FI', 'Finland', '837', 'COMPANY',             0,  'COMPLETED',        'PRT-2233445566', 'COMMERCIAL',   1999, 'RETAIL',             3,  1450.00, '1999-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-TKU-001', 'Yliopistonkatu 27a',  'Turku',     '20100', '888999',    'FI', 'Finland', '853', 'MUNICIPAL_SERVICE_OPERATION', 0, 'COMPLETED', 'PRT-3344556677', 'MUNICIPAL',    1970, 'ADMINISTRATION',     4,  1100.00, '1970-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-TKU-002', 'Puistokatu 5',        'Turku',     '20200', '918273',    'FI', 'Finland', '853', 'DETACHED_HOUSE',      1,  'COMPLETED',        'PRT-4455667788', 'RESIDENTIAL',  1957, 'SINGLE_FAMILY',      1,  95.00,  '1957-01-01', NULL,         1942, 'system', NOW(), 'system', NOW()),
+  ('PROP-OUL-001', 'Kauppurienkatu 22',   'Oulu',      '90100', '334455667', 'FI', 'Finland', '564', 'COMPANY',             0,  'COMPLETED',        'PRT-5566778899', 'COMMERCIAL',   2008, 'RETAIL',             2,  620.00, '2008-03-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-OUL-002', 'Hallituskatu 18',     'Oulu',      '90100', '334455667', 'FI', 'Finland', '564', 'COMPANY',             0,  'UNDER_CONSTRUCTION', 'PRT-6677889900', 'COMMERCIAL', 2024, 'MIXED_USE',          5,  2800.00, '2024-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-JYV-001', 'Vapaudenkatu 32',     'Jyväskylä', '40100', '776655',    'FI', 'Finland', '179', 'MUNICIPAL_SERVICE_OPERATION', 0, 'COMPLETED', 'PRT-7788990011', 'MUNICIPAL',    1982, 'OFFICE',             3,  750.00, '1982-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-LAH-001', 'Harjukatu 33',        'Lahti',     '15100', '369258',    'FI', 'Finland', '398', 'MUNICIPAL_SERVICE_OPERATION', 0, 'COMPLETED', 'PRT-8899001122', 'MUNICIPAL',    1977, 'ADMINISTRATION',     2,  480.00, '1977-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW()),
+  ('PROP-PIR-001', 'Pirkkalaistentie 1',  'Pirkkala',  '33960', '654321',    'FI', 'Finland', '604', 'MUNICIPAL_SERVICE_OPERATION', 0, 'COMPLETED', 'PRT-9900112233', 'MUNICIPAL',    1991, 'ADMINISTRATION',     2,  520.00, '1991-01-01', NULL,         NULL, 'system', NOW(), 'system', NOW());
+
+-- ─────────────────────────────────────────────
+-- PROPERTY OWNERS (R4 — representative sample)
+-- ─────────────────────────────────────────────
+INSERT INTO property_owners (property_id, owner_id, owner_name, owner_contact_info, ownership_type, ownership_percentage, created_by, created_at, last_modified_by, last_modified_at)
+SELECT p.id, 'OWN-001', 'Matti Virtanen', 'matti.virtanen@example.com', 'INDIVIDUAL', 100.00, 'system', NOW(), 'system', NOW() FROM properties p WHERE p.property_id = 'PROP-HEL-001'
+UNION ALL
+SELECT p.id, 'OWN-002', 'Helsinki Oy',    'laskutus@helsinkioy.fi',      'COMPANY',    100.00, 'system', NOW(), 'system', NOW() FROM properties p WHERE p.property_id = 'PROP-HEL-002'
+UNION ALL
+SELECT p.id, 'OWN-003', 'As Oy Hämeentie 14', 'isannointi@hameentie14.fi', 'HOUSING_COMPANY', 100.00, 'system', NOW(), 'system', NOW() FROM properties p WHERE p.property_id = 'PROP-HEL-003'
+UNION ALL
+SELECT p.id, 'OWN-004', 'Keräys Finland Ab', 'info@kerays.fi',            'COMPANY',    100.00, 'system', NOW(), 'system', NOW() FROM properties p WHERE p.property_id = 'PROP-HEL-004';
 
 -- ─────────────────────────────────────────────
 -- CLASSIFICATION RULES
@@ -177,18 +189,18 @@ INSERT INTO validation_rules (company_id, rule_type, rule_code, config, blocking
 -- ─────────────────────────────────────────────
 -- BILLING EVENTS
 -- ─────────────────────────────────────────────
-INSERT INTO billing_events (customer_number, product_id, waste_fee_price, transport_fee_price, eco_fee_price, quantity, weight, vat_rate_0, vat_rate_24, event_date, municipality_id, location_id, vehicle_id, status, excluded, non_billable, office_review_required, legal_classification, origin, created_by, created_at, last_modified_by, last_modified_at)
-SELECT '123456',    id, 12.50, 4.80,  0.50, 1,   0.24,  0, 25.50, '2025-11-05', 'MUN-01', 'LOC-001', 'ABC-123', 'IN_PROGRESS', false, false, false, 'PRIVATE_LAW', 'INTEGRATION', 'system', NOW(), 'system', NOW() FROM products WHERE code = 'WASTE-COLLECTION-240L'
+INSERT INTO billing_events (customer_number, product_id, waste_fee_price, transport_fee_price, eco_fee_price, quantity, weight, vat_rate_0, vat_rate_24, event_date, municipality_id, location_id, vehicle_id, status, excluded, non_billable, office_review_required, legal_classification, origin, waste_type, receiving_site, created_by, created_at, last_modified_by, last_modified_at)
+SELECT '123456',    id, 12.50, 4.80,  0.50, 1,   0.24,  0, 25.50, '2025-11-05', 'MUN-01', 'LOC-001', 'ABC-123', 'IN_PROGRESS', false, false, false, 'PRIVATE_LAW', 'INTEGRATION', 'MIXED_WASTE',  'Ämmässuo Waste Treatment Centre',  'system', NOW(), 'system', NOW() FROM products WHERE code = 'WASTE-COLLECTION-240L'
 UNION ALL
-SELECT '987654321', id, 28.00, 8.50,  1.00, 3,   0.72,  0, 25.50, '2025-11-07', 'MUN-01', 'LOC-002', 'XYZ-456', 'IN_PROGRESS', false, false, false, 'PRIVATE_LAW', 'INTEGRATION', 'system', NOW(), 'system', NOW() FROM products WHERE code = 'WASTE-COLLECTION-660L'
+SELECT '987654321', id, 28.00, 8.50,  1.00, 3,   0.72,  0, 25.50, '2025-11-07', 'MUN-01', 'LOC-002', 'XYZ-456', 'IN_PROGRESS', false, false, false, 'PRIVATE_LAW', 'INTEGRATION', 'MIXED_WASTE',  'Ämmässuo Waste Treatment Centre',  'system', NOW(), 'system', NOW() FROM products WHERE code = 'WASTE-COLLECTION-660L'
 UNION ALL
-SELECT '111222',    id, 12.50, 4.80,  0.50, 1,   0.24,  0, 25.50, '2025-11-03', 'MUN-02', 'LOC-003', 'DEF-789', 'SENT',        false, false, false, 'PUBLIC_LAW',  'INTEGRATION', 'system', NOW(), 'system', NOW() FROM products WHERE code = 'WASTE-COLLECTION-240L'
+SELECT '111222',    id, 12.50, 4.80,  0.50, 1,   0.24,  0, 25.50, '2025-11-03', 'MUN-02', 'LOC-003', 'DEF-789', 'SENT',        false, false, false, 'PUBLIC_LAW',  'INTEGRATION', 'MIXED_WASTE',  'Espoo Waste Transfer Station',     'system', NOW(), 'system', NOW() FROM products WHERE code = 'WASTE-COLLECTION-240L'
 UNION ALL
-SELECT '333444',    id, 0.00,  45.00, 0.00, 2,   0.00,  0, 25.50, '2025-10-28', 'MUN-03', 'LOC-004', 'GHI-012', 'COMPLETED',   false, false, false, 'PUBLIC_LAW',  'INTEGRATION', 'system', NOW(), 'system', NOW() FROM products WHERE code = 'TRANSPORT-FEE'
+SELECT '333444',    id, 0.00,  45.00, 0.00, 2,   0.00,  0, 25.50, '2025-10-28', 'MUN-03', 'LOC-004', 'GHI-012', 'COMPLETED',   false, false, false, 'PUBLIC_LAW',  'INTEGRATION', NULL,           'Vantaa Transfer Station',          'system', NOW(), 'system', NOW() FROM products WHERE code = 'TRANSPORT-FEE'
 UNION ALL
-SELECT '555666777', id, 5.00,  2.50,  0.25, 120, 120.0, 0, 25.50, '2025-11-10', 'MUN-01', 'LOC-005', 'JKL-345', 'ERROR',       false, false, false, 'PRIVATE_LAW', 'INTEGRATION', 'system', NOW(), 'system', NOW() FROM products WHERE code = 'RECYCLING-PAPER'
+SELECT '555666777', id, 5.00,  2.50,  0.25, 120, 120.0, 0, 25.50, '2025-11-10', 'MUN-01', 'LOC-005', 'JKL-345', 'ERROR',       false, false, false, 'PRIVATE_LAW', 'INTEGRATION', 'PAPER',        'Kivikko Recycling Terminal',       'system', NOW(), 'system', NOW() FROM products WHERE code = 'RECYCLING-PAPER'
 UNION ALL
-SELECT '888999',    id, 3.00,  0.00,  1.50, 1,   0.10,  0, 25.50, '2025-11-12', 'MUN-04', 'LOC-006', NULL,      'IN_PROGRESS', false, false, false, 'PUBLIC_LAW',  'MANUAL',      'system', NOW(), 'system', NOW() FROM products WHERE code = 'ECO-FEE';
+SELECT '888999',    id, 3.00,  0.00,  1.50, 1,   0.10,  0, 25.50, '2025-11-12', 'MUN-04', 'LOC-006', NULL,      'IN_PROGRESS', false, false, false, 'PUBLIC_LAW',  'MANUAL',      'ECO_LEVY',     NULL,                               'system', NOW(), 'system', NOW() FROM products WHERE code = 'ECO-FEE';
 
 -- ─────────────────────────────────────────────
 -- EVENT TYPE CONFIGS

@@ -23,6 +23,7 @@ export default function CreateBillingEventPage() {
     ecoFeePrice: '', quantity: '', weight: '', customerNumber: '',
     vehicleId: '', driverId: '', locationId: '', municipalityId: '', comments: '',
     contractor: '', direction: '', sharedServiceGroupPercentage: '',
+    wasteType: '', receivingSite: '',
   })
   const [fieldErrors, setFieldErrors] = useState({})
 
@@ -228,7 +229,22 @@ export default function CreateBillingEventPage() {
           </div>
         </div>
 
-        {/* Section 6 — Additional Details */}
+        {/* Section 6 — Waste Classification */}
+        <div className="form-section">
+          <div className="form-section-title">Waste Classification</div>
+          <div className="form-row">
+            <div className="field">
+              <label>Waste Type <span className="optional">(optional)</span></label>
+              <input value={form.wasteType} onChange={set('wasteType')} placeholder="e.g. MIXED_WASTE, PAPER, BIO_WASTE" />
+            </div>
+            <div className="field">
+              <label>Receiving Site <span className="optional">(optional)</span></label>
+              <input value={form.receivingSite} onChange={set('receivingSite')} placeholder="e.g. Ämmässuo Waste Treatment Centre" />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 7 — Additional Details */}
         <div className="form-section">
           <div className="form-section-title">Additional Details</div>
           <div className="form-row">

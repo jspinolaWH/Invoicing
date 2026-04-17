@@ -1,17 +1,20 @@
 import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { transferBillingEvent } from '../../api/billingEvents'
 import { searchCustomers } from '../../api/customers'
 import { searchProperties } from '../../api/properties'
 import SearchableAutocomplete from '../SearchableAutocomplete'
 
 export default function TransferEventModal({ eventId, currentCustomerNumber, onSuccess, onClose }) {
+  const navigate = useNavigate()
   // Customer field
   const [customerDisplay, setCustomerDisplay]   = useState('')
   const [targetCustomerNumber, setTargetCustomerNumber] = useState('')
 
   // Property field
-  const [propertyDisplay, setPropertyDisplay]   = useState('')
-  const [targetPropertyId, setTargetPropertyId] = useState('')
+  const [propertyDisplay, setPropertyDisplay]     = useState('')
+  const [targetPropertyId, setTargetPropertyId]   = useState('')
+  const [targetPropertyDbId, setTargetPropertyDbId] = useState(null)
 
   const [reason, setReason]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -36,6 +39,7 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
 
   const handlePropertySelect = (option) => {
     setTargetPropertyId(option.propertyId)
+    setTargetPropertyDbId(option.id)
     setPropertyDisplay(option.streetAddress)
   }
 
@@ -112,6 +116,7 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
               onChange={(raw) => {
                 setPropertyDisplay(raw)
                 setTargetPropertyId('')
+                setTargetPropertyDbId(null)
               }}
               onSelect={handlePropertySelect}
               onSearch={doPropertySearch}
@@ -122,13 +127,20 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                   <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
                     {p.propertyId}
                     {p.city ? ` · ${p.city}` : ''}
+                    {p.municipalityCode ? ` · ${p.municipalityCode}` : ''}
+                    {p.buildingClassification ? ` · ${p.buildingClassification.replace(/_/g, ' ')}` : ''}
                   </div>
                 </div>
               )}
             />
             {targetPropertyId && (
-              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                 Property ID: <code>{targetPropertyId}</code>
+                <button type="button" className="btn-secondary"
+                  style={{ padding: '1px 8px', fontSize: 11 }}
+                  onClick={() => navigate(`/properties/${targetPropertyDbId}`)}>
+                  View detail
+                </button>
               </div>
             )}
           </div>

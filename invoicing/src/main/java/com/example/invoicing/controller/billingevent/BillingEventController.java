@@ -55,6 +55,17 @@ public class BillingEventController {
         return billingEventService.createManual(request);
     }
 
+    @GetMapping("/export")
+    public List<BillingEventExportRow> export(
+        @RequestParam LocalDate dateFrom,
+        @RequestParam LocalDate dateTo,
+        @RequestParam(required = false) BillingEventStatus status,
+        @RequestParam(required = false) String customerNumber,
+        @RequestParam(required = false) String municipalityId
+    ) {
+        return billingEventService.exportEvents(dateFrom, dateTo, status, customerNumber, municipalityId);
+    }
+
     @GetMapping
     public Page<BillingEventResponse> list(
         @RequestParam(required = false) String customerNumber,

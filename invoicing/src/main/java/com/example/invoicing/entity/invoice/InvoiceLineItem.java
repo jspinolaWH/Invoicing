@@ -65,7 +65,7 @@ public class InvoiceLineItem extends BaseAuditEntity {
         joinColumns = @JoinColumn(name = "line_item_id"))
     private java.util.List<AccountingLedgerEntry> ledgerEntries = new java.util.ArrayList<>();
 
-    /** Transient — used by the generation pipeline only, not persisted. */
-    @Transient
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_event_id")
     private BillingEvent sourceEvent;
 }

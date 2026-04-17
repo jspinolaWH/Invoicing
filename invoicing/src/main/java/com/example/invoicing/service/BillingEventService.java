@@ -101,6 +101,8 @@ public class BillingEventService {
         event.setContractor(req.getContractor());
         event.setDirection(req.getDirection());
         event.setSharedServiceGroupPercentage(req.getSharedServiceGroupPercentage());
+        event.setWasteType(req.getWasteType());
+        event.setReceivingSite(req.getReceivingSite());
 
         resolveAccountingDefaults(event, product, req.getLocationId());
         resolveVatRates(event, req.getEventDate());
@@ -151,6 +153,8 @@ public class BillingEventService {
         applyIfChanged(id, "sharedServiceGroupPct",  req.getSharedServiceGroupPercentage(), event.getSharedServiceGroupPercentage(), event::setSharedServiceGroupPercentage, currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "direction",              req.getDirection(),              event.getDirection(),              event::setDirection,              currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "comments",               req.getComments(),               event.getComments(),               event::setComments,               currentUser, req.getReason(), auditEntries);
+        applyIfChanged(id, "wasteType",              req.getWasteType(),              event.getWasteType(),              event::setWasteType,              currentUser, req.getReason(), auditEntries);
+        applyIfChanged(id, "receivingSite",          req.getReceivingSite(),          event.getReceivingSite(),          event::setReceivingSite,          currentUser, req.getReason(), auditEntries);
 
         billingEventRepository.save(event);
         if (!auditEntries.isEmpty()) {
@@ -264,6 +268,37 @@ public class BillingEventService {
     }
 
     // -----------------------------------------------------------------------
+    // EXPORT
+    // -----------------------------------------------------------------------
+    @Transactional(readOnly = true)
+    public List<BillingEventExportRow> exportEvents(LocalDate dateFrom, LocalDate dateTo,
+            BillingEventStatus status, String customerNumber, String municipalityId) {
+        return billingEventRepository.findForExport(dateFrom, dateTo, status, customerNumber, municipalityId)
+            .stream().map(e -> {
+                VatCalculationResult vat = null;
+                try { vat = vatCalculationService.calculate(e); } catch (Exception ignored) {}
+                return BillingEventExportRow.builder()
+                    .eventId(e.getId())
+                    .eventDate(e.getEventDate())
+                    .accountingAccount(e.getAccountingAccount() != null ? e.getAccountingAccount().getCode() : null)
+                    .responsibilityArea(e.getCostCenter() != null ? e.getCostCenter().getResponsibilitySegment() : null)
+                    .productGroup(e.getProduct() != null ? e.getProduct().getCode() : null)
+                    .wasteType(e.getWasteType())
+                    .serviceResponsibility(e.getCostCenter() != null ? e.getCostCenter().getReceptionSegment() : null)
+                    .locationId(e.getLocationId())
+                    .municipalityId(e.getMunicipalityId())
+                    .projectCode(e.getProjectId())
+                    .costCenter(e.getCostCenter() != null ? e.getCostCenter().getCompositeCode() : null)
+                    .receivingSite(e.getReceivingSite())
+                    .calculatedAmountNet(vat != null ? vat.getAmountNet() : null)
+                    .calculatedAmountVat(vat != null ? vat.getAmountVat() : null)
+                    .calculatedAmountGross(vat != null ? vat.getAmountGross() : null)
+                    .customerNumber(e.getCustomerNumber())
+                    .build();
+            }).toList();
+    }
+
+    // -----------------------------------------------------------------------
     // HELPERS
     // -----------------------------------------------------------------------
     private void resolveVatRates(BillingEvent event, LocalDate eventDate) {
@@ -299,6 +334,8 @@ public class BillingEventService {
         event.setSharedServiceGroupPercentage(req.getSharedServiceGroupPercentage());
         event.setComments(req.getComments());
         event.setProjectId(req.getProjectId());
+        event.setWasteType(req.getWasteType());
+        event.setReceivingSite(req.getReceivingSite());
     }
 
     private Product loadProduct(Long productId) {
@@ -373,6 +410,8 @@ public class BillingEventService {
                 .build() : null)
             .createdAt(e.getCreatedAt())
             .createdBy(e.getCreatedBy())
+            .wasteType(e.getWasteType())
+            .receivingSite(e.getReceivingSite())
             .build();
     }
 
@@ -439,7 +478,12 @@ public class BillingEventService {
             .createdBy(e.getCreatedBy())
             .lastModifiedAt(e.getLastModifiedAt())
             .lastModifiedBy(e.getLastModifiedBy())
-            .resolvedCostCenterCode(resolvedCostCenter);
+            .resolvedCostCenterCode(resolvedCostCenter)
+            .wasteType(e.getWasteType())
+            .receivingSite(e.getReceivingSite())
+            .responsibilityArea(e.getCostCenter() != null ? e.getCostCenter().getResponsibilitySegment() : null)
+            .serviceResponsibility(e.getCostCenter() != null ? e.getCostCenter().getReceptionSegment() : null)
+            .transmissionErrorReason(e.getTransmissionErrorReason());
 
         if (vatResult != null) {
             builder

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   getBillingEvents, validateBillingEvents,
   bulkExcludeBillingEvents, bulkTransferBillingEvents,
+  exportBillingEvents,
 } from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
@@ -44,6 +45,7 @@ export default function BillingEventsPage() {
   const [validating, setValidating] = useState(false)
   const [bulkExcludeOpen, setBulkExcludeOpen] = useState(false)
   const [bulkTransferOpen, setBulkTransferOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const [filters, setFilters] = useState({
     customerNumber: '', status: '', municipalityId: '',
@@ -141,9 +143,10 @@ export default function BillingEventsPage() {
           <h1>Billing Events</h1>
           <p>Manage and validate billing events before invoicing.</p>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/billing-events/new')}>
-          + New Event
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <button className="btn-secondary" onClick={() => setExportOpen(true)}>Export</button>
+          <button className="btn-primary" onClick={() => navigate('/billing-events/new')}>+ New Event</button>
+        </div>
       </div>
 
       <RelatedTasks tasks={RELATED_TASKS} />
@@ -314,6 +317,10 @@ export default function BillingEventsPage() {
           onClose={() => setBulkTransferOpen(false)}
         />
       )}
+
+      {exportOpen && (
+        <ExportModal onClose={() => setExportOpen(false)} />
+      )}
     </div>
   )
 }
@@ -458,6 +465,93 @@ function BulkTransferModal({ eventIds, onSuccess, onClose }) {
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
           <button onClick={handleSubmit} disabled={!isValid || loading} className="btn-primary">
             {loading ? 'Transferring…' : `Transfer ${eventIds.length} Events`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------
+// Export modal
+// -----------------------------------------------------------------------
+const STATUSES_EXPORT = ['IN_PROGRESS', 'SENT', 'COMPLETED', 'ERROR']
+
+function ExportModal({ onClose }) {
+  const [form, setForm] = useState({ dateFrom: '', dateTo: '', status: '', customerNumber: '', municipalityId: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+
+  const handleExport = async () => {
+    if (!form.dateFrom || !form.dateTo) { setError('Date From and Date To are required.'); return }
+    setLoading(true)
+    setError(null)
+    try {
+      const params = { dateFrom: form.dateFrom, dateTo: form.dateTo }
+      if (form.status) params.status = form.status
+      if (form.customerNumber) params.customerNumber = form.customerNumber
+      if (form.municipalityId) params.municipalityId = form.municipalityId
+      const res = await exportBillingEvents(params)
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `billing-export-${form.dateFrom}-${form.dateTo}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      onClose()
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Export failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Export Billing Events</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
+          <div className="form-row" style={{ marginBottom: 12 }}>
+            <div className="field">
+              <label>Date From <span style={{ color: 'var(--color-icon-danger)' }}>*</span></label>
+              <input type="date" value={form.dateFrom} onChange={set('dateFrom')} />
+            </div>
+            <div className="field">
+              <label>Date To <span style={{ color: 'var(--color-icon-danger)' }}>*</span></label>
+              <input type="date" value={form.dateTo} onChange={set('dateTo')} />
+            </div>
+          </div>
+          <div className="form-row" style={{ marginBottom: 12 }}>
+            <div className="field">
+              <label>Status <span className="optional">(optional)</span></label>
+              <select value={form.status} onChange={set('status')}
+                style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}>
+                <option value="">All statuses</option>
+                {STATUSES_EXPORT.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Customer # <span className="optional">(optional)</span></label>
+              <input value={form.customerNumber} onChange={set('customerNumber')} placeholder="6–9 digits" />
+            </div>
+          </div>
+          <div className="field" style={{ marginBottom: 8 }}>
+            <label>Municipality ID <span className="optional">(optional)</span></label>
+            <input value={form.municipalityId} onChange={set('municipalityId')} />
+          </div>
+          <p className="muted" style={{ fontSize: 13 }}>Downloads a JSON file containing all PD-177 reporting fields for the selected period.</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={handleExport} disabled={loading}>
+            {loading ? 'Exporting…' : 'Download JSON'}
           </button>
         </div>
       </div>

@@ -40,6 +40,7 @@ import OperatorManagementPage from './pages/integration/OperatorManagementPage'
 import AuthorityInvoiceViewPage from './pages/authority/AuthorityInvoiceViewPage'
 import PdOverviewPage from './pages/pd/PdOverviewPage'
 import MasterDataHubPage from './pages/masterdata/MasterDataHubPage'
+import PropertyDetailPage from './pages/properties/PropertyDetailPage'
 
 export default function App() {
   return (
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="integration/operator" element={<OperatorManagementPage />} />
           <Route path="authority/invoices" element={<AuthorityInvoiceViewPage />} />
           <Route path="pd-overview" element={<PdOverviewPage />} />
+          <Route path="properties/:id" element={<PropertyDetailPage />} />
         </Route>
         </Route>
       </Routes>

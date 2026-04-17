@@ -1,17 +1,23 @@
 package com.example.invoicing.controller.property;
+
+import com.example.invoicing.entity.property.dto.PropertyDetailResponse;
 import com.example.invoicing.entity.property.dto.PropertySearchResult;
 import com.example.invoicing.repository.PropertyRepository;
+import com.example.invoicing.service.PropertyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/properties")
 @RequiredArgsConstructor
 public class PropertyController {
+
     private final PropertyRepository propertyRepo;
+    private final PropertyService propertyService;
 
     @GetMapping("/search")
     public ResponseEntity<List<PropertySearchResult>> search(@RequestParam String q) {
@@ -20,5 +26,10 @@ public class PropertyController {
             .search(q.trim(), PageRequest.of(0, 10))
             .stream().map(PropertySearchResult::from).toList();
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PropertyDetailResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(propertyService.getPropertyDetail(id));
     }
 }

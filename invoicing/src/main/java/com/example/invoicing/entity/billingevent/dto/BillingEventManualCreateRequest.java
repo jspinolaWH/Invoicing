@@ -46,4 +46,6 @@ public class BillingEventManualCreateRequest {
     private String contractor;
     private BillingEventDirection direction;
     private BigDecimal sharedServiceGroupPercentage;
+    private String wasteType;
+    private String receivingSite;
 }

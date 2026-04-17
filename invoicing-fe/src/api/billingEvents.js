@@ -116,3 +116,11 @@ export const approveBillingEvent = (id) =>
 
 export const rejectBillingEvent = (id, rejectionReason) =>
   axios.post(`/api/v1/billing-events/${id}/reject`, { rejectionReason })
+
+// Export
+export const exportBillingEvents = (params) =>
+  axios.get('/api/v1/billing-events/export', { params })
+
+// Dev simulation
+export const simulateTransmissionOutcome = (id, outcome, errorReason) =>
+  axios.post(`/api/v1/dev/billing-events/${id}/simulate-transmission`, { outcome, errorReason })

@@ -44,4 +44,6 @@ public class BillingEventResponse {
     private CostCenterSummaryDto costCenter;
     private Instant createdAt;
     private String createdBy;
+    private String wasteType;
+    private String receivingSite;
 }

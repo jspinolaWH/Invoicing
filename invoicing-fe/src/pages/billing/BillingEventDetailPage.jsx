@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getBillingEvent, getCreditTransferLink } from '../../api/billingEvents'
+import { getBillingEvent, getCreditTransferLink, simulateTransmissionOutcome } from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
 import StatusTransitionPanel from '../../components/billing/StatusTransitionPanel'
@@ -36,6 +36,10 @@ export default function BillingEventDetailPage() {
   const [transferModal, setTransferModal] = useState(false)
   const [creditTransferModal, setCreditTransferModal] = useState(false)
   const [creditTransferLink, setCreditTransferLink] = useState(null)
+  const [simOutcome, setSimOutcome] = useState('SENT')
+  const [simErrorReason, setSimErrorReason] = useState('')
+  const [simLoading, setSimLoading] = useState(false)
+  const [simError, setSimError] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -180,6 +184,10 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>Contractor</label><span>{event.contractor ?? '—'}</span></div>
             <div className="detail-field"><label>Direction</label><span>{event.direction ?? '—'}</span></div>
             <div className="detail-field"><label>Shared Collection Group %</label><span>{event.sharedServiceGroupPercentage != null ? `${event.sharedServiceGroupPercentage}%` : '—'}</span></div>
+            <div className="detail-field"><label>Waste Type</label><span>{event.wasteType ?? '—'}</span></div>
+            <div className="detail-field"><label>Receiving Site</label><span>{event.receivingSite ?? '—'}</span></div>
+            <div className="detail-field"><label>Responsibility Area</label><span>{event.responsibilityArea ?? '—'}</span></div>
+            <div className="detail-field"><label>Service Responsibility</label><span>{event.serviceResponsibility ?? '—'}</span></div>
             <div className="detail-field"><label>Accounting Account</label><span>{event.accountingAccount ? `${event.accountingAccount.code} — ${event.accountingAccount.name}` : '—'}</span></div>
             <div className="detail-field"><label>Cost Center</label><span>{event.costCenter?.compositeCode ?? '—'}</span></div>
             <div className="detail-field"><label>Resolved Cost Centre</label><span>{event.resolvedCostCenterCode || '—'}</span></div>
@@ -237,6 +245,11 @@ export default function BillingEventDetailPage() {
             <span className="muted">Current status:</span>
             <StatusBadge status={event.status} />
           </div>
+          {event.status === 'ERROR' && event.transmissionErrorReason && (
+            <div style={{ padding: 'var(--space-4)', background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 'var(--radius-md)' }}>
+              <strong>Transmission error:</strong> {event.transmissionErrorReason}
+            </div>
+          )}
           <StatusTransitionPanel
             eventId={id}
             currentStatus={event.status}
@@ -245,6 +258,51 @@ export default function BillingEventDetailPage() {
           {!['SENT', 'ERROR'].includes(event.status) && (
             <p className="muted">No manual transitions available for this status.</p>
           )}
+
+          <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 'var(--radius-md)' }}>
+            <strong style={{ display: 'block', marginBottom: 'var(--space-3)', fontSize: 13 }}>Dev — Simulate Transmission Outcome</strong>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12 }}>Outcome</label>
+                <select value={simOutcome} onChange={e => setSimOutcome(e.target.value)}
+                  style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #ccc' }}>
+                  <option value="SENT">SENT</option>
+                  <option value="ERROR">ERROR</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                </select>
+              </div>
+              {simOutcome === 'ERROR' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 12 }}>Error reason</label>
+                  <input
+                    value={simErrorReason}
+                    onChange={e => setSimErrorReason(e.target.value)}
+                    placeholder="e.g. Operator rejected the file"
+                    style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #ccc', width: 260 }}
+                  />
+                </div>
+              )}
+              <button
+                className="btn-secondary"
+                disabled={simLoading}
+                onClick={async () => {
+                  setSimLoading(true)
+                  setSimError(null)
+                  try {
+                    await simulateTransmissionOutcome(id, simOutcome, simOutcome === 'ERROR' ? simErrorReason : undefined)
+                    load()
+                  } catch (e) {
+                    setSimError(e.response?.data?.message ?? 'Simulation failed')
+                  } finally {
+                    setSimLoading(false)
+                  }
+                }}
+              >
+                Apply
+              </button>
+            </div>
+            {simError && <div className="error-msg" style={{ marginTop: 'var(--space-2)' }}>{simError}</div>}
+          </div>
         </div>
       )}
 

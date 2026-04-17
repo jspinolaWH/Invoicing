@@ -61,4 +61,9 @@ public class BillingEventDetailResponse {
     private BigDecimal calculatedAmountVat;
     private BigDecimal calculatedAmountGross;
     private String buyerVatNumber;
+    private String wasteType;
+    private String receivingSite;
+    private String responsibilityArea;
+    private String serviceResponsibility;
+    private String transmissionErrorReason;
 }

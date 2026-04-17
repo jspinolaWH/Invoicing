@@ -55,4 +55,6 @@ public class BillingEventCreateRequest {
     private String comments;
     private String projectId;
     private LegalClassification legalClassification;
+    private String wasteType;
+    private String receivingSite;
 }

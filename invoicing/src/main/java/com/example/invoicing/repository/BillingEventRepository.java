@@ -158,4 +158,27 @@ public interface BillingEventRepository extends JpaRepository<BillingEvent, Long
         @Param("to") LocalDate to,
         @Param("productId") Long productId
     );
+
+    @Query("""
+        SELECT DISTINCT li.sourceEvent FROM InvoiceLineItem li
+        WHERE li.invoice.id = :invoiceId AND li.sourceEvent IS NOT NULL
+        """)
+    List<BillingEvent> findByInvoiceId(@Param("invoiceId") Long invoiceId);
+
+    @Query("""
+        SELECT e FROM BillingEvent e
+        WHERE e.eventDate >= :dateFrom
+          AND e.eventDate <= :dateTo
+          AND (:status         IS NULL OR e.status = :status)
+          AND (:customerNumber IS NULL OR e.customerNumber = :customerNumber)
+          AND (:municipalityId IS NULL OR e.municipalityId = :municipalityId)
+        ORDER BY e.eventDate ASC
+        """)
+    List<BillingEvent> findForExport(
+        @Param("dateFrom")       LocalDate dateFrom,
+        @Param("dateTo")         LocalDate dateTo,
+        @Param("status")         BillingEventStatus status,
+        @Param("customerNumber") String customerNumber,
+        @Param("municipalityId") String municipalityId
+    );
 }

@@ -20,7 +20,7 @@ public class BillingEventStatusService {
 
     static final Map<BillingEventStatus, Set<BillingEventStatus>> ALLOWED_TRANSITIONS = Map.of(
         BillingEventStatus.IN_PROGRESS, Set.of(BillingEventStatus.SENT),
-        BillingEventStatus.SENT,        Set.of(BillingEventStatus.COMPLETED, BillingEventStatus.ERROR),
+        BillingEventStatus.SENT,        Set.of(BillingEventStatus.COMPLETED),
         BillingEventStatus.ERROR,       Set.of(BillingEventStatus.SENT),
         BillingEventStatus.COMPLETED,   Set.of()
     );
@@ -28,8 +28,21 @@ public class BillingEventStatusService {
     public BillingEvent transitionTo(Long eventId, BillingEventStatus targetStatus) {
         BillingEvent event = billingEventRepository.findById(eventId)
             .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + eventId));
-        assertValidTransition(event.getStatus(), targetStatus, eventId);
+        return applyTransition(event, targetStatus, null);
+    }
+
+    public BillingEvent transitionTo(BillingEvent event, BillingEventStatus targetStatus, String reason) {
+        return applyTransition(event, targetStatus, reason);
+    }
+
+    private BillingEvent applyTransition(BillingEvent event, BillingEventStatus targetStatus, String reason) {
+        assertValidTransition(event.getStatus(), targetStatus, event.getId());
         event.setStatus(targetStatus);
+        if (targetStatus == BillingEventStatus.ERROR) {
+            event.setTransmissionErrorReason(reason);
+        } else {
+            event.setTransmissionErrorReason(null);
+        }
         return billingEventRepository.save(event);
     }
 

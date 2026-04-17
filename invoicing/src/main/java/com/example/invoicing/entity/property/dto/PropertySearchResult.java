@@ -1,4 +1,6 @@
 package com.example.invoicing.entity.property.dto;
+
+import com.example.invoicing.entity.property.BuildingClassification;
 import com.example.invoicing.entity.property.Property;
 import lombok.*;
 
@@ -10,6 +12,9 @@ public class PropertySearchResult {
     private String city;
     private String postalCode;
     private String customerNumber;
+    private String municipalityCode;
+    private BuildingClassification buildingClassification;
+    private Integer numberOfApartments;
 
     public static PropertySearchResult from(Property p) {
         return PropertySearchResult.builder()
@@ -19,6 +24,9 @@ public class PropertySearchResult {
             .city(p.getCity())
             .postalCode(p.getPostalCode())
             .customerNumber(p.getCustomerNumber())
+            .municipalityCode(p.getMunicipalityCode())
+            .buildingClassification(p.getBuildingClassification())
+            .numberOfApartments(p.getNumberOfApartments())
             .build();
     }
 }
