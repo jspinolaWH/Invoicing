@@ -328,7 +328,9 @@ public class DataSeeder implements CommandLineRunner {
             new Spec("987321",    "Antti Mäkinen",           CustomerType.PRIVATE,
                 DeliveryMethod.PAPER,     "Aleksis Kiven katu 14","33200", "Tampere",    null,           "fi", InvoicingMode.GROSS),
             new Spec("765432",    "Rovaniemen kaupunki",     CustomerType.MUNICIPALITY,
-                DeliveryMethod.E_INVOICE, "Hallituskatu 7",       "96200", "Rovaniemi",  "FI00876543",   "fi", InvoicingMode.GROSS)
+                DeliveryMethod.E_INVOICE, "Hallituskatu 7",       "96200", "Rovaniemi",  "FI00876543",   "fi", InvoicingMode.GROSS),
+            new Spec("000001",    "No Contract Customer",    CustomerType.PRIVATE,
+                DeliveryMethod.EMAIL,     "Testikatu 1",          "00100", "Helsinki",   null,           "fi", InvoicingMode.GROSS)
         );
 
         int created = 0;
@@ -650,11 +652,6 @@ public class DataSeeder implements CommandLineRunner {
     //  Contracts
     // ─────────────────────────────────────────────
     private void seedContracts() {
-        if (contractRepository.count() > 0) {
-            log.info("[Seeder] Contracts already seeded — skipping.");
-            return;
-        }
-
         List<Product> all = productRepository.findAll();
         if (all.isEmpty()) {
             log.warn("[Seeder] No products found — skipping contract seeding.");
@@ -664,48 +661,56 @@ public class DataSeeder implements CommandLineRunner {
         java.util.Map<String, Product> byCode = all.stream()
             .collect(java.util.stream.Collectors.toMap(Product::getCode, p -> p));
 
-        // Helper: resolve codes that exist, silently drop missing ones
         java.util.function.Function<String[], List<Product>> pick = codes -> {
             List<Product> result = new java.util.ArrayList<>();
             for (String c : codes) { Product p = byCode.get(c); if (p != null) result.add(p); }
             return result;
         };
 
-        List<Contract> contracts = List.of(
-            contract("123456", "Matti Virtanen — Kotijätehuolto",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION","RECYCLING-PAPER","ECO-FEE"})),
-            contract("987654321", "Helsinki Oy — Yritysjätepalvelut",
-                pick.apply(new String[]{"WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","RECYCLING-CARDBOARD","TRANSPORT-FEE","BULKY-WASTE"})),
-            contract("111222", "Espoon kaupunki — Kunnalliset palvelut",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","ECO-FEE","LAND-RENT"})),
-            contract("333444", "Vantaa Municipality — Waste Services",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","BIOWASTE-COLLECTION","BULKY-WASTE","ECO-FEE"})),
-            contract("555666777", "Keräys Finland — Kierrätyssopimus",
-                pick.apply(new String[]{"RECYCLING-PAPER","RECYCLING-CARDBOARD","RECYCLING-GLASS","HAZARDOUS-WASTE","TRANSPORT-FEE","CONTAINER-RENTAL-660L"})),
-            contract("888999", "Turku Authority — Municipal Contract",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","ECO-FEE","LAND-RENT"})),
-            contract("444555", "Tampereen kaupunki — Jätehuolto",
-                pick.apply(new String[]{"WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","LAND-RENT","ECO-FEE"})),
-            contract("666777888", "Jyväskylä Services — Palvelusopimus",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","RECYCLING-PAPER","TRANSPORT-FEE","EXPERT-WORK","CONTAINER-RENTAL-240L"})),
-            contract("111999888", "Lahti Industrial — Vaarallinen jäte",
-                pick.apply(new String[]{"HAZARDOUS-WASTE","TRANSPORT-FEE","CONTAINER-RENTAL-660L","EXPERT-WORK"})),
-            contract("999111222", "Aalto Kiinteistöt — Kiinteistöjätehuolto",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","CONTAINER-RENTAL-240L","CONTAINER-RENTAL-660L","ECO-FEE"})),
-            contract("222333", "Pirjo Korhonen — Kotijätehuolto",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION","RECYCLING-PAPER"})),
-            contract("456789", "Oulun kaupunki — Kunnalliset palvelut",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","LAND-RENT","ECO-FEE"})),
-            contract("123789456", "TechWaste Solutions — Teollisuusjäte",
-                pick.apply(new String[]{"HAZARDOUS-WASTE","TRANSPORT-FEE","EXPERT-WORK","BULKY-WASTE"})),
-            contract("987321", "Antti Mäkinen — Kotijätehuolto",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION"})),
-            contract("765432", "Rovaniemen kaupunki — Jätepalvelut",
-                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","BIOWASTE-COLLECTION","ECO-FEE","LAND-RENT"}))
+        record Spec(String num, String name, String[] codes) {}
+        List<Spec> specs = List.of(
+            new Spec("123456",    "Matti Virtanen — Kotijätehuolto",
+                new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION","RECYCLING-PAPER","ECO-FEE"}),
+            new Spec("987654321", "Helsinki Oy — Yritysjätepalvelut",
+                new String[]{"WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","RECYCLING-CARDBOARD","TRANSPORT-FEE","BULKY-WASTE"}),
+            new Spec("111222",    "Espoon kaupunki — Kunnalliset palvelut",
+                new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","ECO-FEE","LAND-RENT"}),
+            new Spec("333444",    "Vantaa Municipality — Waste Services",
+                new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","BIOWASTE-COLLECTION","BULKY-WASTE","ECO-FEE"}),
+            new Spec("555666777", "Keräys Finland — Kierrätyssopimus",
+                new String[]{"RECYCLING-PAPER","RECYCLING-CARDBOARD","RECYCLING-GLASS","HAZARDOUS-WASTE","TRANSPORT-FEE","CONTAINER-RENTAL-660L"}),
+            new Spec("888999",    "Turku Authority — Municipal Contract",
+                new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","ECO-FEE","LAND-RENT"}),
+            new Spec("444555",    "Tampereen kaupunki — Jätehuolto",
+                new String[]{"WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","LAND-RENT","ECO-FEE"}),
+            new Spec("666777888", "Jyväskylä Services — Palvelusopimus",
+                new String[]{"WASTE-COLLECTION-240L","RECYCLING-PAPER","TRANSPORT-FEE","EXPERT-WORK","CONTAINER-RENTAL-240L"}),
+            new Spec("111999888", "Lahti Industrial — Vaarallinen jäte",
+                new String[]{"HAZARDOUS-WASTE","TRANSPORT-FEE","CONTAINER-RENTAL-660L","EXPERT-WORK"}),
+            new Spec("999111222", "Aalto Kiinteistöt — Kiinteistöjätehuolto",
+                new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","CONTAINER-RENTAL-240L","CONTAINER-RENTAL-660L","ECO-FEE"}),
+            new Spec("222333",    "Pirjo Korhonen — Kotijätehuolto",
+                new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION","RECYCLING-PAPER"}),
+            new Spec("777888",    "Kauniaisten kaupunki — Jätehuolto",
+                new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION","ECO-FEE"}),
+            new Spec("456789",    "Oulun kaupunki — Kunnalliset palvelut",
+                new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","LAND-RENT","ECO-FEE"}),
+            new Spec("123789456", "TechWaste Solutions — Teollisuusjäte",
+                new String[]{"HAZARDOUS-WASTE","TRANSPORT-FEE","EXPERT-WORK","BULKY-WASTE"}),
+            new Spec("987321",    "Antti Mäkinen — Kotijätehuolto",
+                new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION"}),
+            new Spec("765432",    "Rovaniemen kaupunki — Jätepalvelut",
+                new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","BIOWASTE-COLLECTION","ECO-FEE","LAND-RENT"})
+            // 000001 "No Contract Customer" intentionally has no contract
         );
 
+        contractRepository.deleteAll();
+        List<Contract> contracts = new java.util.ArrayList<>();
+        for (Spec s : specs) {
+            contracts.add(contract(s.num(), s.name(), pick.apply(s.codes())));
+        }
         contractRepository.saveAll(contracts);
-        log.info("[Seeder] Seeded {} contracts.", contracts.size());
+        log.info("[Seeder] Contracts: re-seeded {} contracts.", contracts.size());
     }
 
     private Contract contract(String customerNumber, String name, List<Product> products) {
