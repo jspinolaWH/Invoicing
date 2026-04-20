@@ -47,4 +47,5 @@ public class BillingEventResponse {
     private String wasteType;
     private String receivingSite;
     private boolean priceOverridden;
+    private String pendingTransferCustomerNumber;
 }

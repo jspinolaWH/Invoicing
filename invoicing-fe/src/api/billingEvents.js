@@ -44,6 +44,18 @@ export const transferBillingEvent = (id, data) =>
 export const bulkTransferBillingEvents = (data) =>
   axios.post('/api/v1/billing-events/bulk-transfer', data)
 
+export const confirmTransferBillingEvent = (id) =>
+  axios.post(`/api/v1/billing-events/${id}/transfer/confirm`)
+
+export const cancelTransferBillingEvent = (id) =>
+  axios.post(`/api/v1/billing-events/${id}/transfer/cancel`)
+
+export const bulkConfirmTransferBillingEvents = (eventIds) =>
+  axios.post('/api/v1/billing-events/bulk-transfer/confirm', { eventIds })
+
+export const bulkCancelTransferBillingEvents = (eventIds) =>
+  axios.post('/api/v1/billing-events/bulk-transfer/cancel', { eventIds })
+
 // Credit & Transfer (SENT / COMPLETED events)
 export const creditTransferBillingEvent = (id, data) =>
   axios.post(`/api/v1/billing-events/${id}/credit-transfer`, data)

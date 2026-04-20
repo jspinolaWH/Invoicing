@@ -70,4 +70,8 @@ public class BillingEventDetailResponse {
     private BigDecimal originalWasteFeePrice;
     private BigDecimal originalTransportFeePrice;
     private BigDecimal originalEcoFeePrice;
+    private String pendingTransferCustomerNumber;
+    private String pendingTransferLocationId;
+    private String priorCustomerNumber;
+    private String priorLocationId;
 }

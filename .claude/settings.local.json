@@ -61,7 +61,8 @@
       "mcp__claude_ai_Linear__list_issues",
       "mcp__claude_ai_Linear__search_documentation",
       "mcp__claude_ai_Linear__get_issue",
-      "Bash(grep -E \"\\(issues|jsx|js\\)$\")"
+      "Bash(grep -E \"\\(issues|jsx|js\\)$\")",
+      "Bash(grep -E \"\\\\.\\(java|jsx|ts|tsx\\)$\")"
     ]
   }
 }

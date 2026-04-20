@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   getBillingEvents, validateBillingEvents,
-  bulkExcludeBillingEvents, bulkTransferBillingEvents,
+  bulkExcludeBillingEvents,
   exportBillingEvents,
 } from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
@@ -10,6 +10,7 @@ import StatusBadge from '../../components/billing/StatusBadge'
 import ValidationReportModal from '../../components/ValidationReportModal'
 import ExclusionModal from '../../components/billing/ExclusionModal'
 import TransferEventModal from '../../components/billing/TransferEventModal'
+import BulkTransferModal from '../../components/billing/BulkTransferModal'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -24,7 +25,7 @@ const RELATED_TASKS = [
   { id: 'PD-275', label: '3.4.x Credit & Transfer',           href: 'https://ioteelab.atlassian.net/browse/PD-275' },
 ]
 
-const STATUSES = ['DRAFT', 'IN_PROGRESS', 'SENT', 'COMPLETED', 'ERROR']
+const STATUSES = ['DRAFT', 'PENDING_TRANSFER', 'IN_PROGRESS', 'SENT', 'COMPLETED', 'ERROR']
 const EXCLUDED_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'false', label: 'Active only' },
@@ -79,24 +80,26 @@ export default function BillingEventsPage() {
 
   const loadStatusCounts = async () => {
     try {
-      const [draft, inProgress, sent, completed, error, excluded] = await Promise.all([
-        getBillingEvents({ status: 'DRAFT',       size: 1, page: 0 }),
-        getBillingEvents({ status: 'IN_PROGRESS', size: 1, page: 0 }),
-        getBillingEvents({ status: 'SENT',        size: 1, page: 0 }),
-        getBillingEvents({ status: 'COMPLETED',   size: 1, page: 0 }),
-        getBillingEvents({ status: 'ERROR',        size: 1, page: 0 }),
-        getBillingEvents({ excluded: 'true',       size: 1, page: 0 }),
+      const [draft, pendingTransfer, inProgress, sent, completed, error, excluded] = await Promise.all([
+        getBillingEvents({ status: 'DRAFT',            size: 1, page: 0 }),
+        getBillingEvents({ status: 'PENDING_TRANSFER', size: 1, page: 0 }),
+        getBillingEvents({ status: 'IN_PROGRESS',      size: 1, page: 0 }),
+        getBillingEvents({ status: 'SENT',             size: 1, page: 0 }),
+        getBillingEvents({ status: 'COMPLETED',        size: 1, page: 0 }),
+        getBillingEvents({ status: 'ERROR',            size: 1, page: 0 }),
+        getBillingEvents({ excluded: 'true',           size: 1, page: 0 }),
       ])
       setStatusCounts({
-        DRAFT:       draft.data.totalElements ?? 0,
-        IN_PROGRESS: inProgress.data.totalElements ?? 0,
-        SENT:        sent.data.totalElements ?? 0,
-        COMPLETED:   completed.data.totalElements ?? 0,
-        ERROR:        error.data.totalElements ?? 0,
-        EXCLUDED:    excluded.data.totalElements ?? 0,
+        DRAFT:            draft.data.totalElements ?? 0,
+        PENDING_TRANSFER: pendingTransfer.data.totalElements ?? 0,
+        IN_PROGRESS:      inProgress.data.totalElements ?? 0,
+        SENT:             sent.data.totalElements ?? 0,
+        COMPLETED:        completed.data.totalElements ?? 0,
+        ERROR:            error.data.totalElements ?? 0,
+        EXCLUDED:         excluded.data.totalElements ?? 0,
       })
     } catch {
-      setStatusCounts({ DRAFT: 0, IN_PROGRESS: 0, SENT: 0, COMPLETED: 0, ERROR: 0, EXCLUDED: 0 })
+      setStatusCounts({ DRAFT: 0, PENDING_TRANSFER: 0, IN_PROGRESS: 0, SENT: 0, COMPLETED: 0, ERROR: 0, EXCLUDED: 0 })
     }
   }
 
@@ -334,12 +337,13 @@ export default function BillingEventsPage() {
 // Stat strip
 // -----------------------------------------------------------------------
 const STAT_CONFIG = [
-  { key: 'DRAFT',       label: 'Draft',       color: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
-  { key: 'IN_PROGRESS', label: 'In Progress', color: '#92400e', bg: '#fffbeb', border: '#fcd34d' },
-  { key: 'SENT',        label: 'Sent',        color: 'var(--color-status-info-text)',   bg: 'var(--color-status-info-bg)',   border: 'var(--color-status-info-border)'   },
-  { key: 'COMPLETED',   label: 'Completed',   color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)' },
-  { key: 'ERROR',       label: 'Error',       color: '#b91c1c', bg: '#fff1f2', border: '#fecdd3' },
-  { key: 'EXCLUDED',    label: 'Excluded',    color: 'var(--color-text-secondary)', bg: 'var(--color-bg-table-header)', border: 'var(--color-border-subtle)', noClick: true },
+  { key: 'DRAFT',            label: 'Draft',            color: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
+  { key: 'PENDING_TRANSFER', label: 'Pending Transfer', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  { key: 'IN_PROGRESS',      label: 'In Progress',      color: '#92400e', bg: '#fffbeb', border: '#fcd34d' },
+  { key: 'SENT',             label: 'Sent',             color: 'var(--color-status-info-text)',   bg: 'var(--color-status-info-bg)',   border: 'var(--color-status-info-border)'   },
+  { key: 'COMPLETED',        label: 'Completed',        color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)' },
+  { key: 'ERROR',            label: 'Error',            color: '#b91c1c', bg: '#fff1f2', border: '#fecdd3' },
+  { key: 'EXCLUDED',         label: 'Excluded',         color: 'var(--color-text-secondary)', bg: 'var(--color-bg-table-header)', border: 'var(--color-border-subtle)', noClick: true },
 ]
 
 function StatStrip({ counts, onStatusClick }) {
@@ -415,68 +419,6 @@ function BulkExcludeModal({ eventIds, onSuccess, onClose }) {
   )
 }
 
-function BulkTransferModal({ eventIds, onSuccess, onClose }) {
-  const [targetCustomerNumber, setTargetCustomerNumber] = useState('')
-  const [reason, setReason] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const isValid = /^\d{6,9}$/.test(targetCustomerNumber) && reason.trim()
-
-  const handleSubmit = async () => {
-    if (!isValid) return
-    setLoading(true)
-    setError(null)
-    try {
-      await bulkTransferBillingEvents({ eventIds, targetCustomerNumber, reason })
-      onSuccess()
-    } catch (err) {
-      setError(err.response?.data?.message ?? 'Bulk transfer failed.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Transfer {eventIds.length} Events</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        <div className="modal-body">
-          {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
-          <div className="field" style={{ marginBottom: 12 }}>
-            <label>Target Customer Number <span style={{ color: 'var(--color-icon-danger)' }}>*</span></label>
-            <input
-              type="text"
-              value={targetCustomerNumber}
-              onChange={e => setTargetCustomerNumber(e.target.value)}
-              placeholder="6–9 digit customer number"
-            />
-          </div>
-          <div className="field">
-            <label>Reason <span style={{ color: 'var(--color-icon-danger)' }}>*</span></label>
-            <textarea
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-              rows={3}
-              style={{ width: '100%', padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical', boxSizing: 'border-box' }}
-              placeholder="Required"
-            />
-          </div>
-          <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>SENT or COMPLETED events will be skipped automatically.</p>
-        </div>
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button onClick={handleSubmit} disabled={!isValid || loading} className="btn-primary">
-            {loading ? 'Transferring…' : `Transfer ${eventIds.length} Events`}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // -----------------------------------------------------------------------
 // Export modal

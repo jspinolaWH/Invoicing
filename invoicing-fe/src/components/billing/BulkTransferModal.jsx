@@ -1,20 +1,17 @@
 import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { transferBillingEvent } from '../../api/billingEvents'
+import { bulkTransferBillingEvents } from '../../api/billingEvents'
 import { searchCustomers, getCustomerProperties } from '../../api/customers'
 import SearchableAutocomplete from '../SearchableAutocomplete'
 
-export default function TransferEventModal({ eventId, currentCustomerNumber, onSuccess, onClose }) {
-  const navigate = useNavigate()
-  const [step, setStep] = useState(1) // 1 = form, 2 = review
+export default function BulkTransferModal({ eventIds, onSuccess, onClose }) {
+  const [step, setStep] = useState(1)
 
-  const [customerDisplay, setCustomerDisplay]         = useState('')
+  const [customerDisplay, setCustomerDisplay]           = useState('')
   const [targetCustomerNumber, setTargetCustomerNumber] = useState('')
-  const [targetCustomerName, setTargetCustomerName]   = useState('')
+  const [targetCustomerName, setTargetCustomerName]     = useState('')
 
-  const [propertyDisplay, setPropertyDisplay]         = useState('')
-  const [targetPropertyId, setTargetPropertyId]       = useState('')
-  const [targetPropertyDbId, setTargetPropertyDbId]   = useState(null)
+  const [propertyDisplay, setPropertyDisplay]   = useState('')
+  const [targetPropertyId, setTargetPropertyId] = useState('')
 
   const [reason, setReason]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -37,12 +34,10 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
     setCustomerDisplay(option.name)
     setPropertyDisplay('')
     setTargetPropertyId('')
-    setTargetPropertyDbId(null)
   }
 
   const handlePropertySelect = (option) => {
     setTargetPropertyId(option.propertyId)
-    setTargetPropertyDbId(option.id)
     setPropertyDisplay(option.streetAddress)
   }
 
@@ -50,14 +45,15 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
     setLoading(true)
     setError(null)
     try {
-      await transferBillingEvent(eventId, {
+      await bulkTransferBillingEvents({
+        eventIds,
         targetCustomerNumber,
         targetPropertyId: targetPropertyId || undefined,
         reason,
       })
       onSuccess()
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Transfer failed.')
+      setError(err.response?.data?.message ?? 'Bulk transfer failed.')
       setStep(1)
     } finally {
       setLoading(false)
@@ -68,18 +64,15 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Transfer Billing Event{step === 2 ? ' — Review' : ''}</h2>
+          <h2>Transfer {eventIds.length} Events{step === 2 ? ' — Review' : ''}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
         {step === 1 && (
           <>
             <div className="modal-body">
-              <p className="muted" style={{ marginBottom: 16 }}>
-                Currently assigned to customer <strong>{currentCustomerNumber}</strong>.
-              </p>
               {error && <div className="error-msg" style={{ marginBottom: 12 }}>{error}</div>}
 
               <div className="field" style={{ marginBottom: 12 }}>
@@ -98,7 +91,6 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                   onSelect={handleCustomerSelect}
                   onSearch={doCustomerSearch}
                   placeholder="Search by name, number, or address…"
-                  required
                   renderOption={(c) => (
                     <div>
                       <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{c.name}</div>
@@ -122,11 +114,7 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                 <SearchableAutocomplete
                   key={targetCustomerNumber}
                   value={propertyDisplay}
-                  onChange={(raw) => {
-                    setPropertyDisplay(raw)
-                    setTargetPropertyId('')
-                    setTargetPropertyDbId(null)
-                  }}
+                  onChange={(raw) => { setPropertyDisplay(raw); setTargetPropertyId('') }}
                   onSelect={handlePropertySelect}
                   onSearch={doPropertySearch}
                   placeholder={targetCustomerNumber ? 'Search by address or property ID…' : 'Select a customer first'}
@@ -136,21 +124,10 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                       <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{p.streetAddress}</div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
                         {p.propertyId}{p.city ? ` · ${p.city}` : ''}
-                        {p.municipalityCode ? ` · ${p.municipalityCode}` : ''}
                       </div>
                     </div>
                   )}
                 />
-                {targetPropertyId && (
-                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Property ID: <code>{targetPropertyId}</code>
-                    <button type="button" className="btn-secondary"
-                      style={{ padding: '1px 8px', fontSize: 11 }}
-                      onClick={() => navigate(`/properties/${targetPropertyDbId}`)}>
-                      View detail
-                    </button>
-                  </div>
-                )}
               </div>
 
               <div className="field">
@@ -163,14 +140,11 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                   placeholder="Required"
                 />
               </div>
+              <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>SENT or COMPLETED events will be skipped automatically.</p>
             </div>
             <div className="modal-footer">
               <button className="btn-secondary" onClick={onClose}>Cancel</button>
-              <button
-                onClick={() => setStep(2)}
-                disabled={!isFormValid}
-                className="btn-primary"
-              >
+              <button onClick={() => setStep(2)} disabled={!isFormValid} className="btn-primary">
                 Next: Review →
               </button>
             </div>
@@ -184,12 +158,7 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
               <div style={{ padding: 'var(--space-4)', background: 'var(--color-bg-subtle, #f9fafb)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Current customer</div>
-                    <code style={{ fontWeight: 600 }}>{currentCustomerNumber}</code>
-                  </div>
-                  <span style={{ color: 'var(--color-text-secondary)', fontSize: 20 }}>→</span>
-                  <div>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>New customer</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Transferring {eventIds.length} events to</div>
                     <code style={{ fontWeight: 600 }}>{targetCustomerNumber}</code>
                     {targetCustomerName && <span style={{ marginLeft: 6, color: 'var(--color-text-secondary)', fontSize: 13 }}>{targetCustomerName}</span>}
                   </div>
@@ -206,17 +175,13 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                 </div>
               </div>
               <p className="muted" style={{ marginTop: 12, fontSize: 13 }}>
-                This will put the event into <strong>Pending Transfer</strong> state. A second confirmation step will be required to apply the change.
+                Events will move to <strong>Pending Transfer</strong> state and require a second confirmation to apply.
               </p>
             </div>
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setStep(1)}>← Back</button>
-              <button
-                onClick={handleConfirm}
-                disabled={loading}
-                className="btn-primary"
-              >
-                {loading ? 'Initiating…' : 'Initiate Transfer'}
+              <button onClick={handleConfirm} disabled={loading} className="btn-primary">
+                {loading ? 'Initiating…' : `Initiate Transfer for ${eventIds.length} Events`}
               </button>
             </div>
           </>

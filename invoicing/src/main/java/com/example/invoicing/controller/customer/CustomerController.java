@@ -2,7 +2,9 @@ package com.example.invoicing.controller.customer;
 import com.example.invoicing.entity.customer.dto.BillingProfileResponse;
 import com.example.invoicing.entity.customer.dto.CustomerSearchResult;
 import com.example.invoicing.entity.customer.dto.CustomerSummaryResponse;
+import com.example.invoicing.entity.property.dto.PropertySearchResult;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
+import com.example.invoicing.repository.PropertyRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -15,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomerController {
     private final CustomerBillingProfileRepository customerRepo;
+    private final PropertyRepository propertyRepo;
 
     @GetMapping
     public ResponseEntity<List<CustomerSummaryResponse>> list() {
@@ -37,5 +40,16 @@ public class CustomerController {
         return customerRepo.findById(id)
             .map(c -> ResponseEntity.ok(BillingProfileResponse.from(c)))
             .orElseThrow(() -> new EntityNotFoundException("Customer not found: " + id));
+    }
+
+    @GetMapping("/{customerNumber}/properties")
+    public ResponseEntity<List<PropertySearchResult>> getProperties(
+        @PathVariable String customerNumber,
+        @RequestParam(required = false) String search
+    ) {
+        List<PropertySearchResult> results = propertyRepo
+            .findByCustomerNumber(customerNumber, search, PageRequest.of(0, 20))
+            .stream().map(PropertySearchResult::from).toList();
+        return ResponseEntity.ok(results);
     }
 }

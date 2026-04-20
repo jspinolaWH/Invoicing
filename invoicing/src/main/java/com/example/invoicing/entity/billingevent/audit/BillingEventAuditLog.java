@@ -39,6 +39,9 @@ public class BillingEventAuditLog {
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
 
+    @Column(name = "confirmed_by", length = 100)
+    private String confirmedBy;
+
     @Column(nullable = false, length = 2000)
     private String reason;
 }

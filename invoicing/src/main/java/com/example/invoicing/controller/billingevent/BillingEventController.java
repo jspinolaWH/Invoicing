@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -151,6 +152,7 @@ public class BillingEventController {
     // -----------------------------------------------------------------------
     // TRANSFER
     // -----------------------------------------------------------------------
+    @PreAuthorize("hasRole('INVOICING')")
     @PostMapping("/{id}/transfer")
     public TransferResult transfer(
         @PathVariable Long id,
@@ -161,6 +163,7 @@ public class BillingEventController {
         return transferService.transfer(id, request, user);
     }
 
+    @PreAuthorize("hasRole('INVOICING')")
     @PostMapping("/bulk-transfer")
     public BulkTransferResult bulkTransfer(
         @Valid @RequestBody BulkTransferRequest request,
@@ -168,6 +171,46 @@ public class BillingEventController {
     ) {
         String user = currentUser != null ? currentUser : "system";
         return transferService.bulkTransfer(request, user);
+    }
+
+    @PreAuthorize("hasRole('INVOICING')")
+    @PostMapping("/{id}/transfer/confirm")
+    public TransferResult confirmTransfer(
+        @PathVariable Long id,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return transferService.confirmTransfer(id, user);
+    }
+
+    @PreAuthorize("hasRole('INVOICING')")
+    @PostMapping("/{id}/transfer/cancel")
+    public TransferResult cancelTransfer(
+        @PathVariable Long id,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return transferService.cancelTransfer(id, user);
+    }
+
+    @PreAuthorize("hasRole('INVOICING')")
+    @PostMapping("/bulk-transfer/confirm")
+    public BulkTransferResult bulkConfirmTransfer(
+        @Valid @RequestBody BulkActionRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return transferService.bulkConfirmTransfer(request.getEventIds(), user);
+    }
+
+    @PreAuthorize("hasRole('INVOICING')")
+    @PostMapping("/bulk-transfer/cancel")
+    public BulkTransferResult bulkCancelTransfer(
+        @Valid @RequestBody BulkActionRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return transferService.bulkCancelTransfer(request.getEventIds(), user);
     }
 
     // -----------------------------------------------------------------------

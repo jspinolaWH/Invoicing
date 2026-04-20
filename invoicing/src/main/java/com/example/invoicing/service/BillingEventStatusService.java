@@ -19,11 +19,12 @@ public class BillingEventStatusService {
     private final BillingEventRepository billingEventRepository;
 
     static final Map<BillingEventStatus, Set<BillingEventStatus>> ALLOWED_TRANSITIONS = Map.of(
-        BillingEventStatus.DRAFT,       Set.of(BillingEventStatus.IN_PROGRESS),
-        BillingEventStatus.IN_PROGRESS, Set.of(BillingEventStatus.SENT),
-        BillingEventStatus.SENT,        Set.of(BillingEventStatus.COMPLETED),
-        BillingEventStatus.ERROR,       Set.of(BillingEventStatus.SENT),
-        BillingEventStatus.COMPLETED,   Set.of()
+        BillingEventStatus.DRAFT,            Set.of(BillingEventStatus.IN_PROGRESS),
+        BillingEventStatus.IN_PROGRESS,      Set.of(BillingEventStatus.SENT, BillingEventStatus.PENDING_TRANSFER),
+        BillingEventStatus.PENDING_TRANSFER, Set.of(BillingEventStatus.IN_PROGRESS),
+        BillingEventStatus.SENT,             Set.of(BillingEventStatus.COMPLETED),
+        BillingEventStatus.ERROR,            Set.of(BillingEventStatus.SENT),
+        BillingEventStatus.COMPLETED,        Set.of()
     );
 
     public BillingEvent transitionTo(Long eventId, BillingEventStatus targetStatus) {
@@ -49,12 +50,12 @@ public class BillingEventStatusService {
 
     public void assertMutable(BillingEvent event) {
         if (event.getStatus() == BillingEventStatus.SENT
-                || event.getStatus() == BillingEventStatus.COMPLETED) {
+                || event.getStatus() == BillingEventStatus.COMPLETED
+                || event.getStatus() == BillingEventStatus.PENDING_TRANSFER) {
             throw new IllegalStateException(
                 "BillingEvent " + event.getId() + " is " + event.getStatus()
                 + " and cannot be modified. Use the credit-and-re-invoice flow for corrections.");
         }
-        // DRAFT and IN_PROGRESS/ERROR are mutable
     }
 
     private void assertValidTransition(BillingEventStatus from, BillingEventStatus to, Long id) {

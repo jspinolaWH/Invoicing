@@ -5,6 +5,7 @@ import {
   transitionBillingEventStatus,
   getBillingEventAttachments, uploadBillingEventAttachment,
   downloadBillingEventAttachment, deleteBillingEventAttachment,
+  confirmTransferBillingEvent, cancelTransferBillingEvent,
 } from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
@@ -66,8 +67,9 @@ export default function BillingEventDetailPage() {
   if (!event) return <div className="error-msg">Event not found.</div>
 
   const canEdit = event.status === 'DRAFT' || event.status === 'IN_PROGRESS' || event.status === 'ERROR'
-  const canExclude = !event.excluded && event.status !== 'SENT' && event.status !== 'COMPLETED'
+  const canExclude = !event.excluded && event.status !== 'SENT' && event.status !== 'COMPLETED' && event.status !== 'PENDING_TRANSFER'
   const canTransfer = !event.excluded && event.status === 'IN_PROGRESS'
+  const isPendingTransfer = event.status === 'PENDING_TRANSFER'
   const canCreditTransfer = !event.excluded && (event.status === 'SENT' || event.status === 'COMPLETED')
 
   // Determine the role of this event in any credit-transfer chain
@@ -113,6 +115,31 @@ export default function BillingEventDetailPage() {
             <button className="btn-secondary" onClick={() => setTransferModal(true)}>
               Transfer
             </button>
+          )}
+          {isPendingTransfer && (
+            <>
+              <button className="btn-primary" onClick={async () => {
+                try {
+                  await confirmTransferBillingEvent(id)
+                  load()
+                } catch (e) {
+                  alert(e.response?.data?.message ?? 'Confirm transfer failed.')
+                }
+              }}>
+                Confirm Transfer
+              </button>
+              <button className="btn-danger" onClick={async () => {
+                if (!window.confirm('Cancel this pending transfer?')) return
+                try {
+                  await cancelTransferBillingEvent(id)
+                  load()
+                } catch (e) {
+                  alert(e.response?.data?.message ?? 'Cancel transfer failed.')
+                }
+              }}>
+                Cancel Transfer
+              </button>
+            </>
           )}
           {canCreditTransfer && !isOriginal && (
             <button className="btn-secondary" onClick={() => setCreditTransferModal(true)}>
@@ -169,6 +196,20 @@ export default function BillingEventDetailPage() {
             onClick={() => navigate(`/billing-events/${creditTransferLink.creditEventId}`)}>
             View Credit Event #{creditTransferLink.creditEventId}
           </button>
+        </div>
+      )}
+
+      {isPendingTransfer && event.pendingTransferCustomerNumber && (
+        <div style={{ padding: 'var(--space-3) var(--space-4)', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <span>Transfer pending: <strong>{event.customerNumber}</strong> → <strong>{event.pendingTransferCustomerNumber}</strong></span>
+          {event.pendingTransferLocationId && <span>· Property: <code>{event.pendingTransferLocationId}</code></span>}
+        </div>
+      )}
+
+      {event.priorCustomerNumber && (
+        <div style={{ padding: 'var(--space-3) var(--space-4)', background: '#fefce8', border: '1px solid #fde047', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>
+          Transferred from: <strong>{event.priorCustomerNumber}</strong>
+          {event.priorLocationId && <span> · Prior property: <code>{event.priorLocationId}</code></span>}
         </div>
       )}
 

@@ -436,6 +436,7 @@ public class BillingEventService {
             .wasteType(e.getWasteType())
             .receivingSite(e.getReceivingSite())
             .priceOverridden(e.isPriceOverridden())
+            .pendingTransferCustomerNumber(e.getPendingTransferCustomerNumber())
             .build();
     }
 
@@ -511,7 +512,11 @@ public class BillingEventService {
             .priceOverridden(e.isPriceOverridden())
             .originalWasteFeePrice(e.getOriginalWasteFeePrice())
             .originalTransportFeePrice(e.getOriginalTransportFeePrice())
-            .originalEcoFeePrice(e.getOriginalEcoFeePrice());
+            .originalEcoFeePrice(e.getOriginalEcoFeePrice())
+            .pendingTransferCustomerNumber(e.getPendingTransferCustomerNumber())
+            .pendingTransferLocationId(e.getPendingTransferLocationId())
+            .priorCustomerNumber(e.getPriorCustomerNumber())
+            .priorLocationId(e.getPriorLocationId());
 
         if (vatResult != null) {
             builder

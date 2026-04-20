@@ -145,6 +145,18 @@ public class BillingEvent extends BaseAuditEntity {
     @Column(name = "transmission_error_reason", columnDefinition = "TEXT")
     private String transmissionErrorReason;
 
+    @Column(name = "pending_transfer_customer_number", length = 9)
+    private String pendingTransferCustomerNumber;
+
+    @Column(name = "pending_transfer_location_id", length = 100)
+    private String pendingTransferLocationId;
+
+    @Column(name = "prior_customer_number", length = 9)
+    private String priorCustomerNumber;
+
+    @Column(name = "prior_location_id", length = 100)
+    private String priorLocationId;
+
     @Column(name = "price_overridden", nullable = false)
     private boolean priceOverridden = false;
 

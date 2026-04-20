@@ -34,6 +34,12 @@
   border-color: #fecdd3;
 }
 
+.pending {
+  background: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
 .default {
   background: var(--color-bg-table-header);
   color: var(--color-text-secondary);

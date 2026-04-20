@@ -14,4 +14,16 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
            OR LOWER(p.propertyId) LIKE LOWER(CONCAT('%', :q, '%'))
         """)
     Page<Property> search(@Param("q") String q, Pageable pageable);
+
+    @Query("""
+        SELECT p FROM Property p
+        WHERE p.customerNumber = :customerNumber
+          AND (:q IS NULL OR LOWER(p.streetAddress) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(p.propertyId) LIKE LOWER(CONCAT('%', :q, '%')))
+        ORDER BY p.streetAddress ASC
+        """)
+    java.util.List<Property> findByCustomerNumber(
+        @Param("customerNumber") String customerNumber,
+        @Param("q") String q,
+        Pageable pageable);
 }

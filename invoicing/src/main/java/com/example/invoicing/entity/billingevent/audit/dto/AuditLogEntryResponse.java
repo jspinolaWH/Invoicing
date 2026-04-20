@@ -14,6 +14,7 @@ public class AuditLogEntryResponse {
     private String oldValue;
     private String newValue;
     private String changedBy;
+    private String confirmedBy;
     private Instant changedAt;
     private String reason;
 }

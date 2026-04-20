@@ -42,6 +42,7 @@ public class AuditLogQueryService {
             .oldValue(log.getOldValue())
             .newValue(log.getNewValue())
             .changedBy(log.getChangedBy())
+            .confirmedBy(log.getConfirmedBy())
             .changedAt(log.getChangedAt())
             .reason(log.getReason())
             .build();
