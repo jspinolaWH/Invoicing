@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getBillingEvent, getCreditTransferLink, simulateTransmissionOutcome } from '../../api/billingEvents'
+import {
+  getBillingEvent, getCreditTransferLink, simulateTransmissionOutcome,
+  transitionBillingEventStatus,
+  getBillingEventAttachments, uploadBillingEventAttachment,
+  downloadBillingEventAttachment, deleteBillingEventAttachment,
+} from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
 import StatusTransitionPanel from '../../components/billing/StatusTransitionPanel'
@@ -19,7 +24,7 @@ const RELATED_TASKS = [
   { id: 'PD-275', label: '3.4.x Credit & Transfer',      href: 'https://ioteelab.atlassian.net/browse/PD-275' },
 ]
 
-const TABS = ['Details', 'Audit Trail', 'Status']
+const TABS = ['Details', 'Audit Trail', 'Status', 'Attachments']
 
 function formatTs(iso) {
   if (!iso) return '—'
@@ -60,7 +65,7 @@ export default function BillingEventDetailPage() {
   if (loading) return <div className="loading">Loading event…</div>
   if (!event) return <div className="error-msg">Event not found.</div>
 
-  const canEdit = event.status === 'IN_PROGRESS' || event.status === 'ERROR'
+  const canEdit = event.status === 'DRAFT' || event.status === 'IN_PROGRESS' || event.status === 'ERROR'
   const canExclude = !event.excluded && event.status !== 'SENT' && event.status !== 'COMPLETED'
   const canTransfer = !event.excluded && event.status === 'IN_PROGRESS'
   const canCreditTransfer = !event.excluded && (event.status === 'SENT' || event.status === 'COMPLETED')
@@ -82,6 +87,18 @@ export default function BillingEventDetailPage() {
           <p>{event.customerNumber} · {event.eventDate} · {event.product?.name ?? event.product?.code}</p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          {event.status === 'DRAFT' && (
+            <button className="btn-primary" onClick={async () => {
+              try {
+                await transitionBillingEventStatus(id, 'IN_PROGRESS')
+                load()
+              } catch (e) {
+                alert(e.response?.data?.message ?? 'Failed to submit draft.')
+              }
+            }}>
+              Submit
+            </button>
+          )}
           {canExclude && (
             <button className="btn-danger" onClick={() => setExclusionModal('exclude')}>
               Exclude
@@ -218,6 +235,31 @@ export default function BillingEventDetailPage() {
               </div>
             </div>
           )}
+          {event.priceOverridden && (
+            <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 'var(--radius-md)' }}>
+              <strong style={{ display: 'block', marginBottom: 'var(--space-2)' }}>Price Override</strong>
+              <div className="detail-grid">
+                {event.originalWasteFeePrice != null && (
+                  <div className="detail-field">
+                    <label>Waste Fee</label>
+                    <span>Product default: €{Number(event.originalWasteFeePrice).toFixed(2)} → <strong>€{Number(event.wasteFeePrice).toFixed(2)}</strong></span>
+                  </div>
+                )}
+                {event.originalTransportFeePrice != null && (
+                  <div className="detail-field">
+                    <label>Transport Fee</label>
+                    <span>Product default: €{Number(event.originalTransportFeePrice).toFixed(2)} → <strong>€{Number(event.transportFeePrice).toFixed(2)}</strong></span>
+                  </div>
+                )}
+                {event.originalEcoFeePrice != null && (
+                  <div className="detail-field">
+                    <label>Eco Fee</label>
+                    <span>Product default: €{Number(event.originalEcoFeePrice).toFixed(2)} → <strong>€{Number(event.ecoFeePrice).toFixed(2)}</strong></span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {event.comments && (
             <div style={{ marginTop: 'var(--space-6)' }}>
               <div className="detail-field"><label>Comments</label><span>{event.comments}</span></div>
@@ -255,7 +297,7 @@ export default function BillingEventDetailPage() {
             currentStatus={event.status}
             onTransitioned={load}
           />
-          {!['SENT', 'ERROR'].includes(event.status) && (
+          {!['DRAFT', 'SENT', 'ERROR'].includes(event.status) && (
             <p className="muted">No manual transitions available for this status.</p>
           )}
 
@@ -306,6 +348,8 @@ export default function BillingEventDetailPage() {
         </div>
       )}
 
+      {activeTab === 'Attachments' && <AttachmentsTab eventId={id} />}
+
       {exclusionModal && (
         <ExclusionModal
           eventId={id}
@@ -330,6 +374,113 @@ export default function BillingEventDetailPage() {
           onSuccess={() => { setCreditTransferModal(false); load(); loadLink() }}
           onClose={() => setCreditTransferModal(false)}
         />
+      )}
+    </div>
+  )
+}
+
+function AttachmentsTab({ eventId }) {
+  const [attachments, setAttachments] = useState([])
+  const [uploading, setUploading]     = useState(false)
+  const [error, setError]             = useState(null)
+
+  const loadAttachments = () => {
+    getBillingEventAttachments(eventId)
+      .then(r => setAttachments(r.data))
+      .catch(() => {})
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadAttachments() }, [eventId])
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError(null)
+    try {
+      await uploadBillingEventAttachment(eventId, file)
+      loadAttachments()
+    } catch (err) {
+      setError(err.response?.data ?? 'Upload failed.')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleDelete = async (attachmentId) => {
+    if (!window.confirm('Delete this attachment?')) return
+    try {
+      await deleteBillingEventAttachment(eventId, attachmentId)
+      loadAttachments()
+    } catch {
+      setError('Delete failed.')
+    }
+  }
+
+  const handleDownload = async (att) => {
+    try {
+      const res = await downloadBillingEventAttachment(eventId, att.id)
+      const url = URL.createObjectURL(res.data)
+      const a   = document.createElement('a')
+      a.href = url
+      a.download = att.fileName
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError('Download failed.')
+    }
+  }
+
+  const fmt = (bytes) => {
+    if (bytes < 1024)       return `${bytes} B`
+    if (bytes < 1048576)    return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / 1048576).toFixed(1)} MB`
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      {error && <div className="error-msg">{error}</div>}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {uploading ? 'Uploading…' : '+ Upload File'}
+          <input type="file" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+        </label>
+        <span className="muted" style={{ fontSize: 13 }}>Max 10 MB per file · up to 10 attachments</span>
+      </div>
+
+      {attachments.length === 0 ? (
+        <p className="muted">No attachments yet.</p>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>File Name</th>
+              <th>Type</th>
+              <th>Size</th>
+              <th>Uploaded</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {attachments.map(att => (
+              <tr key={att.id}>
+                <td>{att.fileName}</td>
+                <td><code style={{ fontSize: 12 }}>{att.contentType}</code></td>
+                <td>{fmt(att.fileSize)}</td>
+                <td>{att.createdAt ? new Date(att.createdAt).toLocaleString('fi-FI') : '—'}</td>
+                <td>
+                  <div className="actions">
+                    <button className="btn-secondary" onClick={() => handleDownload(att)}>Download</button>
+                    <button className="btn-danger"    onClick={() => handleDelete(att.id)}>Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   )

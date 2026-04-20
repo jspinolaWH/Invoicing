@@ -12,6 +12,9 @@ export const createBillingEvent = (data) =>
 export const createManualBillingEvent = (data) =>
   axios.post('/api/v1/billing-events/manual', data)
 
+export const createDraftBillingEvent = (data) =>
+  axios.post('/api/v1/billing-events/draft', data)
+
 export const updateBillingEvent = (id, data) =>
   axios.patch(`/api/v1/billing-events/${id}`, data)
 
@@ -120,6 +123,24 @@ export const rejectBillingEvent = (id, rejectionReason) =>
 // Export
 export const exportBillingEvents = (params) =>
   axios.get('/api/v1/billing-events/export', { params })
+
+// Attachments
+export const getBillingEventAttachments = (id) =>
+  axios.get(`/api/v1/billing-events/${id}/attachments`)
+
+export const uploadBillingEventAttachment = (id, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return axios.post(`/api/v1/billing-events/${id}/attachments`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+export const downloadBillingEventAttachment = (id, attachmentId) =>
+  axios.get(`/api/v1/billing-events/${id}/attachments/${attachmentId}`, { responseType: 'blob' })
+
+export const deleteBillingEventAttachment = (id, attachmentId) =>
+  axios.delete(`/api/v1/billing-events/${id}/attachments/${attachmentId}`)
 
 // Dev simulation
 export const simulateTransmissionOutcome = (id, outcome, errorReason) =>

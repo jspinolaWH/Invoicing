@@ -144,4 +144,16 @@ public class BillingEvent extends BaseAuditEntity {
 
     @Column(name = "transmission_error_reason", columnDefinition = "TEXT")
     private String transmissionErrorReason;
+
+    @Column(name = "price_overridden", nullable = false)
+    private boolean priceOverridden = false;
+
+    @Column(name = "original_waste_fee_price", precision = 19, scale = 4)
+    private BigDecimal originalWasteFeePrice;
+
+    @Column(name = "original_transport_fee_price", precision = 19, scale = 4)
+    private BigDecimal originalTransportFeePrice;
+
+    @Column(name = "original_eco_fee_price", precision = 19, scale = 4)
+    private BigDecimal originalEcoFeePrice;
 }

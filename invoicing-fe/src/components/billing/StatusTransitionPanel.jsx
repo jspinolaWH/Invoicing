@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { transitionBillingEventStatus } from '../../api/billingEvents'
 
 const NEXT_ACTIONS = {
+  DRAFT:       ['IN_PROGRESS'],
   IN_PROGRESS: [],
   SENT:        ['COMPLETED'],
   ERROR:       ['SENT'],

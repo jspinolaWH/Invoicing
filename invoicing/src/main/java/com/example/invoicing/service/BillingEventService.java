@@ -82,6 +82,18 @@ public class BillingEventService {
     // CREATE — manual (billing clerk)
     // -----------------------------------------------------------------------
     public BillingEventResponse createManual(BillingEventManualCreateRequest req) {
+        BillingEvent event = buildManualEvent(req);
+        event.setStatus(BillingEventStatus.IN_PROGRESS);
+        return toResponse(billingEventRepository.save(event));
+    }
+
+    public BillingEventResponse saveDraft(BillingEventManualCreateRequest req) {
+        BillingEvent event = buildManualEvent(req);
+        event.setStatus(BillingEventStatus.DRAFT);
+        return toResponse(billingEventRepository.save(event));
+    }
+
+    private BillingEvent buildManualEvent(BillingEventManualCreateRequest req) {
         Product product = loadProduct(req.getProductId());
         BillingEvent event = new BillingEvent();
 
@@ -104,14 +116,25 @@ public class BillingEventService {
         event.setWasteType(req.getWasteType());
         event.setReceivingSite(req.getReceivingSite());
 
+        BigDecimal defWaste     = product.getDefaultWasteFee();
+        BigDecimal defTransport = product.getDefaultTransportFee();
+        BigDecimal defEco       = product.getDefaultEcoFee();
+        boolean overridden = (defWaste     != null && req.getWasteFeePrice().compareTo(defWaste)         != 0)
+                          || (defTransport != null && req.getTransportFeePrice().compareTo(defTransport) != 0)
+                          || (defEco       != null && req.getEcoFeePrice().compareTo(defEco)             != 0);
+        if (overridden) {
+            event.setPriceOverridden(true);
+            event.setOriginalWasteFeePrice(defWaste);
+            event.setOriginalTransportFeePrice(defTransport);
+            event.setOriginalEcoFeePrice(defEco);
+        }
+
         resolveAccountingDefaults(event, product, req.getLocationId());
         resolveVatRates(event, req.getEventDate());
         event.setLegalClassification(
             classificationService.classify(req.getCustomerNumber(), product, req.getMunicipalityId()));
-        event.setStatus(BillingEventStatus.IN_PROGRESS);
         event.setOrigin("MANUAL");
-
-        return toResponse(billingEventRepository.save(event));
+        return event;
     }
 
     // -----------------------------------------------------------------------
@@ -412,6 +435,7 @@ public class BillingEventService {
             .createdBy(e.getCreatedBy())
             .wasteType(e.getWasteType())
             .receivingSite(e.getReceivingSite())
+            .priceOverridden(e.isPriceOverridden())
             .build();
     }
 
@@ -483,7 +507,11 @@ public class BillingEventService {
             .receivingSite(e.getReceivingSite())
             .responsibilityArea(e.getCostCenter() != null ? e.getCostCenter().getResponsibilitySegment() : null)
             .serviceResponsibility(e.getCostCenter() != null ? e.getCostCenter().getReceptionSegment() : null)
-            .transmissionErrorReason(e.getTransmissionErrorReason());
+            .transmissionErrorReason(e.getTransmissionErrorReason())
+            .priceOverridden(e.isPriceOverridden())
+            .originalWasteFeePrice(e.getOriginalWasteFeePrice())
+            .originalTransportFeePrice(e.getOriginalTransportFeePrice())
+            .originalEcoFeePrice(e.getOriginalEcoFeePrice());
 
         if (vatResult != null) {
             builder

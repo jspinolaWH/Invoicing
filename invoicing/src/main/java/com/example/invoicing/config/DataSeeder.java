@@ -12,6 +12,8 @@ import com.example.invoicing.repository.MinimumFeeConfigRepository;
 import com.example.invoicing.entity.minimumfee.PeriodType;
 import com.example.invoicing.entity.surcharge.SurchargeConfig;
 import com.example.invoicing.repository.SurchargeConfigRepository;
+import com.example.invoicing.entity.contract.Contract;
+import com.example.invoicing.repository.ContractRepository;
 import com.example.invoicing.entity.account.AccountingAccount;
 import com.example.invoicing.entity.allocation.AccountingAllocationRule;
 import com.example.invoicing.entity.billingevent.BillingEvent;
@@ -68,6 +70,7 @@ public class DataSeeder implements CommandLineRunner {
     private final SurchargeConfigRepository surchargeConfigRepository;
     private final BillingCycleRepository billingCycleRepository;
     private final MinimumFeeConfigRepository minimumFeeConfigRepository;
+    private final ContractRepository contractRepository;
 
     @Override
     public void run(String... args) {
@@ -86,6 +89,7 @@ public class DataSeeder implements CommandLineRunner {
         seedSurchargeConfigs();
         seedBillingCycles();
         seedMinimumFeeConfigs();
+        seedContracts();
     }
 
     // ─────────────────────────────────────────────
@@ -286,40 +290,58 @@ public class DataSeeder implements CommandLineRunner {
     //  Customers
     // ─────────────────────────────────────────────
     private void seedCustomers() {
-        if (customerRepository.count() > 0) {
-            log.info("[Seeder] Customers already seeded — skipping.");
-            return;
-        }
+        record Spec(String number, String name, CustomerType type,
+                    DeliveryMethod delivery, String street, String postal, String city,
+                    String businessId, String lang, InvoicingMode mode) {}
 
-        List<Customer> customers = List.of(
-            customer("Matti Virtanen", CustomerType.PRIVATE,
-                new BillingProfile("123456", DeliveryMethod.EMAIL,
-                    new BillingAddress("Mannerheimintie 1", "00100", "Helsinki", "FI", null, null, null),
-                    null, "fi", InvoicingMode.GROSS)),
-            customer("Helsinki Oy", CustomerType.BUSINESS,
-                new BillingProfile("987654321", DeliveryMethod.E_INVOICE,
-                    new BillingAddress("Aleksanterinkatu 52", "00100", "Helsinki", "FI", null, null, null),
-                    "FI12345678", "fi", InvoicingMode.NET)),
-            customer("Espoon kaupunki", CustomerType.MUNICIPALITY,
-                new BillingProfile("111222", DeliveryMethod.E_INVOICE,
-                    new BillingAddress("Espoonkatu 1", "02770", "Espoo", "FI", null, null, null),
-                    "FI02073311", "fi", InvoicingMode.GROSS)),
-            customer("Vantaa Municipality", CustomerType.MUNICIPALITY,
-                new BillingProfile("333444", DeliveryMethod.PAPER,
-                    new BillingAddress("Asematie 7", "01300", "Vantaa", "FI", null, null, null),
-                    "FI02068919", "fi", InvoicingMode.GROSS)),
-            customer("Keräys Finland Ab", CustomerType.BUSINESS,
-                new BillingProfile("555666777", DeliveryMethod.EMAIL,
-                    new BillingAddress("Teollisuuskatu 28", "00510", "Helsinki", "FI", null, null, null),
-                    "FI22334455", "sv", InvoicingMode.NET)),
-            customer("Turku Authority", CustomerType.AUTHORITY,
-                new BillingProfile("888999", DeliveryMethod.EMAIL,
-                    new BillingAddress("Yliopistonkatu 27a", "20100", "Turku", "FI", null, null, null),
-                    null, "fi", InvoicingMode.GROSS))
+        List<Spec> specs = List.of(
+            // ── Original six ────────────────────────────────────────────────
+            new Spec("123456",    "Matti Virtanen",          CustomerType.PRIVATE,
+                DeliveryMethod.EMAIL,     "Mannerheimintie 1",    "00100", "Helsinki",   null,           "fi", InvoicingMode.GROSS),
+            new Spec("987654321", "Helsinki Oy",             CustomerType.BUSINESS,
+                DeliveryMethod.E_INVOICE, "Aleksanterinkatu 52",  "00100", "Helsinki",   "FI12345678",   "fi", InvoicingMode.NET),
+            new Spec("111222",    "Espoon kaupunki",         CustomerType.MUNICIPALITY,
+                DeliveryMethod.E_INVOICE, "Espoonkatu 1",         "02770", "Espoo",      "FI02073311",   "fi", InvoicingMode.GROSS),
+            new Spec("333444",    "Vantaa Municipality",     CustomerType.MUNICIPALITY,
+                DeliveryMethod.PAPER,     "Asematie 7",           "01300", "Vantaa",     "FI02068919",   "fi", InvoicingMode.GROSS),
+            new Spec("555666777", "Keräys Finland Ab",       CustomerType.BUSINESS,
+                DeliveryMethod.EMAIL,     "Teollisuuskatu 28",    "00510", "Helsinki",   "FI22334455",   "sv", InvoicingMode.NET),
+            new Spec("888999",    "Turku Authority",         CustomerType.AUTHORITY,
+                DeliveryMethod.EMAIL,     "Yliopistonkatu 27a",   "20100", "Turku",      null,           "fi", InvoicingMode.GROSS),
+            // ── Additional customers ─────────────────────────────────────────
+            new Spec("444555",    "Tampereen kaupunki",      CustomerType.MUNICIPALITY,
+                DeliveryMethod.E_INVOICE, "Frenckellinaukio 2B",  "33100", "Tampere",    "FI02151029",   "fi", InvoicingMode.GROSS),
+            new Spec("666777888", "Jyväskylä Services Oy",  CustomerType.BUSINESS,
+                DeliveryMethod.E_INVOICE, "Vapaudenkatu 32",      "40100", "Jyväskylä",  "FI31234567",   "fi", InvoicingMode.NET),
+            new Spec("222333",    "Pirjo Korhonen",          CustomerType.PRIVATE,
+                DeliveryMethod.EMAIL,     "Tulliportinkatu 9",    "80100", "Joensuu",    null,           "fi", InvoicingMode.GROSS),
+            new Spec("999111222", "Aalto Kiinteistöt Oy",   CustomerType.BUSINESS,
+                DeliveryMethod.E_INVOICE, "Otakaari 1",           "02150", "Espoo",      "FI11223344",   "fi", InvoicingMode.NET),
+            new Spec("777888",    "Kauniaisten kaupunki",   CustomerType.MUNICIPALITY,
+                DeliveryMethod.PAPER,     "Kasavuorentie 1",      "02700", "Kauniainen", "FI01613237",   "fi", InvoicingMode.GROSS),
+            new Spec("111999888", "Lahti Industrial Oy",    CustomerType.BUSINESS,
+                DeliveryMethod.EMAIL,     "Vesijärvenkatu 11",    "15100", "Lahti",      "FI55443322",   "fi", InvoicingMode.NET),
+            new Spec("456789",    "Oulun kaupunki",          CustomerType.MUNICIPALITY,
+                DeliveryMethod.E_INVOICE, "Kirkkokatu 4",         "90100", "Oulu",       "FI02265200",   "fi", InvoicingMode.GROSS),
+            new Spec("123789456", "TechWaste Solutions Oy", CustomerType.BUSINESS,
+                DeliveryMethod.EMAIL,     "Elektroniikkatie 4",   "90590", "Oulu",       "FI66778899",   "fi", InvoicingMode.NET),
+            new Spec("987321",    "Antti Mäkinen",           CustomerType.PRIVATE,
+                DeliveryMethod.PAPER,     "Aleksis Kiven katu 14","33200", "Tampere",    null,           "fi", InvoicingMode.GROSS),
+            new Spec("765432",    "Rovaniemen kaupunki",     CustomerType.MUNICIPALITY,
+                DeliveryMethod.E_INVOICE, "Hallituskatu 7",       "96200", "Rovaniemi",  "FI00876543",   "fi", InvoicingMode.GROSS)
         );
 
-        customerRepository.saveAll(customers);
-        log.info("[Seeder] Seeded {} customers.", customers.size());
+        int created = 0;
+        for (Spec s : specs) {
+            if (customerRepository.findByBillingProfile_CustomerIdNumber(s.number()).isEmpty()) {
+                customerRepository.save(customer(s.name(), s.type(),
+                    new BillingProfile(s.number(), s.delivery(),
+                        new BillingAddress(s.street(), s.postal(), s.city(), "FI", null, null, null),
+                        s.businessId(), s.lang(), s.mode())));
+                created++;
+            }
+        }
+        log.info("[Seeder] Customers: {} created (existing ones skipped).", created);
     }
 
     private Customer customer(String name, CustomerType type, BillingProfile profile) {
@@ -622,6 +644,77 @@ public class DataSeeder implements CommandLineRunner {
 
         costCenterCompositionConfigRepository.save(config);
         log.info("[Seeder] Seeded cost center composition config.");
+    }
+
+    // ─────────────────────────────────────────────
+    //  Contracts
+    // ─────────────────────────────────────────────
+    private void seedContracts() {
+        if (contractRepository.count() > 0) {
+            log.info("[Seeder] Contracts already seeded — skipping.");
+            return;
+        }
+
+        List<Product> all = productRepository.findAll();
+        if (all.isEmpty()) {
+            log.warn("[Seeder] No products found — skipping contract seeding.");
+            return;
+        }
+
+        java.util.Map<String, Product> byCode = all.stream()
+            .collect(java.util.stream.Collectors.toMap(Product::getCode, p -> p));
+
+        // Helper: resolve codes that exist, silently drop missing ones
+        java.util.function.Function<String[], List<Product>> pick = codes -> {
+            List<Product> result = new java.util.ArrayList<>();
+            for (String c : codes) { Product p = byCode.get(c); if (p != null) result.add(p); }
+            return result;
+        };
+
+        List<Contract> contracts = List.of(
+            contract("123456", "Matti Virtanen — Kotijätehuolto",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION","RECYCLING-PAPER","ECO-FEE"})),
+            contract("987654321", "Helsinki Oy — Yritysjätepalvelut",
+                pick.apply(new String[]{"WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","RECYCLING-CARDBOARD","TRANSPORT-FEE","BULKY-WASTE"})),
+            contract("111222", "Espoon kaupunki — Kunnalliset palvelut",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","ECO-FEE","LAND-RENT"})),
+            contract("333444", "Vantaa Municipality — Waste Services",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","BIOWASTE-COLLECTION","BULKY-WASTE","ECO-FEE"})),
+            contract("555666777", "Keräys Finland — Kierrätyssopimus",
+                pick.apply(new String[]{"RECYCLING-PAPER","RECYCLING-CARDBOARD","RECYCLING-GLASS","HAZARDOUS-WASTE","TRANSPORT-FEE","CONTAINER-RENTAL-660L"})),
+            contract("888999", "Turku Authority — Municipal Contract",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","ECO-FEE","LAND-RENT"})),
+            contract("444555", "Tampereen kaupunki — Jätehuolto",
+                pick.apply(new String[]{"WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","LAND-RENT","ECO-FEE"})),
+            contract("666777888", "Jyväskylä Services — Palvelusopimus",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","RECYCLING-PAPER","TRANSPORT-FEE","EXPERT-WORK","CONTAINER-RENTAL-240L"})),
+            contract("111999888", "Lahti Industrial — Vaarallinen jäte",
+                pick.apply(new String[]{"HAZARDOUS-WASTE","TRANSPORT-FEE","CONTAINER-RENTAL-660L","EXPERT-WORK"})),
+            contract("999111222", "Aalto Kiinteistöt — Kiinteistöjätehuolto",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","CONTAINER-RENTAL-240L","CONTAINER-RENTAL-660L","ECO-FEE"})),
+            contract("222333", "Pirjo Korhonen — Kotijätehuolto",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION","RECYCLING-PAPER"})),
+            contract("456789", "Oulun kaupunki — Kunnalliset palvelut",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","WASTE-COLLECTION-4000L","BIOWASTE-COLLECTION","LAND-RENT","ECO-FEE"})),
+            contract("123789456", "TechWaste Solutions — Teollisuusjäte",
+                pick.apply(new String[]{"HAZARDOUS-WASTE","TRANSPORT-FEE","EXPERT-WORK","BULKY-WASTE"})),
+            contract("987321", "Antti Mäkinen — Kotijätehuolto",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","BIOWASTE-COLLECTION"})),
+            contract("765432", "Rovaniemen kaupunki — Jätepalvelut",
+                pick.apply(new String[]{"WASTE-COLLECTION-240L","WASTE-COLLECTION-660L","BIOWASTE-COLLECTION","ECO-FEE","LAND-RENT"}))
+        );
+
+        contractRepository.saveAll(contracts);
+        log.info("[Seeder] Seeded {} contracts.", contracts.size());
+    }
+
+    private Contract contract(String customerNumber, String name, List<Product> products) {
+        Contract c = new Contract();
+        c.setCustomerNumber(customerNumber);
+        c.setName(name);
+        c.setActive(true);
+        c.setProducts(new java.util.ArrayList<>(products));
+        return c;
     }
 
     private BillingEvent billingEvent(String customerNumber, Product product,

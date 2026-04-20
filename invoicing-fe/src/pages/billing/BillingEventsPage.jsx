@@ -24,7 +24,7 @@ const RELATED_TASKS = [
   { id: 'PD-275', label: '3.4.x Credit & Transfer',           href: 'https://ioteelab.atlassian.net/browse/PD-275' },
 ]
 
-const STATUSES = ['IN_PROGRESS', 'SENT', 'COMPLETED', 'ERROR']
+const STATUSES = ['DRAFT', 'IN_PROGRESS', 'SENT', 'COMPLETED', 'ERROR']
 const EXCLUDED_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'false', label: 'Active only' },
@@ -79,7 +79,8 @@ export default function BillingEventsPage() {
 
   const loadStatusCounts = async () => {
     try {
-      const [inProgress, sent, completed, error, excluded] = await Promise.all([
+      const [draft, inProgress, sent, completed, error, excluded] = await Promise.all([
+        getBillingEvents({ status: 'DRAFT',       size: 1, page: 0 }),
         getBillingEvents({ status: 'IN_PROGRESS', size: 1, page: 0 }),
         getBillingEvents({ status: 'SENT',        size: 1, page: 0 }),
         getBillingEvents({ status: 'COMPLETED',   size: 1, page: 0 }),
@@ -87,6 +88,7 @@ export default function BillingEventsPage() {
         getBillingEvents({ excluded: 'true',       size: 1, page: 0 }),
       ])
       setStatusCounts({
+        DRAFT:       draft.data.totalElements ?? 0,
         IN_PROGRESS: inProgress.data.totalElements ?? 0,
         SENT:        sent.data.totalElements ?? 0,
         COMPLETED:   completed.data.totalElements ?? 0,
@@ -94,7 +96,7 @@ export default function BillingEventsPage() {
         EXCLUDED:    excluded.data.totalElements ?? 0,
       })
     } catch {
-      setStatusCounts({ IN_PROGRESS: 0, SENT: 0, COMPLETED: 0, ERROR: 0, EXCLUDED: 0 })
+      setStatusCounts({ DRAFT: 0, IN_PROGRESS: 0, SENT: 0, COMPLETED: 0, ERROR: 0, EXCLUDED: 0 })
     }
   }
 
@@ -266,6 +268,9 @@ export default function BillingEventsPage() {
                     {evt.excluded
                       ? <span className="origin-badge" style={{ color: '#6b7280', borderColor: '#9ca3af' }}>Excluded</span>
                       : <StatusBadge status={evt.status} />}
+                    {evt.priceOverridden && (
+                      <span className="origin-badge" style={{ color: '#92400e', borderColor: '#d97706', marginLeft: 4 }}>Override</span>
+                    )}
                   </td>
                   <td><span className="origin-badge">{evt.origin ?? '—'}</span></td>
                   <td>
@@ -273,7 +278,7 @@ export default function BillingEventsPage() {
                       <button className="btn-secondary" onClick={() => navigate(`/billing-events/${evt.id}`)}>
                         View
                       </button>
-                      {(evt.status === 'IN_PROGRESS' || evt.status === 'ERROR') && (
+                      {(evt.status === 'DRAFT' || evt.status === 'IN_PROGRESS' || evt.status === 'ERROR') && (
                         <button className="btn-secondary" onClick={() => navigate(`/billing-events/${evt.id}/edit`)}>
                           Edit
                         </button>
@@ -329,6 +334,7 @@ export default function BillingEventsPage() {
 // Stat strip
 // -----------------------------------------------------------------------
 const STAT_CONFIG = [
+  { key: 'DRAFT',       label: 'Draft',       color: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
   { key: 'IN_PROGRESS', label: 'In Progress', color: '#92400e', bg: '#fffbeb', border: '#fcd34d' },
   { key: 'SENT',        label: 'Sent',        color: 'var(--color-status-info-text)',   bg: 'var(--color-status-info-bg)',   border: 'var(--color-status-info-border)'   },
   { key: 'COMPLETED',   label: 'Completed',   color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)' },

@@ -53,7 +53,15 @@
       "Bash(sed -i 's/import com\\\\.example\\\\.invoicing\\\\.billingcycle\\\\.BillingCycleRepository;/import com.example.invoicing.repository.BillingCycleRepository;/' \"$BASE\")",
       "mcp__claude_ai_Atlassian__getJiraIssue",
       "Bash(find *)",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "WebFetch(domain:ioteelab.atlassian.net)",
+      "Bash(cp *)",
+      "Bash(claude mcp *)",
+      "mcp__claude_ai_Linear__list_teams",
+      "mcp__claude_ai_Linear__list_issues",
+      "mcp__claude_ai_Linear__search_documentation",
+      "mcp__claude_ai_Linear__get_issue",
+      "Bash(grep -E \"\\(issues|jsx|js\\)$\")"
     ]
   }
 }

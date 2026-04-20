@@ -16,6 +16,7 @@ import BillingEventsPage from './pages/billing/BillingEventsPage'
 import CreateBillingEventPage from './pages/billing/CreateBillingEventPage'
 import EditBillingEventPage from './pages/billing/EditBillingEventPage'
 import BillingEventDetailPage from './pages/billing/BillingEventDetailPage'
+import BillingEventTemplatesPage from './pages/billing/BillingEventTemplatesPage'
 import OfficeReviewQueuePage from './pages/billing/OfficeReviewQueuePage'
 import AllocationRulesPage from './pages/masterdata/AllocationRulesPage'
 import SurchargeConfigPage from './pages/masterdata/SurchargeConfigPage'
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="billing-events/:id" element={<BillingEventDetailPage />} />
           <Route path="billing-events/:id/edit" element={<EditBillingEventPage />} />
           <Route path="billing-events/review-queue" element={<OfficeReviewQueuePage />} />
+          <Route path="billing-events/templates" element={<BillingEventTemplatesPage />} />
           <Route path="billing/cycles" element={<BillingCyclesPage />} />
           <Route path="billing/restrictions" element={<BillingRestrictionsPage />} />
           <Route path="billing/seasonal-fees" element={<SeasonalFeesPage />} />

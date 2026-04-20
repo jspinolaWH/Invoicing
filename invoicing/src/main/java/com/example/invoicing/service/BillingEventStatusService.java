@@ -19,6 +19,7 @@ public class BillingEventStatusService {
     private final BillingEventRepository billingEventRepository;
 
     static final Map<BillingEventStatus, Set<BillingEventStatus>> ALLOWED_TRANSITIONS = Map.of(
+        BillingEventStatus.DRAFT,       Set.of(BillingEventStatus.IN_PROGRESS),
         BillingEventStatus.IN_PROGRESS, Set.of(BillingEventStatus.SENT),
         BillingEventStatus.SENT,        Set.of(BillingEventStatus.COMPLETED),
         BillingEventStatus.ERROR,       Set.of(BillingEventStatus.SENT),
@@ -53,6 +54,7 @@ public class BillingEventStatusService {
                 "BillingEvent " + event.getId() + " is " + event.getStatus()
                 + " and cannot be modified. Use the credit-and-re-invoice flow for corrections.");
         }
+        // DRAFT and IN_PROGRESS/ERROR are mutable
     }
 
     private void assertValidTransition(BillingEventStatus from, BillingEventStatus to, Long id) {

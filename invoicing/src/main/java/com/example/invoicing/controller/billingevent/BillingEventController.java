@@ -55,6 +55,15 @@ public class BillingEventController {
         return billingEventService.createManual(request);
     }
 
+    @PostMapping("/draft")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BillingEventResponse createDraft(
+        @Valid @RequestBody BillingEventManualCreateRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        return billingEventService.saveDraft(request);
+    }
+
     @GetMapping("/export")
     public List<BillingEventExportRow> export(
         @RequestParam LocalDate dateFrom,

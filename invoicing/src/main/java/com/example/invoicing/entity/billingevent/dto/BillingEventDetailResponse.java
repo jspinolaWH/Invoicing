@@ -66,4 +66,8 @@ public class BillingEventDetailResponse {
     private String responsibilityArea;
     private String serviceResponsibility;
     private String transmissionErrorReason;
+    private boolean priceOverridden;
+    private BigDecimal originalWasteFeePrice;
+    private BigDecimal originalTransportFeePrice;
+    private BigDecimal originalEcoFeePrice;
 }
