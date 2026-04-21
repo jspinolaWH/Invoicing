@@ -15,6 +15,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -29,7 +30,7 @@ public class InvoiceTransmissionService {
     private final BillingEventRepository billingEventRepository;
     private final BillingEventStatusService billingEventStatusService;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ExternalTransmissionResult transmit(Long invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
             .orElseThrow(() -> new EntityNotFoundException("Invoice not found: " + invoiceId));

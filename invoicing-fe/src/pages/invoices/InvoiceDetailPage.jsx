@@ -31,6 +31,26 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="page">
+      {invoice.creditNotes?.length > 0 && (
+        <div style={{ background: '#fefce8', border: '1px solid #fcd34d', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+          <strong style={{ color: '#92400e' }}>This invoice has been (partially) credited.</strong>
+          <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+            {invoice.creditNotes.map(cn => (
+              <li key={cn.creditNoteId}>
+                <a
+                  href={`/invoices/${cn.creditNoteId}`}
+                  onClick={e => { e.preventDefault(); navigate(`/invoices/${cn.creditNoteId}`) }}
+                  style={{ color: 'var(--color-brand-primary)', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  {cn.creditNoteNumber || `Credit Note #${cn.creditNoteId}`}
+                </a>
+                {cn.issuedAt ? ` — issued ${cn.issuedAt}` : ''}
+                {cn.netAmount != null ? ` · net ${cn.netAmount}` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="page-header">
         <div className="page-header-text">
           <h1>Invoice {invoice.invoiceNumber || `#${invoice.id}`}</h1>

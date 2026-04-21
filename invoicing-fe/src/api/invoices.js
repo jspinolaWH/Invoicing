@@ -14,3 +14,7 @@ export const getCreditHistory = (customerId, page = 0, size = 20) =>
   axios.get(`/api/v1/customers/${customerId}/credit-history`, { params: { page, size } })
 export const correctInvoice = (invoiceId, data) =>
   axios.post(`/api/v1/invoices/${invoiceId}/correct`, data)
+export const copyInvoice = (invoiceId, data) =>
+  axios.post(`/api/v1/invoices/${invoiceId}/copy`, data)
+export const getInvoiceBillingEvents = (invoiceId) =>
+  axios.get(`/api/v1/invoices/${invoiceId}/billing-events`)

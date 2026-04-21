@@ -6,6 +6,7 @@ import java.util.List;
 @Data
 public class CorrectionRequest {
     private Long targetCustomerId;
+    private String targetPropertyId;
     private List<Long> lineItemIds;
     private List<Long> billingEventIds;   // IDs of billing events to copy (since BillingEvent has no FK to Invoice)
     private String customText;

@@ -1,86 +1,127 @@
 ---
-description: Read a scope-issue MD file and implement the fixes in the backend and frontend code
-argument-hint: <md-file> [folder]
+description: Read a gap report MD file and implement the fixes in the backend and frontend code. Fully autonomous — no human confirmation required.
+argument-hint: <requirement-id>
 allowed-tools: [Read, Edit, Write, Glob, Grep, Bash]
 ---
 
 # Code Fix
 
-You are implementing fixes identified by a scope-review agent for this MVP project.
+You are an autonomous fix-implementation agent. You read a gap report produced by the gap-check agent and implement every fix described in it. You do not ask questions. You do not wait for confirmation. You implement, verify, and exit.
 
-The project has:
-- **Backend**: Spring Boot Java at `invoicing/src/main/java/com/example/invoicing/`
-- **Frontend**: React/Vite at `invoicing-fe/src/`
+## Setup
 
-## Input
+### 1. Detect project root
 
-Arguments: `$ARGUMENTS`
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+```
 
-Parse the arguments:
-- First token is the MD filename (e.g. `missing-scope.md`)
-- Optional second token is the folder to look in (defaults to `Docs/scope-issues/`)
+### 2. Load the gap report
 
-Resolve the file path:
-1. If the argument is an absolute path, use it directly.
-2. If it contains a `/`, treat it as relative to the project root `/mnt/c/Users/drasm/Desktop/Invoicing/`.
-3. Otherwise look for it in `issues2fix/` first, then the project root.
+The argument is `$ARGUMENTS` — this is a requirement ID (e.g. `PD-364`).
 
-Read the resolved MD file. If it cannot be found, tell the user the resolved path you tried and stop.
+Read the gap report from:
+```
+$PROJECT_ROOT/ralph/gaps/$ARGUMENTS.md
+```
 
-If the resolved filename contains `.done.` (e.g. `my-file.done.md`), stop immediately and tell the user this file has already been processed.
+If the file does not exist, output:
+```
+ERROR: No gap report found at ralph/gaps/$ARGUMENTS.md — run gap-check first
+```
+and stop.
 
-## How to work through the file
+Read the final line of the file. If it is `PASSES`, output:
+```
+SKIP: $ARGUMENTS already passes — nothing to fix
+```
+and stop.
 
-The MD file will contain a list of missing or broken scope items. Each item typically describes:
-- What feature or endpoint is missing or incomplete
-- Whether it is Backend, Frontend, or Both
-- File paths or class/component names involved
-- Expected behavior
+If the final line contains `.done`, output:
+```
+SKIP: $ARGUMENTS gap report already processed
+```
+and stop.
 
-Work through each issue one at a time:
+### 3. Locate the codebase
 
-1. **Understand** — Read the issue description carefully.
-2. **Locate** — Use Grep and Glob to find the relevant existing files. Don't guess paths; verify.
-3. **Fix** — Implement the full end-to-end change. Every fix must cover **both** layers unless the issue explicitly states it is backend-only or frontend-only:
-   - Backend: add/edit Java files (entity, repository, service, controller, DTO, endpoint).
-   - Frontend: add/edit React components, API helper calls, route wiring, and any UI that exposes the backend change to the user.
-   - Never leave a backend change without a corresponding frontend that surfaces it, and vice versa. If only one side is described in the issue, infer and implement the other side based on the existing code conventions in the project.
-4. **Verify** — After editing, re-read the changed file section to confirm the change is correct.
-5. **Mark done** — After finishing each issue, output a one-line summary: `✓ Fixed: <short description>`.
+Scan `$PROJECT_ROOT` for backend and frontend roots using these heuristics — in order, stop at first match:
+
+**Backend:**
+- Look for `src/main/java` → Spring Boot project
+- Look for `*.py` with `requirements.txt` or `pyproject.toml` → Python project
+- Look for `package.json` with a `main` or `server` entry → Node backend
+
+**Frontend:**
+- Look for `src/` with `index.html` and `package.json` containing `react` or `vite` → React/Vite
+- Look for `pages/` with `package.json` containing `next` → Next.js
+
+## How to work through the gap report
+
+Read the **Gaps Found** section. Work through each gap one at a time:
+
+1. **Understand** — read the gap description, layer, and affected files
+2. **Locate** — use Grep and Glob to find the relevant existing files. Never guess paths; verify first
+3. **Fix** — implement the full end-to-end change:
+   - If layer is `Backend`: add/edit files (entity, repository, service, controller, DTO)
+   - If layer is `Frontend`: add/edit React components, API calls, route wiring, UI
+   - If layer is `Both`: implement backend first, then frontend that surfaces it
+   - Never leave a backend change without a corresponding frontend surface unless the gap explicitly says backend-only
+4. **Verify** — re-read the changed file section to confirm the change is correct
+5. **Mark done** — output a one-line summary: `✓ Fixed: <short description>`
 
 ## Rules
 
-- Fix only what the MD file describes. Do not refactor surrounding code or add unrequested features.
-- Follow the existing code conventions in each layer (package names, naming style, annotation patterns).
-- If an issue is unclear or requires a decision, ask the user before implementing — don't guess.
-- If an issue depends on another issue in the same file, fix the dependency first.
-- Do not add comments unless the logic is non-obvious.
-- After all issues are done, output a summary table:
+- Fix only what the gap report describes. Do not refactor surrounding code or add unrequested features
+- Follow existing code conventions in each layer (package names, naming style, annotation patterns)
+- If a gap depends on another gap in the same report, fix the dependency first
+- Do not add comments unless the logic is non-obvious
+- If a fix is genuinely ambiguous and cannot be resolved by reading the existing code, skip it and log it as SKIPPED in the summary with a reason
+
+## After all fixes
+
+Output a fix summary:
 
 ```
 ## Fix Summary
-| # | Issue | Status |
-|---|-------|--------|
+| # | Gap | Status |
+|---|-----|--------|
 | 1 | <description> | ✓ Fixed |
 | 2 | <description> | ✓ Fixed |
-...
 ```
 
-## UI Navigation Guide
+Then output a **"Where to see these changes"** section. For each fix, describe:
+- Which page or route to navigate to
+- What UI element to interact with
+- What the user should now see that was missing before
 
-After the summary table, output a **"Where to see these changes"** section. For each fix, describe concretely where the user can verify it in the running app:
+If a fix is backend-only, say so and describe how to trigger it indirectly.
 
-- Which page or route to navigate to (e.g. `/billing-events`, `/invoices`, `/products`)
-- What UI element to interact with (e.g. "open the Create Invoice modal", "click the Transfer button on a billing event")
-- What the user should now see that was missing or broken before
+## Mark the gap report as processed
 
-If the fix is backend-only with no direct UI surface (e.g. a background service or validation rule), say so explicitly and describe how to trigger it indirectly (e.g. "submit a form that would have failed before" or "check the response in the network tab").
+Append to the gap report file `$PROJECT_ROOT/ralph/gaps/$ARGUMENTS.md`:
 
-Assume the frontend dev server runs at `http://localhost:5173` and the backend at `http://localhost:8080`.
+```markdown
+## Fix Run
+**Completed:** [ISO timestamp]
+**Fixes applied:** [count]
+**Skipped:** [count, 0 if none]
+```
 
-## After the summary
+Then replace the final line of the file:
+- Change `GAPS_FOUND` → `GAPS_FOUND.done`
 
-Ask the user: "All fixes are done. Should I mark this file as processed? (yes/no)"
+This prevents the orchestrator from running code-fix on this report twice.
 
-- If the user confirms, rename the file by inserting `.done` before `.md` — e.g. `my-file.md` → `my-file.done.md` — using `mv` via Bash.
-- If the user declines, leave the file as-is.
+## Output to stdout
+
+After completing, output exactly one of:
+```
+CODE_FIX_RESULT: DONE
+```
+or if all gaps were skipped:
+```
+CODE_FIX_RESULT: SKIPPED
+```
+
+Nothing else after this line. The orchestrator reads it.

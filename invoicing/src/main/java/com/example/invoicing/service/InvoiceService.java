@@ -1,6 +1,15 @@
 package com.example.invoicing.service;
+import com.example.invoicing.entity.billingevent.BillingEvent;
+import com.example.invoicing.entity.classification.LegalClassification;
+import com.example.invoicing.entity.customer.Customer;
+import com.example.invoicing.entity.customer.InvoicingMode;
+import com.example.invoicing.entity.invoice.InvoiceLanguage;
 import com.example.invoicing.entity.invoice.InvoiceLineItem;
+import com.example.invoicing.entity.invoice.InvoiceStatus;
+import com.example.invoicing.entity.invoice.InvoiceType;
 import com.example.invoicing.entity.invoice.Invoice;
+import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.CustomerBillingProfileRepository;
 import com.example.invoicing.repository.InvoiceRepository;
 
 import com.example.invoicing.entity.invoice.dto.*;
@@ -11,6 +20,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +31,8 @@ import java.util.stream.Collectors;
 public class InvoiceService {
 
     private final InvoiceRepository repository;
+    private final BillingEventRepository billingEventRepository;
+    private final CustomerBillingProfileRepository customerRepository;
 
     public InvoiceResponse findById(Long id) {
         Invoice invoice = repository.findById(id)
@@ -69,6 +83,89 @@ public class InvoiceService {
         return repository.findCreditNotesByCustomerId(customerId, pageable).map(this::toResponse);
     }
 
+    @Transactional
+    public Long createDraftFromEvents(List<Long> billingEventIds, Long customerId) {
+        Customer customer = customerRepository.findById(customerId)
+            .orElseThrow(() -> new EntityNotFoundException("Customer not found: " + customerId));
+
+        List<BillingEvent> events = billingEventIds.isEmpty()
+            ? List.of()
+            : billingEventRepository.findAllById(billingEventIds);
+
+        InvoicingMode invoicingMode = customer.getBillingProfile() != null
+            && customer.getBillingProfile().getInvoicingMode() != null
+            ? customer.getBillingProfile().getInvoicingMode()
+            : InvoicingMode.NET;
+
+        InvoiceLanguage language = resolveLanguage(
+            customer.getBillingProfile() != null ? customer.getBillingProfile().getLanguageCode() : null);
+
+        Invoice invoice = new Invoice();
+        invoice.setCustomer(customer);
+        invoice.setStatus(InvoiceStatus.DRAFT);
+        invoice.setInvoiceType(InvoiceType.STANDARD);
+        invoice.setTemplateCode("WASTE_STANDARD");
+        invoice.setLanguage(language);
+        invoice.setInvoicingMode(invoicingMode);
+        invoice.setInvoiceDate(LocalDate.now());
+        invoice.setDueDate(LocalDate.now().plusDays(14));
+
+        BigDecimal net = BigDecimal.ZERO;
+        BigDecimal gross = BigDecimal.ZERO;
+
+        for (BillingEvent ev : events) {
+            BigDecimal unitPrice = ev.getWasteFeePrice()
+                .add(ev.getTransportFeePrice())
+                .add(ev.getEcoFeePrice());
+            BigDecimal qty = ev.getQuantity();
+            BigDecimal netAmt = qty.multiply(unitPrice).setScale(4, RoundingMode.HALF_UP);
+            BigDecimal vatRate = ev.getVatRate24() != null ? ev.getVatRate24() : BigDecimal.ZERO;
+            BigDecimal grossAmt = netAmt.multiply(
+                BigDecimal.ONE.add(vatRate.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP))
+            ).setScale(4, RoundingMode.HALF_UP);
+
+            LegalClassification cls = ev.getLegalClassification() != null
+                ? ev.getLegalClassification()
+                : LegalClassification.PRIVATE_LAW;
+
+            String description = (ev.getProduct() != null ? ev.getProduct().getCode() : "Event")
+                + " - " + ev.getEventDate();
+
+            InvoiceLineItem li = new InvoiceLineItem();
+            li.setInvoice(invoice);
+            li.setProduct(ev.getProduct());
+            li.setDescription(description);
+            li.setQuantity(qty);
+            li.setUnitPrice(unitPrice);
+            li.setVatRate(vatRate);
+            li.setNetAmount(netAmt);
+            li.setGrossAmount(grossAmt);
+            li.setLegalClassification(cls);
+            li.setAccountingAccount(ev.getAccountingAccount());
+            li.setCostCenter(ev.getCostCenter());
+            li.setSourceEvent(ev);
+            invoice.getLineItems().add(li);
+
+            net = net.add(netAmt);
+            gross = gross.add(grossAmt);
+        }
+
+        invoice.setNetAmount(net);
+        invoice.setGrossAmount(gross);
+        invoice.setVatAmount(gross.subtract(net));
+
+        return repository.save(invoice).getId();
+    }
+
+    private InvoiceLanguage resolveLanguage(String langCode) {
+        if (langCode == null) return InvoiceLanguage.FI;
+        return switch (langCode.toLowerCase()) {
+            case "sv" -> InvoiceLanguage.SV;
+            case "en" -> InvoiceLanguage.EN;
+            default -> InvoiceLanguage.FI;
+        };
+    }
+
     public InvoiceResponse toResponse(Invoice invoice) {
         List<InvoiceLineItemResponse> lineItems = invoice.getLineItems().stream()
             .map(li -> InvoiceLineItemResponse.builder()
@@ -98,6 +195,15 @@ public class InvoiceService {
                 .build())
             .collect(Collectors.toList());
 
+        List<CreditNoteSummary> creditNotes = repository.findCreditNotesByOriginalInvoiceId(invoice.getId()).stream()
+            .map(cn -> CreditNoteSummary.builder()
+                .creditNoteId(cn.getId())
+                .creditNoteNumber(cn.getInvoiceNumber())
+                .issuedAt(cn.getInvoiceDate())
+                .netAmount(cn.getNetAmount())
+                .build())
+            .collect(Collectors.toList());
+
         return InvoiceResponse.builder()
             .id(invoice.getId())
             .invoiceNumber(invoice.getInvoiceNumber())
@@ -118,6 +224,7 @@ public class InvoiceService {
             .customerName(invoice.getCustomer() != null ? invoice.getCustomer().getName() : null)
             .lineItems(lineItems)
             .attachments(attachments)
+            .creditNotes(creditNotes)
             .build();
     }
 }

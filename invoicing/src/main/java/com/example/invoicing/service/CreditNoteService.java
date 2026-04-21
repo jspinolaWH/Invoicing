@@ -35,6 +35,7 @@ public class CreditNoteService {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceNumberSeriesRepository numberSeriesRepository;
     private final FinvoiceBuilderService finvoiceBuilderService;
+    private final InvoiceTransmissionService invoiceTransmissionService;
 
     public CreditNoteResponse credit(Long originalInvoiceId, CreditNoteRequest request) {
         if (request.getInternalComment() == null || request.getInternalComment().isBlank()) {
@@ -114,6 +115,14 @@ public class CreditNoteService {
 
         log.info("Credit note {} issued for original invoice {} (type={}, reason={})",
             saved.getId(), originalInvoiceId, creditType, request.getInternalComment());
+
+        try {
+            invoiceTransmissionService.transmit(saved.getId());
+        } catch (Exception e) {
+            log.error("Failed to transmit credit note {}: {}", saved.getId(), e.getMessage());
+            saved.setStatus(InvoiceStatus.ERROR);
+            invoiceRepository.save(saved);
+        }
 
         return CreditNoteResponse.from(saved, original, creditType);
     }

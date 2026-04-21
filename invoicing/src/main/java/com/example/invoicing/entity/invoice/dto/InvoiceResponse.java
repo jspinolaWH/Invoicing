@@ -27,4 +27,5 @@ public class InvoiceResponse {
     private String customerName;
     private List<InvoiceLineItemResponse> lineItems;
     private List<InvoiceAttachmentResponse> attachments;
+    private List<CreditNoteSummary> creditNotes;
 }

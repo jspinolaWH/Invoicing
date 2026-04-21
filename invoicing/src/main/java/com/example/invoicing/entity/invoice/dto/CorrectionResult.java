@@ -9,5 +9,6 @@ public class CorrectionResult {
     private Long creditNoteId;
     private List<Long> copiedEventIds;
     private Long targetCustomerId;
+    private Long draftInvoiceId;
     private String message;
 }
