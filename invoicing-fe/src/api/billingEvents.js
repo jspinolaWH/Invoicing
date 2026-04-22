@@ -129,6 +129,9 @@ export const seedReviewEvent = () => {
 export const approveBillingEvent = (id) =>
   axios.post(`/api/v1/billing-events/${id}/approve`)
 
+export const approveCorrectionBillingEvent = (id) =>
+  axios.post(`/api/v1/billing-events/${id}/approve-correction`)
+
 export const rejectBillingEvent = (id, rejectionReason) =>
   axios.post(`/api/v1/billing-events/${id}/reject`, { rejectionReason })
 
@@ -157,3 +160,18 @@ export const deleteBillingEventAttachment = (id, attachmentId) =>
 // Dev simulation
 export const simulateTransmissionOutcome = (id, outcome, errorReason) =>
   axios.post(`/api/v1/dev/billing-events/${id}/simulate-transmission`, { outcome, errorReason })
+
+// Selective component invoicing (AC3)
+export const updateBillingEventComponents = (id, data) =>
+  axios.patch(`/api/v1/billing-events/${id}/components`, data)
+
+// Contractor payment (AC5)
+export const recordContractorPayment = (id, data) =>
+  axios.post(`/api/v1/billing-events/${id}/contractor-payment`, data)
+
+// Validation override (PD-278)
+export const overrideValidation = (id, reason) =>
+  axios.post(`/api/v1/billing-events/${id}/validation-override`, { reason })
+
+export const getBillingEventValidationFailures = (id) =>
+  axios.get(`/api/v1/billing-events/${id}/validation-failures`)

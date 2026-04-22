@@ -4,6 +4,7 @@ import com.example.invoicing.entity.sharedservice.dto.ParticipantResponse;
 import com.example.invoicing.entity.sharedservice.dto.ParticipantRequest;
 import com.example.invoicing.entity.sharedservice.dto.PropertyGroupResponse;
 import com.example.invoicing.entity.sharedservice.dto.PropertyGroupRequest;
+import com.example.invoicing.entity.sharedservice.dto.RetroactiveParticipantRequest;
 import com.example.invoicing.repository.SharedServiceParticipantRepository;
 import com.example.invoicing.repository.PropertyGroupRepository;
 import com.example.invoicing.entity.sharedservice.SharedServiceParticipant;
@@ -27,6 +28,8 @@ public class PropertyGroupService {
     private final PropertyGroupRepository groupRepository;
     private final SharedServiceParticipantRepository participantRepository;
     private final SharedServiceValidationService validationService;
+    private final SharedServiceInvoicingService invoicingService;
+    private final InvoiceRunLockService lockService;
 
     public List<PropertyGroupResponse> findAll() {
         return groupRepository.findByActiveTrueOrderByNameAsc().stream().map(this::toResponse).collect(Collectors.toList());
@@ -47,6 +50,9 @@ public class PropertyGroupService {
     @Transactional
     public PropertyGroupResponse replaceParticipants(Long groupId, List<ParticipantRequest> requests) {
         PropertyGroup group = load(groupId);
+        for (ParticipantRequest req : requests) {
+            lockService.assertNotLocked(req.getCustomerNumber());
+        }
         group.getParticipants().clear();
         groupRepository.save(group);
 
@@ -57,10 +63,30 @@ public class PropertyGroupService {
             p.setSharePercentage(req.getSharePercentage().setScale(2, RoundingMode.HALF_UP));
             p.setValidFrom(req.getValidFrom());
             p.setValidTo(req.getValidTo());
+            p.setIncludeIfZeroShare(req.getIncludeIfZeroShare() != null ? req.getIncludeIfZeroShare() : false);
             group.getParticipants().add(p);
         }
         groupRepository.save(group);
         validationService.validateTotalEquals100(groupId);
+        return toResponse(load(groupId));
+    }
+
+    @Transactional
+    public PropertyGroupResponse addParticipantRetroactive(Long groupId, RetroactiveParticipantRequest request) {
+        PropertyGroup group = load(groupId);
+
+        SharedServiceParticipant p = new SharedServiceParticipant();
+        p.setPropertyGroup(group);
+        p.setCustomerNumber(request.getCustomerNumber());
+        p.setSharePercentage(request.getSharePercentage().setScale(2, RoundingMode.HALF_UP));
+        p.setValidFrom(request.getValidFrom());
+        p.setValidTo(null);
+        p.setIncludeIfZeroShare(false);
+        group.getParticipants().add(p);
+        groupRepository.save(group);
+
+        invoicingService.redistributeRetroactive(groupId, request.getValidFrom());
+
         return toResponse(load(groupId));
     }
 
@@ -89,6 +115,7 @@ public class PropertyGroupService {
                 .sharePercentage(p.getSharePercentage())
                 .validFrom(p.getValidFrom())
                 .validTo(p.getValidTo())
+                .includeIfZeroShare(p.isIncludeIfZeroShare())
                 .build())
             .collect(Collectors.toList());
 

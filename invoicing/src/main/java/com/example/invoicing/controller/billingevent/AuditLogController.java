@@ -2,6 +2,8 @@ package com.example.invoicing.controller.billingevent;
 
 import com.example.invoicing.entity.billingevent.audit.AuditLogQueryService;
 import com.example.invoicing.entity.billingevent.audit.dto.AuditLogEntryResponse;
+import com.example.invoicing.entity.reportingaudit.ReportingDataAuditLog;
+import com.example.invoicing.repository.ReportingDataAuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +16,7 @@ import java.util.List;
 public class AuditLogController {
 
     private final AuditLogQueryService auditLogQueryService;
+    private final ReportingDataAuditLogRepository reportingAuditLogRepository;
 
     @GetMapping("/user-activity")
     public List<AuditLogEntryResponse> getUserActivity(
@@ -27,5 +30,18 @@ public class AuditLogController {
     @GetMapping("/by-field")
     public List<AuditLogEntryResponse> getByField(@RequestParam String fieldName) {
         return auditLogQueryService.getChangesByField(fieldName);
+    }
+
+    @GetMapping("/reporting-data/{invoiceId}")
+    public List<ReportingDataAuditLog> getReportingAuditForInvoice(@PathVariable Long invoiceId) {
+        return reportingAuditLogRepository.findByInvoiceIdOrderByLoggedAtDesc(invoiceId);
+    }
+
+    @GetMapping("/reporting-data/export")
+    public List<ReportingDataAuditLog> exportReportingAudit(
+        @RequestParam Instant from,
+        @RequestParam Instant to
+    ) {
+        return reportingAuditLogRepository.findByPeriod(from, to);
     }
 }

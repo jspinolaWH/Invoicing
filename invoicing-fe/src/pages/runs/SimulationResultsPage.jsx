@@ -14,9 +14,27 @@ export default function SimulationResultsPage() {
 
   if (!report) return <div className="page"><p>No simulation data. Go back and run a simulation.</p></div>
 
-  const blockingFailures = (report.validationFailures || []).filter(f => f.severity === 'BLOCKING')
-  const warnings = (report.validationFailures || []).filter(f => f.severity === 'WARNING')
+  const allFailures = report.validationFailures || []
+  const blockingFailures = allFailures.filter(f => f.severity === 'BLOCKING')
+  const warnings = allFailures.filter(f => f.severity === 'WARNING')
   const hasBlocking = blockingFailures.length > 0
+
+  const RULE_TYPE_LABELS = {
+    MANDATORY_FIELD: 'Missing Mandatory Fields',
+    PRICE_CONSISTENCY: 'Financial Data Issues',
+    QUANTITY_THRESHOLD: 'Quantity Threshold Violations',
+    CLASSIFICATION: 'Classification Issues',
+    REPORTING_DATA_COMPLETENESS: 'Reporting Data Incomplete',
+    VAT_ACCURACY: 'Incorrect VAT Calculations',
+  }
+
+  const failuresByCategory = allFailures.reduce((acc, f) => {
+    const key = f.ruleType || 'OTHER'
+    if (!acc[key]) acc[key] = { blocking: 0, warning: 0 }
+    if (f.severity === 'BLOCKING') acc[key].blocking++
+    else acc[key].warning++
+    return acc
+  }, {})
 
   const handleCommit = async () => {
     setCommitting(true); setError(null)
@@ -66,8 +84,39 @@ export default function SimulationResultsPage() {
         ))}
       </div>
 
+      {/* Validation Error Category Summary */}
+      {Object.keys(failuresByCategory).length > 0 && (
+        <>
+          <h3 style={{ marginBottom: 'var(--space-2)' }}>Validation Error Summary by Category</h3>
+          <table className="table" style={{ marginBottom: 'var(--space-4)' }}>
+            <thead>
+              <tr>
+                <th>Error Category</th>
+                <th style={{ textAlign: 'right' }}>Blocking</th>
+                <th style={{ textAlign: 'right' }}>Warnings</th>
+                <th style={{ textAlign: 'right' }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(failuresByCategory).map(([ruleType, counts]) => (
+                <tr key={ruleType}>
+                  <td>{RULE_TYPE_LABELS[ruleType] || ruleType}</td>
+                  <td style={{ textAlign: 'right', color: counts.blocking > 0 ? '#dc2626' : undefined }}>
+                    {counts.blocking || '—'}
+                  </td>
+                  <td style={{ textAlign: 'right', color: counts.warning > 0 ? '#b45309' : undefined }}>
+                    {counts.warning || '—'}
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{counts.blocking + counts.warning}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
       {/* Validation Failures */}
-      {(report.validationFailures || []).length > 0 && (
+      {allFailures.length > 0 && (
         <>
           <h3 style={{ marginBottom: 'var(--space-2)' }}>Validation Issues</h3>
           <table className="table" style={{ marginBottom: 'var(--space-4)' }}>
@@ -90,6 +139,58 @@ export default function SimulationResultsPage() {
                   <td>{f.customerName || f.customerId}</td>
                   <td>{f.ruleType}</td>
                   <td>{f.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {/* Category Breakdown */}
+      {(report.categoryBreakdown || []).length > 0 && (
+        <>
+          <h3 style={{ marginBottom: 'var(--space-2)' }}>Billed Events by Category</h3>
+          <table className="table" style={{ marginBottom: 'var(--space-4)' }}>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th style={{ textAlign: 'right' }}>Events</th>
+                <th style={{ textAlign: 'right' }}>Net Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.categoryBreakdown.map((row, i) => (
+                <tr key={i}>
+                  <td>{row.category}</td>
+                  <td style={{ textAlign: 'right' }}>{row.eventCount}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(row.netAmount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {/* Cost Centre Allocations */}
+      {(report.costCentreAllocations || []).length > 0 && (
+        <>
+          <h3 style={{ marginBottom: 'var(--space-2)' }}>Cost Centre Allocations</h3>
+          <table className="table" style={{ marginBottom: 'var(--space-4)' }}>
+            <thead>
+              <tr>
+                <th>Cost Centre</th>
+                <th>Description</th>
+                <th style={{ textAlign: 'right' }}>Events</th>
+                <th style={{ textAlign: 'right' }}>Net Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.costCentreAllocations.map((row, i) => (
+                <tr key={i}>
+                  <td>{row.costCentreCode}</td>
+                  <td>{row.costCentreDescription || '—'}</td>
+                  <td style={{ textAlign: 'right' }}>{row.eventCount}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(row.netAmount)}</td>
                 </tr>
               ))}
             </tbody>

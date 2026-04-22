@@ -3,10 +3,12 @@ import com.example.invoicing.common.exception.FinvoiceValidationException;
 import com.example.invoicing.entity.invoice.VatGroup;
 import com.example.invoicing.entity.invoice.SellerDetails;
 
+import com.example.invoicing.entity.customer.BillingAddress;
 import com.example.invoicing.entity.customer.BillingProfile;
 import com.example.invoicing.entity.invoice.AccountingLedgerEntry;
 import com.example.invoicing.entity.invoice.Invoice;
 import com.example.invoicing.entity.invoice.InvoiceAttachment;
+import com.example.invoicing.entity.invoice.InvoiceLanguage;
 import com.example.invoicing.entity.invoice.InvoiceLineItem;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -139,17 +141,28 @@ public class FinvoiceBuilderService {
         addChild(doc, bpd, "BuyerOrganisationName", invoice.getCustomer().getName());
 
         if (profile != null && profile.getBillingAddress() != null) {
-            addChild(doc, bpd, "BuyerStreetName", profile.getBillingAddress().getStreetAddress());
-            addChild(doc, bpd, "BuyerTownName", profile.getBillingAddress().getCity());
-            addChild(doc, bpd, "BuyerPostCodeIdentifier", profile.getBillingAddress().getPostalCode());
+            BillingAddress addr = profile.getBillingAddress();
+            boolean useAlt = invoice.getLanguage() != null
+                && invoice.getLanguage() != InvoiceLanguage.FI
+                && addr.getStreetAddressAlt() != null && !addr.getStreetAddressAlt().isBlank();
+            addChild(doc, bpd, "BuyerStreetName", useAlt ? addr.getStreetAddressAlt() : addr.getStreetAddress());
+            addChild(doc, bpd, "BuyerTownName", useAlt && addr.getCityAlt() != null ? addr.getCityAlt() : addr.getCity());
+            addChild(doc, bpd, "BuyerPostCodeIdentifier", addr.getPostalCode());
+            String countryCode = useAlt && addr.getCountryCodeAlt() != null ? addr.getCountryCodeAlt() : addr.getCountryCode();
+            addChild(doc, bpd, "CountryCode", countryCode != null ? countryCode : "FI");
+        } else {
+            addChild(doc, bpd, "CountryCode", "FI");
         }
-        addChild(doc, bpd, "CountryCode", "FI");
 
         root.appendChild(bpd);
     }
 
     private void appendInvoiceDetails(Document doc, Element root, Invoice invoice) {
         Element id = doc.createElement("InvoiceDetails");
+
+        if (invoice.getLanguage() != null) {
+            addChild(doc, id, "DocumentLanguage", invoice.getLanguage().name().toLowerCase());
+        }
 
         addChild(doc, id, "InvoiceTypeText", invoice.getInvoiceType() != null
             && invoice.getInvoiceType().name().equals("CREDIT_NOTE") ? "CREDIT NOTE" : "INVOICE");
@@ -182,6 +195,12 @@ public class FinvoiceBuilderService {
             id.appendChild(dueDate);
         }
 
+        if (invoice.getInvoicingMode() != null) {
+            Element modeEl = doc.createElement("InvoicingMode");
+            modeEl.setTextContent(invoice.getInvoicingMode().name());
+            id.appendChild(modeEl);
+        }
+
         root.appendChild(id);
     }
 
@@ -208,7 +227,7 @@ public class FinvoiceBuilderService {
         addChild(doc, row, "ArticleName", line.getDescription());
 
         Element qty = doc.createElement("DeliveredQuantity");
-        qty.setAttribute("QuantityUnitCode", "pcs");
+        qty.setAttribute("QuantityUnitCode", resolveUnitCode(line));
         qty.setTextContent(line.getQuantity().setScale(2, RoundingMode.HALF_UP).toPlainString());
         row.appendChild(qty);
 
@@ -252,6 +271,27 @@ public class FinvoiceBuilderService {
             row.appendChild(ledgerCode);
         }
 
+        if (line.getCostCenter() != null && line.getCostCenter().getCompositeCode() != null) {
+            Element ccId = doc.createElement("RowIdentifier");
+            ccId.setAttribute("IdentifierType", "CostCenter");
+            ccId.setTextContent(line.getCostCenter().getCompositeCode());
+            row.appendChild(ccId);
+        }
+
+        if (line.getLegalClassification() != null) {
+            Element srId = doc.createElement("RowIdentifier");
+            srId.setAttribute("IdentifierType", "ServiceResponsibility");
+            srId.setTextContent(line.getLegalClassification().name());
+            row.appendChild(srId);
+        }
+
+        if (line.getWasteType() != null) {
+            Element wtId = doc.createElement("RowIdentifier");
+            wtId.setAttribute("IdentifierType", "WasteType");
+            wtId.setTextContent(line.getWasteType());
+            row.appendChild(wtId);
+        }
+
         return row;
     }
 
@@ -264,7 +304,7 @@ public class FinvoiceBuilderService {
         addChild(doc, row, "ArticleName", line.getDescription());
 
         Element qty = doc.createElement("DeliveredQuantity");
-        qty.setAttribute("QuantityUnitCode", "pcs");
+        qty.setAttribute("QuantityUnitCode", resolveUnitCode(line));
         qty.setTextContent(line.getQuantity().setScale(2, RoundingMode.HALF_UP).toPlainString());
         row.appendChild(qty);
 
@@ -303,6 +343,27 @@ public class FinvoiceBuilderService {
             ledgerCode.setAttribute("IdentifierType", "LedgerCode");
             ledgerCode.setTextContent(line.getAccountingAccount().getCode());
             row.appendChild(ledgerCode);
+        }
+
+        if (line.getCostCenter() != null && line.getCostCenter().getCompositeCode() != null) {
+            Element ccId = doc.createElement("RowIdentifier");
+            ccId.setAttribute("IdentifierType", "CostCenter");
+            ccId.setTextContent(line.getCostCenter().getCompositeCode());
+            row.appendChild(ccId);
+        }
+
+        if (line.getLegalClassification() != null) {
+            Element srId = doc.createElement("RowIdentifier");
+            srId.setAttribute("IdentifierType", "ServiceResponsibility");
+            srId.setTextContent(line.getLegalClassification().name());
+            row.appendChild(srId);
+        }
+
+        if (line.getWasteType() != null) {
+            Element wtId = doc.createElement("RowIdentifier");
+            wtId.setAttribute("IdentifierType", "WasteType");
+            wtId.setTextContent(line.getWasteType());
+            row.appendChild(wtId);
         }
 
         if (invoice(line) && line.getVatRate().compareTo(BigDecimal.ZERO) == 0) {
@@ -419,6 +480,15 @@ public class FinvoiceBuilderService {
         if (profile == null || profile.getBusinessId() == null || profile.getBusinessId().isBlank()) {
             throw new FinvoiceValidationException("Reverse charge requires buyer VAT number (businessId)");
         }
+    }
+
+    private String resolveUnitCode(InvoiceLineItem line) {
+        if (line.getProduct() == null || line.getProduct().getPricingUnit() == null) {
+            return "pcs";
+        }
+        Invoice inv = line.getInvoice();
+        String lang = inv != null && inv.getLanguage() != null ? inv.getLanguage().name() : "FI";
+        return line.getProduct().getPricingUnit().getLabel(lang);
     }
 
     private BigDecimal resolveEffectiveVatRate(InvoiceLineItem line, boolean reverseCharge) {

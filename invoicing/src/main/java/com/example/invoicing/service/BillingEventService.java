@@ -1,11 +1,13 @@
 package com.example.invoicing.service;
 
 import com.example.invoicing.service.CostCenterCompositionService;
+import com.example.invoicing.entity.weighbridge.dto.WeighbridgeConfigResponse;
 import com.example.invoicing.entity.vat.VatCalculationResult;
 import com.example.invoicing.service.VatCalculationService;
 import com.example.invoicing.entity.account.AccountingAccount;
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
+import com.example.invoicing.entity.billingevent.BillingEventValidationStatus;
 import com.example.invoicing.entity.billingevent.audit.BillingEventAuditLog;
 import com.example.invoicing.entity.billingevent.dto.*;
 import com.example.invoicing.entity.billingevent.dto.BulkExcludeFailure;
@@ -28,6 +30,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.springframework.security.access.AccessDeniedException;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +48,7 @@ public class BillingEventService {
     private final LegalClassificationService classificationService;
     private final CostCenterCompositionService costCenterCompositionService;
     private final VatCalculationService vatCalculationService;
+    private final WeighbridgeIntegrationConfigService weighbridgeConfigService;
 
     // -----------------------------------------------------------------------
     // CREATE — external source (integration / weighbridge)
@@ -54,9 +58,20 @@ public class BillingEventService {
         BillingEvent event = new BillingEvent();
         mapCommonFields(event, req, product);
 
+        weighbridgeConfigService.findByCustomerNumber(req.getCustomerNumber())
+            .filter(WeighbridgeConfigResponse::isActive)
+            .ifPresent(config -> {
+                if (event.getProjectId() == null && config.getSiteReference() != null) {
+                    event.setProjectId(config.getSiteReference());
+                }
+            });
+
         if (req.getAccountingAccountId() != null && req.getCostCenterId() != null) {
             event.setAccountingAccount(accountingAccountRepository.getReferenceById(req.getAccountingAccountId()));
-            event.setCostCenter(costCenterRepository.getReferenceById(req.getCostCenterId()));
+            CostCenter cc = costCenterRepository.findById(req.getCostCenterId())
+                .orElseThrow(() -> new EntityNotFoundException("CostCenter not found: " + req.getCostCenterId()));
+            event.setCostCenter(cc);
+            snapshotCostCenterSegments(event, cc);
         } else {
             resolveAccountingDefaults(event, product, req.getLocationId());
         }
@@ -110,11 +125,14 @@ public class BillingEventService {
         event.setLocationId(req.getLocationId());
         event.setMunicipalityId(req.getMunicipalityId());
         event.setComments(req.getComments());
+        event.setInternalComments(req.getInternalComments());
+        event.setRegistrationNumber(req.getRegistrationNumber());
         event.setContractor(req.getContractor());
         event.setDirection(req.getDirection());
         event.setSharedServiceGroupPercentage(req.getSharedServiceGroupPercentage());
         event.setWasteType(req.getWasteType());
         event.setReceivingSite(req.getReceivingSite());
+        event.setProductGroup(product.getProductGroupCode());
 
         BigDecimal defWaste     = product.getDefaultWasteFee();
         BigDecimal defTransport = product.getDefaultTransportFee();
@@ -140,11 +158,37 @@ public class BillingEventService {
     // -----------------------------------------------------------------------
     // UPDATE — partial edit with audit log
     // -----------------------------------------------------------------------
-    public BillingEventResponse update(Long id, BillingEventUpdateRequest req, String currentUser) {
+    public BillingEventResponse update(Long id, BillingEventUpdateRequest req, String currentUser, boolean pricingOnly) {
         BillingEvent event = billingEventRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
 
         statusService.assertMutable(event);
+        BillingEventStatus originalStatus = event.getStatus();
+
+        if (pricingOnly) {
+            boolean hasNonPricingChange =
+                req.getEventDate() != null ||
+                req.getProductId() != null ||
+                req.getQuantity() != null ||
+                req.getWeight() != null ||
+                req.getVehicleId() != null ||
+                req.getDriverId() != null ||
+                req.getCustomerNumber() != null ||
+                req.getContractor() != null ||
+                req.getLocationId() != null ||
+                req.getMunicipalityId() != null ||
+                req.getSharedServiceGroupId() != null ||
+                req.getSharedServiceGroupPercentage() != null ||
+                req.getDirection() != null ||
+                req.getComments() != null ||
+                req.getInternalComments() != null ||
+                req.getRegistrationNumber() != null ||
+                req.getWasteType() != null ||
+                req.getReceivingSite() != null;
+            if (hasNonPricingChange) {
+                throw new AccessDeniedException("INVOICING_PRICING role may only update pricing fields (wasteFeePrice, transportFeePrice, ecoFeePrice)");
+            }
+        }
 
         List<BillingEventAuditLog> auditEntries = new ArrayList<>();
 
@@ -176,14 +220,41 @@ public class BillingEventService {
         applyIfChanged(id, "sharedServiceGroupPct",  req.getSharedServiceGroupPercentage(), event.getSharedServiceGroupPercentage(), event::setSharedServiceGroupPercentage, currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "direction",              req.getDirection(),              event.getDirection(),              event::setDirection,              currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "comments",               req.getComments(),               event.getComments(),               event::setComments,               currentUser, req.getReason(), auditEntries);
+        applyIfChanged(id, "internalComments",       req.getInternalComments(),       event.getInternalComments(),       event::setInternalComments,       currentUser, req.getReason(), auditEntries);
+        applyIfChanged(id, "registrationNumber",     req.getRegistrationNumber(),     event.getRegistrationNumber(),     event::setRegistrationNumber,     currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "wasteType",              req.getWasteType(),              event.getWasteType(),              event::setWasteType,              currentUser, req.getReason(), auditEntries);
         applyIfChanged(id, "receivingSite",          req.getReceivingSite(),          event.getReceivingSite(),          event::setReceivingSite,          currentUser, req.getReason(), auditEntries);
+
+        if (!auditEntries.isEmpty() && originalStatus == BillingEventStatus.IN_PROGRESS) {
+            event.setStatus(BillingEventStatus.FOR_CORRECTION);
+            auditEntries.add(buildAudit(id, "status", originalStatus, BillingEventStatus.FOR_CORRECTION,
+                currentUser, "Flagged for correction review after manual edit"));
+        }
 
         billingEventRepository.save(event);
         if (!auditEntries.isEmpty()) {
             auditLogRepository.saveAll(auditEntries);
         }
 
+        return toResponse(event);
+    }
+
+    // -----------------------------------------------------------------------
+    // APPROVE CORRECTION
+    // -----------------------------------------------------------------------
+    public BillingEventResponse approveCorrection(Long id, String currentUser) {
+        BillingEvent event = billingEventRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
+        if (event.getStatus() != BillingEventStatus.FOR_CORRECTION) {
+            throw new IllegalStateException("BillingEvent " + id + " is not in FOR_CORRECTION status");
+        }
+        event.setStatus(BillingEventStatus.IN_PROGRESS);
+        billingEventRepository.save(event);
+        auditLogRepository.save(BillingEventAuditLog.builder()
+            .billingEventId(id).field("status")
+            .oldValue("FOR_CORRECTION").newValue("IN_PROGRESS")
+            .changedBy(currentUser).changedAt(Instant.now())
+            .reason("Correction reviewed and approved").build());
         return toResponse(event);
     }
 
@@ -276,10 +347,12 @@ public class BillingEventService {
     @Transactional(readOnly = true)
     public Page<BillingEventResponse> findFiltered(String customerNumber, BillingEventStatus status,
             String municipalityId, LocalDate dateFrom, LocalDate dateTo,
-            Long productId, Boolean excluded, Boolean requiresReview, Pageable pageable) {
+            Long productId, Boolean excluded, Boolean requiresReview,
+            String serviceResponsibility, BillingEventValidationStatus validationStatus,
+            Pageable pageable) {
         return billingEventRepository.findFiltered(
             customerNumber, status, municipalityId, dateFrom, dateTo,
-            productId, excluded, requiresReview, pageable
+            productId, excluded, requiresReview, serviceResponsibility, validationStatus, pageable
         ).map(this::toResponse);
     }
 
@@ -288,6 +361,17 @@ public class BillingEventService {
         BillingEvent e = billingEventRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
         return toDetailResponse(e);
+    }
+
+    public BillingEventDetailResponse overrideValidation(Long id, String reason, String currentUser) {
+        BillingEvent event = billingEventRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
+        event.setValidationOverrideReason(reason);
+        event.setValidationOverriddenBy(currentUser);
+        event.setValidationOverriddenAt(java.time.Instant.now());
+        event.setValidationStatus(BillingEventValidationStatus.OVERRIDDEN);
+        billingEventRepository.save(event);
+        return toDetailResponse(event);
     }
 
     // -----------------------------------------------------------------------
@@ -304,10 +388,10 @@ public class BillingEventService {
                     .eventId(e.getId())
                     .eventDate(e.getEventDate())
                     .accountingAccount(e.getAccountingAccount() != null ? e.getAccountingAccount().getCode() : null)
-                    .responsibilityArea(e.getCostCenter() != null ? e.getCostCenter().getResponsibilitySegment() : null)
-                    .productGroup(e.getProduct() != null ? e.getProduct().getCode() : null)
+                    .responsibilityArea(e.getResponsibilityArea())
+                    .productGroup(e.getProductGroup())
                     .wasteType(e.getWasteType())
-                    .serviceResponsibility(e.getCostCenter() != null ? e.getCostCenter().getReceptionSegment() : null)
+                    .serviceResponsibility(e.getServiceResponsibility())
                     .locationId(e.getLocationId())
                     .municipalityId(e.getMunicipalityId())
                     .projectCode(e.getProjectId())
@@ -322,8 +406,62 @@ public class BillingEventService {
     }
 
     // -----------------------------------------------------------------------
+    // SELECTIVE COMPONENT INVOICING (AC3)
+    // -----------------------------------------------------------------------
+    public BillingEventDetailResponse updateComponentInclusion(Long id, SelectiveComponentRequest req, String user) {
+        BillingEvent event = billingEventRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
+        statusService.assertMutable(event);
+
+        List<BillingEventAuditLog> auditEntries = new ArrayList<>();
+        if (req.getIncludeWasteFee() != null && req.getIncludeWasteFee() != event.isIncludeWasteFee()) {
+            auditEntries.add(buildAudit(id, "includeWasteFee", event.isIncludeWasteFee(), req.getIncludeWasteFee(), user, null));
+            event.setIncludeWasteFee(req.getIncludeWasteFee());
+        }
+        if (req.getIncludeTransportFee() != null && req.getIncludeTransportFee() != event.isIncludeTransportFee()) {
+            auditEntries.add(buildAudit(id, "includeTransportFee", event.isIncludeTransportFee(), req.getIncludeTransportFee(), user, null));
+            event.setIncludeTransportFee(req.getIncludeTransportFee());
+        }
+        if (req.getIncludeEcoFee() != null && req.getIncludeEcoFee() != event.isIncludeEcoFee()) {
+            auditEntries.add(buildAudit(id, "includeEcoFee", event.isIncludeEcoFee(), req.getIncludeEcoFee(), user, null));
+            event.setIncludeEcoFee(req.getIncludeEcoFee());
+        }
+        billingEventRepository.save(event);
+        if (!auditEntries.isEmpty()) auditLogRepository.saveAll(auditEntries);
+        return toDetailResponse(event);
+    }
+
+    // -----------------------------------------------------------------------
+    // CONTRACTOR PAYMENT (AC5)
+    // -----------------------------------------------------------------------
+    public BillingEventDetailResponse recordContractorPayment(Long id, ContractorPaymentRequest req, String user) {
+        BillingEvent event = billingEventRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + id));
+        if (event.getContractor() == null || event.getContractor().isBlank()) {
+            throw new IllegalStateException("BillingEvent " + id + " has no contractor assigned.");
+        }
+        String oldStatus = event.getContractorPaymentStatus();
+        event.setContractorPaymentStatus(req.getStatus());
+        event.setContractorPaymentNotes(req.getNotes());
+        event.setContractorPaymentRecordedBy(user);
+        event.setContractorPaymentRecordedAt(Instant.now());
+        billingEventRepository.save(event);
+        auditLogRepository.save(BillingEventAuditLog.builder()
+            .billingEventId(id).field("contractorPaymentStatus")
+            .oldValue(oldStatus).newValue(req.getStatus())
+            .changedBy(user).changedAt(Instant.now())
+            .reason(req.getNotes()).build());
+        return toDetailResponse(event);
+    }
+
+    // -----------------------------------------------------------------------
     // HELPERS
     // -----------------------------------------------------------------------
+    private void snapshotCostCenterSegments(BillingEvent event, CostCenter cc) {
+        event.setResponsibilityArea(cc.getResponsibilitySegment());
+        event.setServiceResponsibility(cc.getReceptionSegment());
+    }
+
     private void resolveVatRates(BillingEvent event, LocalDate eventDate) {
         List<VatRate> rates = vatRateRepository.findByEventDate(eventDate);
         rates.stream().filter(r -> r.getRate().compareTo(BigDecimal.ZERO) == 0)
@@ -356,9 +494,12 @@ public class BillingEventService {
         event.setSharedServiceGroupId(req.getSharedServiceGroupId());
         event.setSharedServiceGroupPercentage(req.getSharedServiceGroupPercentage());
         event.setComments(req.getComments());
+        event.setInternalComments(req.getInternalComments());
+        event.setRegistrationNumber(req.getRegistrationNumber());
         event.setProjectId(req.getProjectId());
         event.setWasteType(req.getWasteType());
         event.setReceivingSite(req.getReceivingSite());
+        event.setProductGroup(product.getProductGroupCode());
     }
 
     private Product loadProduct(Long productId) {
@@ -437,6 +578,12 @@ public class BillingEventService {
             .receivingSite(e.getReceivingSite())
             .priceOverridden(e.isPriceOverridden())
             .pendingTransferCustomerNumber(e.getPendingTransferCustomerNumber())
+            .includeWasteFee(e.isIncludeWasteFee())
+            .includeTransportFee(e.isIncludeTransportFee())
+            .includeEcoFee(e.isIncludeEcoFee())
+            .contractorPaymentStatus(e.getContractorPaymentStatus())
+            .validationStatus(e.getValidationStatus())
+            .lastValidatedAt(e.getLastValidatedAt())
             .build();
     }
 
@@ -477,6 +624,8 @@ public class BillingEventService {
             .sharedServiceGroupPercentage(e.getSharedServiceGroupPercentage())
             .direction(e.getDirection())
             .comments(e.getComments())
+            .internalComments(e.getInternalComments())
+            .registrationNumber(e.getRegistrationNumber())
             .status(e.getStatus())
             .excluded(e.isExcluded())
             .exclusionReason(e.getExclusionReason())
@@ -506,8 +655,9 @@ public class BillingEventService {
             .resolvedCostCenterCode(resolvedCostCenter)
             .wasteType(e.getWasteType())
             .receivingSite(e.getReceivingSite())
-            .responsibilityArea(e.getCostCenter() != null ? e.getCostCenter().getResponsibilitySegment() : null)
-            .serviceResponsibility(e.getCostCenter() != null ? e.getCostCenter().getReceptionSegment() : null)
+            .responsibilityArea(e.getResponsibilityArea())
+            .serviceResponsibility(e.getServiceResponsibility())
+            .productGroup(e.getProductGroup())
             .transmissionErrorReason(e.getTransmissionErrorReason())
             .priceOverridden(e.isPriceOverridden())
             .originalWasteFeePrice(e.getOriginalWasteFeePrice())
@@ -516,7 +666,19 @@ public class BillingEventService {
             .pendingTransferCustomerNumber(e.getPendingTransferCustomerNumber())
             .pendingTransferLocationId(e.getPendingTransferLocationId())
             .priorCustomerNumber(e.getPriorCustomerNumber())
-            .priorLocationId(e.getPriorLocationId());
+            .priorLocationId(e.getPriorLocationId())
+            .includeWasteFee(e.isIncludeWasteFee())
+            .includeTransportFee(e.isIncludeTransportFee())
+            .includeEcoFee(e.isIncludeEcoFee())
+            .contractorPaymentStatus(e.getContractorPaymentStatus())
+            .contractorPaymentNotes(e.getContractorPaymentNotes())
+            .contractorPaymentRecordedBy(e.getContractorPaymentRecordedBy())
+            .contractorPaymentRecordedAt(e.getContractorPaymentRecordedAt())
+            .validationStatus(e.getValidationStatus())
+            .lastValidatedAt(e.getLastValidatedAt())
+            .validationOverrideReason(e.getValidationOverrideReason())
+            .validationOverriddenBy(e.getValidationOverriddenBy())
+            .validationOverriddenAt(e.getValidationOverriddenAt());
 
         if (vatResult != null) {
             builder

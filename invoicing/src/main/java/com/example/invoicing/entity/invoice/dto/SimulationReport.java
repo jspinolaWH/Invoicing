@@ -11,10 +11,13 @@ import java.util.List;
 public class SimulationReport {
     private int totalCustomers;
     private int totalInvoices;
+    private int failedCustomers;
     private BigDecimal totalNetAmount;
     private BigDecimal totalGrossAmount;
     private BigDecimal totalVatAmount;
     private List<ValidationFailureEntry> validationFailures;
     private List<InvoicePreviewEntry> sampleLineItems;
+    private List<CategoryBreakdownEntry> categoryBreakdown;
+    private List<CostCentreAllocationEntry> costCentreAllocations;
     private boolean simulationMode;
 }

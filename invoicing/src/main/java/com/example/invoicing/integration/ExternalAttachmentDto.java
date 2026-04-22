@@ -10,4 +10,6 @@ public class ExternalAttachmentDto {
     private String mimeType;
     private String contentBase64;
     private long sizeBytes;
+    private String attachmentIdentifier;
+    private String description;
 }

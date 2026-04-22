@@ -11,4 +11,6 @@ public class BillingAddressRequest {
     private String streetAddressAlt;
     private String cityAlt;
     private String countryCodeAlt;
+    private String emailAddress;
+    private String eInvoicingAddress;
 }

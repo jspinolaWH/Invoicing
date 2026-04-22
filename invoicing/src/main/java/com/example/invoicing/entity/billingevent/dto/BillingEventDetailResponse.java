@@ -2,6 +2,7 @@ package com.example.invoicing.entity.billingevent.dto;
 
 import com.example.invoicing.entity.billingevent.BillingEventDirection;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
+import com.example.invoicing.entity.billingevent.BillingEventValidationStatus;
 import com.example.invoicing.entity.classification.LegalClassification;
 import lombok.Builder;
 import lombok.Data;
@@ -32,6 +33,8 @@ public class BillingEventDetailResponse {
     private BigDecimal sharedServiceGroupPercentage;
     private BillingEventDirection direction;
     private String comments;
+    private String internalComments;
+    private String registrationNumber;
     private BillingEventStatus status;
     private boolean excluded;
     private String exclusionReason;
@@ -65,6 +68,7 @@ public class BillingEventDetailResponse {
     private String receivingSite;
     private String responsibilityArea;
     private String serviceResponsibility;
+    private String productGroup;
     private String transmissionErrorReason;
     private boolean priceOverridden;
     private BigDecimal originalWasteFeePrice;
@@ -74,4 +78,19 @@ public class BillingEventDetailResponse {
     private String pendingTransferLocationId;
     private String priorCustomerNumber;
     private String priorLocationId;
+    // Selective component invoicing (AC3)
+    private boolean includeWasteFee;
+    private boolean includeTransportFee;
+    private boolean includeEcoFee;
+    // Contractor payment (AC5)
+    private String contractorPaymentStatus;
+    private String contractorPaymentNotes;
+    private String contractorPaymentRecordedBy;
+    private java.time.Instant contractorPaymentRecordedAt;
+    // Validation status (PD-278)
+    private BillingEventValidationStatus validationStatus;
+    private java.time.Instant lastValidatedAt;
+    private String validationOverrideReason;
+    private String validationOverriddenBy;
+    private java.time.Instant validationOverriddenAt;
 }

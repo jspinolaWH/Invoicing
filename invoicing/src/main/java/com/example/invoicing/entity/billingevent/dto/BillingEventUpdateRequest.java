@@ -30,6 +30,8 @@ public class BillingEventUpdateRequest {
     private BigDecimal sharedServiceGroupPercentage;
     private BillingEventDirection direction;
     private String comments;
+    private String internalComments;
+    private String registrationNumber;
     private String wasteType;
     private String receivingSite;
 }

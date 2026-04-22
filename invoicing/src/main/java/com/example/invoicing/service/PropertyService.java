@@ -21,6 +21,14 @@ public class PropertyService {
         return toDetailResponse(p);
     }
 
+    @Transactional
+    public PropertyDetailResponse updateTemplate(Long id, Long invoiceTemplateId) {
+        Property p = propertyRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Property not found: " + id));
+        p.setInvoiceTemplateId(invoiceTemplateId);
+        return toDetailResponse(propertyRepository.save(p));
+    }
+
     private PropertyDetailResponse toDetailResponse(Property p) {
         return PropertyDetailResponse.builder()
             .id(p.getId())
@@ -44,6 +52,7 @@ public class PropertyService {
             .addressValidFrom(p.getAddressValidFrom())
             .addressValidTo(p.getAddressValidTo())
             .oldestResidentYear(p.getOldestResidentYear())
+            .invoiceTemplateId(p.getInvoiceTemplateId())
             .owners(p.getOwners().stream().map(o -> PropertyDetailResponse.PropertyOwnerDto.builder()
                 .id(o.getId())
                 .ownerId(o.getOwnerId())

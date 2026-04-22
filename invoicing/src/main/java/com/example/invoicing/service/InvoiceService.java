@@ -11,11 +11,13 @@ import com.example.invoicing.entity.invoice.Invoice;
 import com.example.invoicing.repository.BillingEventRepository;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
 import com.example.invoicing.repository.InvoiceRepository;
+import com.example.invoicing.repository.InvoiceTemplateRepository;
 
 import com.example.invoicing.entity.invoice.dto.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +38,7 @@ public class InvoiceService {
     private final InvoiceRepository repository;
     private final BillingEventRepository billingEventRepository;
     private final CustomerBillingProfileRepository customerRepository;
+    private final InvoiceTemplateRepository invoiceTemplateRepository;
 
     public InvoiceResponse findById(Long id) {
         Invoice invoice = repository.findById(id)
@@ -42,6 +48,11 @@ public class InvoiceService {
 
     public List<InvoiceResponse> findByRunId(Long runId) {
         return repository.findByInvoiceRunId(runId).stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    public Page<InvoiceResponse> findAll(String billingType, Pageable pageable) {
+        String bt = (billingType == null || billingType.isBlank()) ? null : billingType;
+        return repository.findFiltered(bt, pageable).map(this::toResponse);
     }
 
     @Transactional
@@ -92,6 +103,27 @@ public class InvoiceService {
             ? List.of()
             : billingEventRepository.findAllById(billingEventIds);
 
+        boolean invoicePerProject = customer.getBillingProfile() != null
+            && customer.getBillingProfile().isInvoicePerProject();
+
+        if (invoicePerProject && !events.isEmpty()) {
+            Map<String, List<BillingEvent>> byProject = new LinkedHashMap<>();
+            for (BillingEvent ev : events) {
+                String key = ev.getProjectId() != null ? ev.getProjectId() : "";
+                byProject.computeIfAbsent(key, k -> new ArrayList<>()).add(ev);
+            }
+            Long firstId = null;
+            for (Map.Entry<String, List<BillingEvent>> entry : byProject.entrySet()) {
+                Long id = buildAndSaveDraft(customer, entry.getValue(), entry.getKey().isEmpty() ? null : entry.getKey());
+                if (firstId == null) firstId = id;
+            }
+            return firstId;
+        }
+
+        return buildAndSaveDraft(customer, events, null);
+    }
+
+    private Long buildAndSaveDraft(Customer customer, List<BillingEvent> events, String projectReference) {
         InvoicingMode invoicingMode = customer.getBillingProfile() != null
             && customer.getBillingProfile().getInvoicingMode() != null
             ? customer.getBillingProfile().getInvoicingMode()
@@ -104,11 +136,12 @@ public class InvoiceService {
         invoice.setCustomer(customer);
         invoice.setStatus(InvoiceStatus.DRAFT);
         invoice.setInvoiceType(InvoiceType.STANDARD);
-        invoice.setTemplateCode("WASTE_STANDARD");
+        invoice.setTemplateCode(resolveTemplateCode(customer));
         invoice.setLanguage(language);
         invoice.setInvoicingMode(invoicingMode);
         invoice.setInvoiceDate(LocalDate.now());
         invoice.setDueDate(LocalDate.now().plusDays(14));
+        invoice.setProjectReference(projectReference);
 
         BigDecimal net = BigDecimal.ZERO;
         BigDecimal gross = BigDecimal.ZERO;
@@ -157,6 +190,17 @@ public class InvoiceService {
         return repository.save(invoice).getId();
     }
 
+    private String resolveTemplateCode(Customer customer) {
+        Long templateId = customer.getBillingProfile() != null
+            ? customer.getBillingProfile().getInvoiceTemplateId() : null;
+        if (templateId != null) {
+            return invoiceTemplateRepository.findById(templateId)
+                .map(t -> t.getCode())
+                .orElse("WASTE_STANDARD");
+        }
+        return "WASTE_STANDARD";
+    }
+
     private InvoiceLanguage resolveLanguage(String langCode) {
         if (langCode == null) return InvoiceLanguage.FI;
         return switch (langCode.toLowerCase()) {
@@ -181,6 +225,7 @@ public class InvoiceService {
                 .costCenterCode(li.getCostCenter() != null ? li.getCostCenter().getCompositeCode() : null)
                 .bundled(li.isBundled())
                 .lineOrder(li.getLineOrder())
+                .sharedServiceTotalNet(li.getSharedServiceTotalNet())
                 .build())
             .collect(Collectors.toList());
 
@@ -212,6 +257,7 @@ public class InvoiceService {
             .invoicingMode(invoice.getInvoicingMode() != null ? invoice.getInvoicingMode().name() : null)
             .reverseChargeVat(invoice.isReverseChargeVat())
             .customText(invoice.getCustomText())
+            .internalComment(invoice.getInternalComment())
             .status(invoice.getStatus() != null ? invoice.getStatus().name() : null)
             .invoiceType(invoice.getInvoiceType() != null ? invoice.getInvoiceType().name() : null)
             .originalInvoiceId(invoice.getOriginalInvoice() != null ? invoice.getOriginalInvoice().getId() : null)
@@ -222,6 +268,11 @@ public class InvoiceService {
             .vatAmount(invoice.getVatAmount())
             .customerId(invoice.getCustomer() != null ? invoice.getCustomer().getId() : null)
             .customerName(invoice.getCustomer() != null ? invoice.getCustomer().getName() : null)
+            .allowExternalRecall(invoice.getCustomer() != null
+                && invoice.getCustomer().getBillingProfile() != null
+                && invoice.getCustomer().getBillingProfile().isAllowExternalRecall())
+            .billingType(invoice.getBillingType())
+            .projectReference(invoice.getProjectReference())
             .lineItems(lineItems)
             .attachments(attachments)
             .creditNotes(creditNotes)

@@ -10,4 +10,5 @@ public class Customer extends BaseAuditEntity {
     @Column(nullable = false) private String name;
     @Enumerated(EnumType.STRING) @Column(name = "customer_type", nullable = false, length = 20) private CustomerType customerType;
     @Embedded private BillingProfile billingProfile;
+    @Column(name = "parent_customer_number", length = 9) private String parentCustomerNumber;
 }

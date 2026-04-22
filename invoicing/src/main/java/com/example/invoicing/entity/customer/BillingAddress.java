@@ -12,4 +12,6 @@ public class BillingAddress {
     @Column(name = "street_address_alt") private String streetAddressAlt;
     @Column(name = "city_alt") private String cityAlt;
     @Column(name = "country_code_alt", length = 2) private String countryCodeAlt;
+    @Column(name = "email_address", length = 255) private String emailAddress;
+    @Column(name = "einvoicing_address", length = 35) private String eInvoicingAddress;
 }

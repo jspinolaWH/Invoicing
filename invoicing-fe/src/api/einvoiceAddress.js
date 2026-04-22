@@ -5,3 +5,6 @@ export const getEInvoiceAddress = (customerId) =>
 
 export const setEInvoiceAddress = (customerId, data) =>
   axios.put(`/api/v1/customers/${customerId}/einvoice-address`, data)
+
+export const deleteEInvoiceAddress = (customerId) =>
+  axios.delete(`/api/v1/customers/${customerId}/einvoice-address`)

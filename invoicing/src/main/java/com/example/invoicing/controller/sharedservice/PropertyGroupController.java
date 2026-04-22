@@ -48,6 +48,12 @@ public class PropertyGroupController {
         return service.validate(id);
     }
 
+    @PostMapping("/{id}/add-participant-retroactive")
+    public PropertyGroupResponse addParticipantRetroactive(@PathVariable Long id,
+                                                            @RequestBody RetroactiveParticipantRequest request) {
+        return service.addParticipantRetroactive(id, request);
+    }
+
     @ExceptionHandler(SharedServicePercentageException.class)
     public ResponseEntity<String> handlePercentageError(SharedServicePercentageException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());

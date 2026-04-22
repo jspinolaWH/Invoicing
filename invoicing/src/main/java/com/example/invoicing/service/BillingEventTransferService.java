@@ -2,12 +2,17 @@ package com.example.invoicing.service;
 
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
+import com.example.invoicing.entity.billingevent.BillingEventValidationStatus;
 import com.example.invoicing.entity.billingevent.audit.BillingEventAuditLog;
 import com.example.invoicing.entity.billingevent.transfer.BillingEventTransferLog;
 import com.example.invoicing.entity.billingevent.transfer.BillingEventTransferLogRepository;
 import com.example.invoicing.entity.billingevent.transfer.dto.*;
+import com.example.invoicing.entity.validation.ValidationFailure;
+import com.example.invoicing.entity.validation.ValidationRule;
+import com.example.invoicing.entity.validation.ValidationSeverity;
 import com.example.invoicing.repository.BillingEventAuditLogRepository;
 import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.ValidationRuleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +32,8 @@ public class BillingEventTransferService {
     private final BillingEventTransferLogRepository transferLogRepository;
     private final BillingEventAuditLogRepository auditLogRepository;
     private final BillingEventStatusService statusService;
+    private final BillingEventValidationService validationService;
+    private final ValidationRuleRepository validationRuleRepository;
 
     // ── Initiate transfer (moves to PENDING_TRANSFER) ──────────────────────
 
@@ -34,6 +42,7 @@ public class BillingEventTransferService {
             .orElseThrow(() -> new EntityNotFoundException("BillingEvent not found: " + eventId));
 
         statusService.assertMutable(event);
+        assertNoBlockingValidationFailures(event);
 
         String previousCustomer = event.getCustomerNumber();
         String previousProperty = event.getLocationId();
@@ -76,6 +85,7 @@ public class BillingEventTransferService {
         for (BillingEvent event : events) {
             try {
                 statusService.assertMutable(event);
+                assertNoBlockingValidationFailures(event);
 
                 String previousCustomer = event.getCustomerNumber();
                 String previousProperty = event.getLocationId();
@@ -220,5 +230,24 @@ public class BillingEventTransferService {
             }
         }
         return new BulkTransferResult(succeeded, failed);
+    }
+
+    private void assertNoBlockingValidationFailures(BillingEvent event) {
+        BillingEventValidationStatus status = event.getValidationStatus();
+        if (status == BillingEventValidationStatus.FAILED) {
+            List<ValidationRule> activeRules = validationRuleRepository.findAllActive();
+            List<ValidationFailure> failures = validationService.validateEvent(event, activeRules);
+            List<ValidationFailure> blocking = failures.stream()
+                .filter(f -> f.getSeverity() == ValidationSeverity.BLOCKING)
+                .collect(Collectors.toList());
+            if (!blocking.isEmpty()) {
+                String fields = blocking.stream()
+                    .map(ValidationFailure::getField)
+                    .collect(Collectors.joining(", "));
+                throw new IllegalStateException(
+                    "Event " + event.getId() + " has blocking validation failures on fields: " + fields +
+                    ". Resolve or override them before transferring.");
+            }
+        }
     }
 }

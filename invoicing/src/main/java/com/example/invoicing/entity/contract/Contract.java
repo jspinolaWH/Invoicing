@@ -5,6 +5,7 @@ import com.example.invoicing.entity.product.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,4 +30,16 @@ public class Contract extends BaseAuditEntity {
         inverseJoinColumns = @JoinColumn(name = "product_id")
     )
     private List<Product> products = new ArrayList<>();
+
+    @Column(name = "invoice_template_id")
+    private Long invoiceTemplateId;
+
+    @Column(name = "work_site", length = 200)
+    private String workSite;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 }

@@ -75,9 +75,10 @@ public class SeasonalFeeGenerationService {
 
     public void advanceNextDueDate(SeasonalFeeConfig config) {
         LocalDate next = switch (config.getBillingFrequency()) {
-            case MONTHLY   -> config.getNextDueDate().plusMonths(1);
-            case QUARTERLY -> config.getNextDueDate().plusMonths(3);
-            case ANNUAL    -> config.getNextDueDate().plusYears(1);
+            case MONTHLY      -> config.getNextDueDate().plusMonths(1);
+            case QUARTERLY    -> config.getNextDueDate().plusMonths(3);
+            case SEMI_ANNUAL  -> config.getNextDueDate().plusMonths(6);
+            case ANNUAL       -> config.getNextDueDate().plusYears(1);
         };
         config.setNextDueDate(next);
     }

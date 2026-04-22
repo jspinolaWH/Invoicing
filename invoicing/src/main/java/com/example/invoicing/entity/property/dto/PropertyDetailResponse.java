@@ -41,6 +41,9 @@ public class PropertyDetailResponse {
     // R9 — Oldest resident
     private Integer oldestResidentYear;
 
+    // Invoice template
+    private Long invoiceTemplateId;
+
     // R4 — Owners
     private List<PropertyOwnerDto> owners;
 

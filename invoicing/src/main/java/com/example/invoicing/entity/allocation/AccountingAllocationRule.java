@@ -2,6 +2,7 @@ package com.example.invoicing.entity.allocation;
 
 import com.example.invoicing.entity.BaseAuditEntity;
 import com.example.invoicing.entity.account.AccountingAccount;
+import com.example.invoicing.entity.account.PriceComponent;
 import com.example.invoicing.entity.product.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,6 +32,10 @@ public class AccountingAllocationRule extends BaseAuditEntity {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "accounting_account_id", nullable = false)
     private AccountingAccount accountingAccount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "price_component", length = 50)
+    private PriceComponent priceComponent;
 
     /**
      * Specificity score: 1 = product only, 2 = product+region, 3 = product+region+municipality.

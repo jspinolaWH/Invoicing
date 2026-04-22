@@ -16,6 +16,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +45,10 @@ public class SharedServiceInvoicingService {
                 + " on date " + event.getEventDate());
         }
 
+        List<SharedServiceParticipant> filteredParticipants = participants.stream()
+            .filter(p -> p.getSharePercentage().compareTo(BigDecimal.ZERO) != 0 || p.isIncludeIfZeroShare())
+            .collect(Collectors.toList());
+
         BigDecimal totalNet = computeNet(event);
         BigDecimal unitPrice = computeUnitPrice(event);
         BigDecimal vatRate = resolveVatRate(event);
@@ -55,9 +60,9 @@ public class SharedServiceInvoicingService {
         BigDecimal allocatedNet = BigDecimal.ZERO;
         BigDecimal allocatedGross = BigDecimal.ZERO;
 
-        for (int i = 0; i < participants.size(); i++) {
-            SharedServiceParticipant participant = participants.get(i);
-            boolean isLast = (i == participants.size() - 1);
+        for (int i = 0; i < filteredParticipants.size(); i++) {
+            SharedServiceParticipant participant = filteredParticipants.get(i);
+            boolean isLast = (i == filteredParticipants.size() - 1);
 
             BigDecimal share = participant.getSharePercentage()
                 .divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP);
@@ -93,6 +98,7 @@ public class SharedServiceInvoicingService {
             line.setCostCenter(event.getCostCenter());
             line.setBundled(false);
             line.setSourceEvent(event);
+            line.setSharedServiceTotalNet(totalNet);
             lines.add(line);
         }
 

@@ -39,3 +39,20 @@ export async function applyResponsibilityChange(data) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+
+export async function fetchResponsibilityChangeReport({ customerNumber, from, to } = {}) {
+  const params = new URLSearchParams();
+  if (customerNumber) params.set('customerNumber', customerNumber);
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const query = params.toString() ? `?${params}` : '';
+  const res = await fetch(`/api/v1/reports/responsibility-changes${query}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function fetchChangeRunEvents(changeRunId) {
+  const res = await fetch(`/api/v1/reports/responsibility-changes/${changeRunId}/events`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

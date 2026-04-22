@@ -23,10 +23,13 @@ public class InvoiceNumberSeries extends BaseAuditEntity {
     @Column(nullable = false)
     private String formatPattern;   // e.g. "{PREFIX}-{YEAR}-{COUNTER:06d}"
 
+    @Column(length = 50)
+    private String category;        // e.g. SLUDGE, CREDIT, PUBLIC, PRIVATE, ANNUAL
+
     @Column(nullable = false)
     private Long currentCounter;    // monotonically increasing — never decremented
 
-    // Released numbers are never re-issued — kept for auditing only
+    // Released numbers are re-used before minting a new counter value
     @ElementCollection
     @CollectionTable(name = "released_invoice_numbers", joinColumns = @JoinColumn(name = "series_id"))
     @Column(name = "released_number")

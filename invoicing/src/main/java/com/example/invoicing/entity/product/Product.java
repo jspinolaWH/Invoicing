@@ -1,6 +1,9 @@
 package com.example.invoicing.entity.product;
 
 import com.example.invoicing.entity.BaseAuditEntity;
+import com.example.invoicing.entity.account.AccountingAccount;
+import com.example.invoicing.entity.costcenter.CostCenter;
+import com.example.invoicing.entity.pricelist.PriceList;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,6 +45,18 @@ public class Product extends BaseAuditEntity {
 
     @Column(name = "is_active")
     private Boolean active = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_accounting_account_id")
+    private AccountingAccount defaultAccountingAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_cost_center_id")
+    private CostCenter defaultCostCenter;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "price_list_id")
+    private PriceList priceList;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductTranslation> translations = new ArrayList<>();

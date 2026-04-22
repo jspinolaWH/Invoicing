@@ -26,4 +26,6 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
         @Param("customerNumber") String customerNumber,
         @Param("q") String q,
         Pageable pageable);
+
+    java.util.Optional<Property> findByPropertyId(String propertyId);
 }

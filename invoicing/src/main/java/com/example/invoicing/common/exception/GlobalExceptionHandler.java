@@ -46,6 +46,15 @@ public class GlobalExceptionHandler {
                 "Invoice processing in progress. Address changes cannot be made during this time."));
     }
 
+    @ExceptionHandler(BillingRunLockException.class)
+    public ResponseEntity<ErrorResponse> handleBillingRunLocked(BillingRunLockException ex) {
+        return ResponseEntity
+            .status(HttpStatus.LOCKED)
+            .header("Retry-After", "300")
+            .body(new ErrorResponse("CUSTOMER_LOCKED",
+                "Invoice processing in progress. Address changes cannot be made during this time."));
+    }
+
     @ExceptionHandler(com.example.invoicing.common.exception.CannotCancelException.class)
     public ResponseEntity<ErrorResponse> handleCannotCancel(
             com.example.invoicing.common.exception.CannotCancelException ex) {

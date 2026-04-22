@@ -23,3 +23,9 @@ export async function getAuthorityInvoiceImage(id) {
   if (!res.ok) throw new Error(await res.text());
   return res.blob();
 }
+
+export async function getAuthorityInvoiceAttachments(id) {
+  const res = await fetch(`${BASE}/${id}/external-attachments`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

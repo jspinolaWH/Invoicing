@@ -68,4 +68,10 @@ public class InvoiceLineItem extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_event_id")
     private BillingEvent sourceEvent;
+
+    @Column(name = "waste_type", length = 100)
+    private String wasteType;
+
+    @Column(name = "shared_service_total_net", precision = 19, scale = 4)
+    private BigDecimal sharedServiceTotalNet;
 }

@@ -1,6 +1,7 @@
 package com.example.invoicing.service;
 
 import com.example.invoicing.entity.account.AccountingAccount;
+import com.example.invoicing.entity.account.PriceComponent;
 import com.example.invoicing.entity.allocation.AccountingAllocationRule;
 import com.example.invoicing.entity.allocation.dto.AllocationResolveResponse;
 import com.example.invoicing.entity.allocation.dto.AllocationRuleRequest;
@@ -47,8 +48,9 @@ public class AccountingAllocationRuleService {
             .product(product)
             .region(request.getRegion())
             .municipality(request.getMunicipality())
+            .priceComponent(request.getPriceComponent())
             .accountingAccount(account)
-            .specificityScore(computeSpecificityScore(request.getRegion(), request.getMunicipality()))
+            .specificityScore(computeSpecificityScore(request.getRegion(), request.getMunicipality(), request.getPriceComponent()))
             .description(request.getDescription())
             .active(true)
             .build();
@@ -67,8 +69,9 @@ public class AccountingAllocationRuleService {
         rule.setProduct(product);
         rule.setRegion(request.getRegion());
         rule.setMunicipality(request.getMunicipality());
+        rule.setPriceComponent(request.getPriceComponent());
         rule.setAccountingAccount(account);
-        rule.setSpecificityScore(computeSpecificityScore(request.getRegion(), request.getMunicipality()));
+        rule.setSpecificityScore(computeSpecificityScore(request.getRegion(), request.getMunicipality(), request.getPriceComponent()));
         rule.setDescription(request.getDescription());
 
         return toResponse(ruleRepository.save(rule));
@@ -81,14 +84,14 @@ public class AccountingAllocationRuleService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<AccountingAllocationRule> findBestMatch(Long productId, String region, String municipality) {
-        List<AccountingAllocationRule> rules = ruleRepository.findMostSpecificRules(productId, region, municipality);
+    public Optional<AccountingAllocationRule> findBestMatch(Long productId, String region, String municipality, PriceComponent priceComponent) {
+        List<AccountingAllocationRule> rules = ruleRepository.findMostSpecificRules(productId, region, municipality, priceComponent);
         return rules.isEmpty() ? Optional.empty() : Optional.of(rules.get(0));
     }
 
     @Transactional(readOnly = true)
-    public AllocationResolveResponse resolve(Long productId, String region, String municipality) {
-        Optional<AccountingAllocationRule> match = findBestMatch(productId, region, municipality);
+    public AllocationResolveResponse resolve(Long productId, String region, String municipality, PriceComponent priceComponent) {
+        Optional<AccountingAllocationRule> match = findBestMatch(productId, region, municipality, priceComponent);
 
         if (match.isEmpty()) {
             return AllocationResolveResponse.builder()
@@ -98,10 +101,11 @@ public class AccountingAllocationRuleService {
         }
 
         AccountingAllocationRule rule = match.get();
+        String componentSuffix = rule.getPriceComponent() != null ? " (component: " + rule.getPriceComponent().name() + ")" : "";
         String reason = switch (rule.getSpecificityScore()) {
-            case 3 -> "Matched on product + region + municipality";
-            case 2 -> "Matched on product + region";
-            default -> "Matched on product only (fallback rule)";
+            case 6, 3 -> "Matched on product + region + municipality" + componentSuffix;
+            case 5, 2 -> "Matched on product + region" + componentSuffix;
+            default   -> "Matched on product only (fallback rule)" + componentSuffix;
         };
 
         return AllocationResolveResponse.builder()
@@ -114,10 +118,12 @@ public class AccountingAllocationRuleService {
     }
 
     // -----------------------------------------------------------------------
-    private int computeSpecificityScore(String region, String municipality) {
-        if (region != null && !region.isBlank() && municipality != null && !municipality.isBlank()) return 3;
-        if (region != null && !region.isBlank()) return 2;
-        return 1;
+    private int computeSpecificityScore(String region, String municipality, PriceComponent priceComponent) {
+        int base;
+        if (region != null && !region.isBlank() && municipality != null && !municipality.isBlank()) base = 3;
+        else if (region != null && !region.isBlank()) base = 2;
+        else base = 1;
+        return priceComponent != null ? base + 3 : base;
     }
 
     private AccountingAllocationRule loadRule(Long id) {
@@ -139,6 +145,7 @@ public class AccountingAllocationRuleService {
             .accountingAccountId(r.getAccountingAccount().getId())
             .accountingAccountCode(r.getAccountingAccount().getCode())
             .accountingAccountName(r.getAccountingAccount().getName())
+            .priceComponent(r.getPriceComponent() != null ? r.getPriceComponent().name() : null)
             .specificityScore(r.getSpecificityScore())
             .description(r.getDescription())
             .active(r.isActive())

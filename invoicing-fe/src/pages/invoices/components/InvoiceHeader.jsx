@@ -24,6 +24,9 @@ export default function InvoiceHeader({ invoice }) {
         <div><div className="label">Language</div><div className="value">{invoice.language}</div></div>
         <div><div className="label">Mode</div><div className="value">{invoice.invoicingMode}</div></div>
         <div><div className="label">Customer</div><div className="value">{invoice.customerName} ({invoice.customerId})</div></div>
+        {invoice.projectReference && (
+          <div><div className="label">Project Reference</div><div className="value">{invoice.projectReference}</div></div>
+        )}
       </div>
     </div>
   )

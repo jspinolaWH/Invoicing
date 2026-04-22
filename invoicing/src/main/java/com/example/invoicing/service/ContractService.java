@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -20,13 +21,33 @@ public class ContractService {
 
     public List<ContractSummaryDto> getContractsForCustomer(String customerNumber) {
         return contractRepository.findByCustomerNumberAndActiveTrue(customerNumber).stream()
-            .map(c -> ContractSummaryDto.builder()
-                .id(c.getId())
-                .name(c.getName())
-                .customerNumber(c.getCustomerNumber())
-                .active(c.isActive())
-                .build())
+            .map(this::toSummary)
             .toList();
+    }
+
+    @Transactional
+    public ContractSummaryDto updateTemplate(Long contractId, Long invoiceTemplateId) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> new EntityNotFoundException("Contract not found: " + contractId));
+        contract.setInvoiceTemplateId(invoiceTemplateId);
+        return toSummary(contractRepository.save(contract));
+    }
+
+    @Transactional
+    public ContractSummaryDto updateWorkSite(Long contractId, String workSite) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> new EntityNotFoundException("Contract not found: " + contractId));
+        contract.setWorkSite(workSite);
+        return toSummary(contractRepository.save(contract));
+    }
+
+    @Transactional
+    public ContractSummaryDto updateDates(Long contractId, LocalDate startDate, LocalDate endDate) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> new EntityNotFoundException("Contract not found: " + contractId));
+        contract.setStartDate(startDate);
+        contract.setEndDate(endDate);
+        return toSummary(contractRepository.save(contract));
     }
 
     public List<InvoicingProductResponse> getProductsForContract(Long contractId) {
@@ -35,5 +56,18 @@ public class ContractService {
         return contract.getProducts().stream()
             .map(InvoicingProductResponse::from)
             .toList();
+    }
+
+    private ContractSummaryDto toSummary(Contract c) {
+        return ContractSummaryDto.builder()
+            .id(c.getId())
+            .name(c.getName())
+            .customerNumber(c.getCustomerNumber())
+            .active(c.isActive())
+            .invoiceTemplateId(c.getInvoiceTemplateId())
+            .workSite(c.getWorkSite())
+            .startDate(c.getStartDate())
+            .endDate(c.getEndDate())
+            .build();
     }
 }

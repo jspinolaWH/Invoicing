@@ -1,6 +1,7 @@
 package com.example.invoicing.entity.surcharge;
 
 import com.example.invoicing.entity.BaseAuditEntity;
+import com.example.invoicing.entity.customer.CustomerType;
 import com.example.invoicing.entity.customer.DeliveryMethod;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,8 +17,12 @@ import java.math.BigDecimal;
 public class SurchargeConfig extends BaseAuditEntity {
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
+    @Column(name = "delivery_method", nullable = false)
     private DeliveryMethod deliveryMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "customer_type", length = 20)
+    private CustomerType customerType;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
@@ -30,4 +35,10 @@ public class SurchargeConfig extends BaseAuditEntity {
 
     @Column(nullable = false)
     private boolean globalSurchargeEnabled = true;
+
+    @Column(nullable = false)
+    private boolean exemptFirstInvoice = false;
+
+    @Column(nullable = false)
+    private boolean requiresTariffInclusion = false;
 }

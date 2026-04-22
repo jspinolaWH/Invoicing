@@ -6,6 +6,9 @@ import {
   getBillingEventAttachments, uploadBillingEventAttachment,
   downloadBillingEventAttachment, deleteBillingEventAttachment,
   confirmTransferBillingEvent, cancelTransferBillingEvent,
+  updateBillingEventComponents, recordContractorPayment,
+  overrideValidation, validateBillingEvents, getBillingEventValidationFailures,
+  approveCorrectionBillingEvent,
 } from '../../api/billingEvents'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
@@ -14,6 +17,7 @@ import AuditTrailTab from '../../components/billing/AuditTrailTab'
 import ExclusionModal from '../../components/billing/ExclusionModal'
 import TransferEventModal from '../../components/billing/TransferEventModal'
 import CreditTransferModal from '../../components/billing/CreditTransferModal'
+import ValidationFailuresList from '../invoices/components/ValidationFailuresList'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -66,7 +70,7 @@ export default function BillingEventDetailPage() {
   if (loading) return <div className="loading">Loading event…</div>
   if (!event) return <div className="error-msg">Event not found.</div>
 
-  const canEdit = event.status === 'DRAFT' || event.status === 'IN_PROGRESS' || event.status === 'ERROR'
+  const canEdit = event.status === 'DRAFT' || event.status === 'IN_PROGRESS' || event.status === 'FOR_CORRECTION' || event.status === 'ERROR'
   const canExclude = !event.excluded && event.status !== 'SENT' && event.status !== 'COMPLETED' && event.status !== 'PENDING_TRANSFER'
   const canTransfer = !event.excluded && event.status === 'IN_PROGRESS'
   const isPendingTransfer = event.status === 'PENDING_TRANSFER'
@@ -99,6 +103,18 @@ export default function BillingEventDetailPage() {
               }
             }}>
               Submit
+            </button>
+          )}
+          {event.status === 'FOR_CORRECTION' && (
+            <button className="btn-primary" onClick={async () => {
+              try {
+                await approveCorrectionBillingEvent(id)
+                load()
+              } catch (e) {
+                alert(e.response?.data?.message ?? 'Failed to approve correction.')
+              }
+            }}>
+              Approve Correction
             </button>
           )}
           {canExclude && (
@@ -199,6 +215,15 @@ export default function BillingEventDetailPage() {
         </div>
       )}
 
+      {event.status === 'FOR_CORRECTION' && (
+        <div style={{ padding: 'var(--space-3) var(--space-4)', background: '#faf5ff', border: '1px solid #d8b4fe', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>
+          <strong style={{ color: '#7c3aed' }}>Awaiting correction review</strong>
+          <span style={{ color: '#6b21a8', marginLeft: 8, fontSize: 14 }}>
+            This event was manually edited and is blocked from invoicing until an INVOICING user approves the correction.
+          </span>
+        </div>
+      )}
+
       {isPendingTransfer && event.pendingTransferCustomerNumber && (
         <div style={{ padding: 'var(--space-3) var(--space-4)', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <span>Transfer pending: <strong>{event.customerNumber}</strong> → <strong>{event.pendingTransferCustomerNumber}</strong></span>
@@ -235,6 +260,7 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>VAT 0%</label><span>{event.vatRate0}</span></div>
             <div className="detail-field"><label>VAT 24%</label><span>{event.vatRate24}</span></div>
             <div className="detail-field"><label>Classification</label><span>{event.legalClassification ?? '—'}</span></div>
+            <div className="detail-field"><label>Registration Number</label><span>{event.registrationNumber ?? '—'}</span></div>
             <div className="detail-field"><label>Vehicle</label><span>{event.vehicleId ?? '—'}</span></div>
             <div className="detail-field"><label>Driver</label><span>{event.driverId ?? '—'}</span></div>
             <div className="detail-field"><label>Location</label><span>{event.locationId ?? '—'}</span></div>
@@ -244,6 +270,7 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>Shared Collection Group %</label><span>{event.sharedServiceGroupPercentage != null ? `${event.sharedServiceGroupPercentage}%` : '—'}</span></div>
             <div className="detail-field"><label>Waste Type</label><span>{event.wasteType ?? '—'}</span></div>
             <div className="detail-field"><label>Receiving Site</label><span>{event.receivingSite ?? '—'}</span></div>
+            <div className="detail-field"><label>Product Group</label><span>{event.productGroup ?? '—'}</span></div>
             <div className="detail-field"><label>Responsibility Area</label><span>{event.responsibilityArea ?? '—'}</span></div>
             <div className="detail-field"><label>Service Responsibility</label><span>{event.serviceResponsibility ?? '—'}</span></div>
             <div className="detail-field"><label>Accounting Account</label><span>{event.accountingAccount ? `${event.accountingAccount.code} — ${event.accountingAccount.name}` : '—'}</span></div>
@@ -273,6 +300,17 @@ export default function BillingEventDetailPage() {
                 <div className="detail-field"><label>Net Amount</label><span>{event.calculatedAmountNet?.toFixed(2) ?? '—'}</span></div>
                 <div className="detail-field"><label>VAT Amount</label><span>{event.calculatedAmountVat?.toFixed(2) ?? '—'}</span></div>
                 <div className="detail-field"><label>Gross Amount</label><span>{event.calculatedAmountGross?.toFixed(2) ?? '—'}</span></div>
+                {(() => {
+                  const base = (Number(event.wasteFeePrice ?? 0) + Number(event.transportFeePrice ?? 0) + Number(event.ecoFeePrice ?? 0))
+                  const totalWith0 = base * (1 + Number(event.vatRate0 ?? 0) / 100)
+                  const totalWith24 = base * (1 + Number(event.vatRate24 ?? 0) / 100)
+                  return (
+                    <>
+                      <div className="detail-field"><label>Total with 0% VAT</label><span>{totalWith0.toFixed(2)}</span></div>
+                      <div className="detail-field"><label>Total with 24% VAT</label><span>{totalWith24.toFixed(2)}</span></div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           )}
@@ -301,9 +339,18 @@ export default function BillingEventDetailPage() {
               </div>
             </div>
           )}
-          {event.comments && (
-            <div style={{ marginTop: 'var(--space-6)' }}>
-              <div className="detail-field"><label>Comments</label><span>{event.comments}</span></div>
+          <ComponentBillingSection event={event} canEdit={canEdit} onUpdated={load} />
+          {event.contractor && (
+            <ContractorPaymentSection event={event} onUpdated={load} />
+          )}
+          {(event.comments || event.internalComments) && (
+            <div style={{ marginTop: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {event.comments && (
+                <div className="detail-field"><label>Invoice Comments</label><span>{event.comments}</span></div>
+              )}
+              {event.internalComments && (
+                <div className="detail-field"><label>Internal Notes</label><span>{event.internalComments}</span></div>
+              )}
             </div>
           )}
           {event.excluded && (
@@ -317,6 +364,7 @@ export default function BillingEventDetailPage() {
               <strong>Rejected</strong> — {event.rejectionReason}
             </div>
           )}
+          <ValidationStatusSection event={event} onUpdated={load} />
         </div>
       )}
 
@@ -415,6 +463,277 @@ export default function BillingEventDetailPage() {
           onSuccess={() => { setCreditTransferModal(false); load(); loadLink() }}
           onClose={() => setCreditTransferModal(false)}
         />
+      )}
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------
+// Selective Component Billing (AC3)
+// -----------------------------------------------------------------------
+function ComponentBillingSection({ event, canEdit, onUpdated }) {
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [components, setComponents] = useState({
+    includeWasteFee: event.includeWasteFee ?? true,
+    includeTransportFee: event.includeTransportFee ?? true,
+    includeEcoFee: event.includeEcoFee ?? true,
+  })
+
+  const handleToggle = (field) => {
+    if (!canEdit) return
+    setComponents(c => ({ ...c, [field]: !c[field] }))
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      await updateBillingEventComponents(event.id, components)
+      onUpdated()
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Failed to update components.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const changed = components.includeWasteFee !== (event.includeWasteFee ?? true)
+    || components.includeTransportFee !== (event.includeTransportFee ?? true)
+    || components.includeEcoFee !== (event.includeEcoFee ?? true)
+
+  return (
+    <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--color-bg-subtle, #f9fafb)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+      <strong style={{ display: 'block', marginBottom: 'var(--space-3)' }}>Component Billing</strong>
+      <p className="muted" style={{ marginBottom: 'var(--space-3)', fontSize: 13 }}>
+        Select which fee components should be included when this event is invoiced.
+      </p>
+      {error && <div className="error-msg" style={{ marginBottom: 8 }}>{error}</div>}
+      <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
+        {[
+          { key: 'includeWasteFee', label: 'Waste Fee', amount: event.wasteFeePrice },
+          { key: 'includeTransportFee', label: 'Transport Fee', amount: event.transportFeePrice },
+          { key: 'includeEcoFee', label: 'Eco Fee', amount: event.ecoFeePrice },
+        ].map(({ key, label, amount }) => (
+          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: canEdit ? 'pointer' : 'default', padding: 'var(--space-3)', border: `1px solid ${components[key] ? 'var(--color-border)' : '#fecaca'}`, borderRadius: 'var(--radius-md)', background: components[key] ? 'white' : '#fff5f5' }}>
+            <input
+              type="checkbox"
+              checked={components[key]}
+              onChange={() => handleToggle(key)}
+              disabled={!canEdit}
+            />
+            <span>
+              <span style={{ fontWeight: 500 }}>{label}</span>
+              {amount != null && <span className="muted"> — €{Number(amount).toFixed(2)}</span>}
+            </span>
+          </label>
+        ))}
+      </div>
+      {canEdit && changed && (
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : 'Save Component Selection'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------
+// Contractor Payment (AC5)
+// -----------------------------------------------------------------------
+function ContractorPaymentSection({ event, onUpdated }) {
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [notes, setNotes] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [pendingStatus, setPendingStatus] = useState('PAID')
+
+  const handleRecord = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      await recordContractorPayment(event.id, { status: pendingStatus, notes })
+      setShowForm(false)
+      setNotes('')
+      onUpdated()
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Failed to record contractor payment.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const statusColor = {
+    PAID: { color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)' },
+    NOT_REQUIRED: { color: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
+    PENDING: { color: '#92400e', bg: '#fffbeb', border: '#fcd34d' },
+  }
+
+  const current = event.contractorPaymentStatus ?? 'PENDING'
+  const style = statusColor[current] ?? statusColor.PENDING
+
+  return (
+    <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 'var(--radius-md)' }}>
+      <strong style={{ display: 'block', marginBottom: 'var(--space-3)' }}>Contractor Payment</strong>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+        <span className="muted">Contractor:</span>
+        <span>{event.contractor}</span>
+        <span style={{ padding: '2px 10px', borderRadius: 12, border: `1px solid ${style.border}`, background: style.bg, color: style.color, fontSize: 13, fontWeight: 500 }}>
+          {current.replace('_', ' ')}
+        </span>
+      </div>
+      {event.contractorPaymentNotes && (
+        <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>{event.contractorPaymentNotes}</p>
+      )}
+      {event.contractorPaymentRecordedBy && (
+        <p className="muted" style={{ fontSize: 12 }}>
+          Recorded by {event.contractorPaymentRecordedBy} at {formatTs(event.contractorPaymentRecordedAt)}
+        </p>
+      )}
+      {!showForm && current === 'PENDING' && (
+        <button className="btn-secondary" style={{ marginTop: 'var(--space-3)' }} onClick={() => setShowForm(true)}>
+          Record Payment Decision
+        </button>
+      )}
+      {showForm && (
+        <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          {error && <div className="error-msg">{error}</div>}
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <select value={pendingStatus} onChange={e => setPendingStatus(e.target.value)}
+              style={{ padding: '6px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)' }}>
+              <option value="PAID">Paid</option>
+              <option value="NOT_REQUIRED">Not Required</option>
+            </select>
+          </div>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Notes (optional)"
+            style={{ width: '100%', padding: 'var(--space-2) var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', resize: 'vertical', boxSizing: 'border-box' }}
+          />
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            <button className="btn-primary" onClick={handleRecord} disabled={saving}>
+              {saving ? 'Saving…' : 'Confirm'}
+            </button>
+            <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ValidationStatusSection({ event, onUpdated }) {
+  const [overrideOpen, setOverrideOpen] = useState(false)
+  const [overrideReason, setOverrideReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [validating, setValidating] = useState(false)
+  const [error, setError] = useState(null)
+  const [failures, setFailures] = useState([])
+
+  useEffect(() => {
+    if (event.validationStatus === 'FAILED') {
+      getBillingEventValidationFailures(event.id)
+        .then(r => setFailures(r.data))
+        .catch(() => {})
+    } else {
+      setFailures([])
+    }
+  }, [event.id, event.validationStatus])
+
+  const status = event.validationStatus ?? 'PENDING'
+  const statusCfg = {
+    PENDING:    { color: '#6b7280', bg: '#f8fafc', border: '#cbd5e1', label: 'Not yet validated' },
+    PASSED:     { color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)', label: 'Passed' },
+    FAILED:     { color: '#b91c1c', bg: '#fff1f2', border: '#fecdd3', label: 'Failed' },
+    OVERRIDDEN: { color: '#b45309', bg: '#fffbeb', border: '#fcd34d', label: 'Overridden' },
+  }[status] ?? { color: '#6b7280', bg: '#f8fafc', border: '#cbd5e1', label: status }
+
+  const handleValidate = async () => {
+    setValidating(true)
+    setError(null)
+    try {
+      await validateBillingEvents([event.id])
+      onUpdated()
+    } catch {
+      setError('Validation failed.')
+    } finally {
+      setValidating(false)
+    }
+  }
+
+  const handleOverride = async () => {
+    if (!overrideReason.trim()) return
+    setSaving(true)
+    setError(null)
+    try {
+      await overrideValidation(event.id, overrideReason)
+      setOverrideOpen(false)
+      setOverrideReason('')
+      onUpdated()
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Override failed.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--color-bg-subtle, #f9fafb)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+      <strong style={{ display: 'block', marginBottom: 'var(--space-3)' }}>Validation Status</strong>
+      {error && <div className="error-msg" style={{ marginBottom: 8 }}>{error}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+        <span style={{ padding: '2px 12px', borderRadius: 12, border: `1px solid ${statusCfg.border}`, background: statusCfg.bg, color: statusCfg.color, fontSize: 13, fontWeight: 500 }}>
+          {statusCfg.label}
+        </span>
+        {event.lastValidatedAt && (
+          <span className="muted" style={{ fontSize: 13 }}>Last validated: {new Date(event.lastValidatedAt).toLocaleString('fi-FI')}</span>
+        )}
+        <button className="btn-secondary" onClick={handleValidate} disabled={validating} style={{ marginLeft: 'auto' }}>
+          {validating ? 'Validating…' : 'Run Validation'}
+        </button>
+      </div>
+      {status === 'FAILED' && (
+        <div style={{ marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 'var(--radius-md)' }}>
+          <p style={{ marginBottom: 'var(--space-2)', fontSize: 13 }}>
+            This event has validation failures. Fix the flagged fields, or override with a documented reason if the failures are acceptable.
+          </p>
+          <ValidationFailuresList failures={failures} />
+          {!overrideOpen && (
+            <button className="btn-secondary" style={{ marginTop: 'var(--space-2)' }} onClick={() => setOverrideOpen(true)}>Override Validation</button>
+          )}
+          {overrideOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <label style={{ fontWeight: 500, fontSize: 13 }}>
+                Override reason <span style={{ color: 'var(--color-icon-danger)' }}>*</span>
+              </label>
+              <textarea
+                value={overrideReason}
+                onChange={e => setOverrideReason(e.target.value)}
+                rows={3}
+                placeholder="Document why proceeding despite validation failures is acceptable…"
+                style={{ width: '100%', padding: 'var(--space-2) var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <button className="btn-primary" onClick={handleOverride} disabled={!overrideReason.trim() || saving}>
+                  {saving ? 'Saving…' : 'Confirm Override'}
+                </button>
+                <button className="btn-secondary" onClick={() => { setOverrideOpen(false); setOverrideReason('') }}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {status === 'OVERRIDDEN' && event.validationOverrideReason && (
+        <div style={{ marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 'var(--radius-md)' }}>
+          <strong>Override reason:</strong> {event.validationOverrideReason}
+          {event.validationOverriddenBy && (
+            <span className="muted" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
+              by {event.validationOverriddenBy} at {event.validationOverriddenAt ? new Date(event.validationOverriddenAt).toLocaleString('fi-FI') : '—'}
+            </span>
+          )}
+        </div>
       )}
     </div>
   )

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBillingEvent, updateBillingEvent } from '../../api/billingEvents'
 import { getProducts } from '../../api/products'
+import { getPropertyGroups } from '../../api/propertyGroups'
+import { getMyRoles } from '../../api/me'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
 import '../masterdata/VatRatesPage.css'
@@ -17,24 +19,30 @@ export default function EditBillingEventPage() {
   const navigate = useNavigate()
   const [event, setEvent] = useState(null)
   const [products, setProducts] = useState([])
+  const [propertyGroups, setPropertyGroups] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [canEditAll, setCanEditAll] = useState(true)
 
   const [form, setForm] = useState({
     eventDate: '', productId: '', wasteFeePrice: '', transportFeePrice: '',
     ecoFeePrice: '', quantity: '', weight: '', customerNumber: '',
     vehicleId: '', driverId: '', locationId: '', municipalityId: '', comments: '', reason: '',
-    contractor: '', direction: '', sharedServiceGroupPercentage: '',
+    contractor: '', direction: '', sharedServiceGroupId: '', sharedServiceGroupPercentage: '',
     wasteType: '', receivingSite: '',
   })
 
   useEffect(() => {
-    Promise.all([getBillingEvent(id), getProducts()])
-      .then(([evtRes, prodRes]) => {
+    Promise.all([getBillingEvent(id), getProducts(), getPropertyGroups(), getMyRoles().catch(() => [])])
+      .then(([evtRes, prodRes, pgRes, roles]) => {
         const e = evtRes.data
         setEvent(e)
         setProducts(prodRes.data)
+        setPropertyGroups(pgRes.data)
+        const hasInvoicing = roles.includes('INVOICING')
+        const hasPricingOnly = roles.includes('INVOICING_PRICING') && !hasInvoicing
+        setCanEditAll(!hasPricingOnly)
         setForm({
           eventDate: e.eventDate ?? '',
           productId: e.product?.id ?? '',
@@ -52,6 +60,7 @@ export default function EditBillingEventPage() {
           reason: '',
           contractor: e.contractor ?? '',
           direction: e.direction ?? '',
+          sharedServiceGroupId: e.sharedServiceGroupId ?? '',
           sharedServiceGroupPercentage: e.sharedServiceGroupPercentage ?? '',
           wasteType: e.wasteType ?? '',
           receivingSite: e.receivingSite ?? '',
@@ -88,6 +97,9 @@ export default function EditBillingEventPage() {
       if (form.comments !== (event.comments ?? '')) payload.comments = form.comments
       if (form.contractor !== (event.contractor ?? '')) payload.contractor = form.contractor
       if (form.direction !== (event.direction ?? '')) payload.direction = form.direction || null
+      if (form.sharedServiceGroupId !== (event.sharedServiceGroupId ?? '')) {
+        payload.sharedServiceGroupId = form.sharedServiceGroupId || null
+      }
       if (String(form.sharedServiceGroupPercentage) !== String(event.sharedServiceGroupPercentage ?? '')) {
         payload.sharedServiceGroupPercentage = form.sharedServiceGroupPercentage !== '' ? Number(form.sharedServiceGroupPercentage) : null
       }
@@ -109,6 +121,7 @@ export default function EditBillingEventPage() {
   if (!event) return <div className="loading">Loading event…</div>
 
   const isMutable = event.status === 'IN_PROGRESS' || event.status === 'ERROR'
+  const fieldDisabled = (pricingField) => !isMutable || (!pricingField && !canEditAll)
 
   return (
     <div className="page">
@@ -131,6 +144,12 @@ export default function EditBillingEventPage() {
         </div>
       )}
 
+      {isMutable && !canEditAll && (
+        <div className="info-msg" style={{ background: 'var(--color-bg-warning, #fffbeb)', border: '1px solid var(--color-border-warning, #fbbf24)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-4)', color: 'var(--color-text-warning, #92400e)', fontSize: 'var(--font-size-sm)' }}>
+          Your account has <strong>Pricing-only</strong> edit access. Only the Pricing fields (Waste Fee, Transport Fee, Eco Fee) can be modified.
+        </div>
+      )}
+
       {error && <div className="error-msg">{error}</div>}
 
       <form onSubmit={handleSubmit}>
@@ -139,11 +158,11 @@ export default function EditBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Date</label>
-              <input type="date" value={form.eventDate} onChange={set('eventDate')} disabled={!isMutable} />
+              <input type="date" value={form.eventDate} onChange={set('eventDate')} disabled={fieldDisabled(false)} />
             </div>
             <div className="field">
               <label>Product</label>
-              <select value={form.productId} onChange={set('productId')} disabled={!isMutable}
+              <select value={form.productId} onChange={set('productId')} disabled={fieldDisabled(false)}
                 style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}>
                 {products.map(p => (
                   <option key={p.id} value={p.id}>
@@ -186,15 +205,15 @@ export default function EditBillingEventPage() {
           <div className="form-row-3">
             <div className="field">
               <label>Waste Fee</label>
-              <input type="number" step="0.01" value={form.wasteFeePrice} onChange={set('wasteFeePrice')} disabled={!isMutable} />
+              <input type="number" step="0.01" value={form.wasteFeePrice} onChange={set('wasteFeePrice')} disabled={fieldDisabled(true)} />
             </div>
             <div className="field">
               <label>Transport Fee</label>
-              <input type="number" step="0.01" value={form.transportFeePrice} onChange={set('transportFeePrice')} disabled={!isMutable} />
+              <input type="number" step="0.01" value={form.transportFeePrice} onChange={set('transportFeePrice')} disabled={fieldDisabled(true)} />
             </div>
             <div className="field">
               <label>Eco Fee</label>
-              <input type="number" step="0.01" value={form.ecoFeePrice} onChange={set('ecoFeePrice')} disabled={!isMutable} />
+              <input type="number" step="0.01" value={form.ecoFeePrice} onChange={set('ecoFeePrice')} disabled={fieldDisabled(true)} />
             </div>
           </div>
         </div>
@@ -204,11 +223,11 @@ export default function EditBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Quantity</label>
-              <input type="number" step="0.01" value={form.quantity} onChange={set('quantity')} disabled={!isMutable} />
+              <input type="number" step="0.01" value={form.quantity} onChange={set('quantity')} disabled={fieldDisabled(false)} />
             </div>
             <div className="field">
               <label>Weight</label>
-              <input type="number" step="0.001" value={form.weight} onChange={set('weight')} disabled={!isMutable} />
+              <input type="number" step="0.001" value={form.weight} onChange={set('weight')} disabled={fieldDisabled(false)} />
             </div>
           </div>
         </div>
@@ -218,21 +237,21 @@ export default function EditBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Customer Number</label>
-              <input value={form.customerNumber} onChange={set('customerNumber')} disabled={!isMutable} />
+              <input value={form.customerNumber} onChange={set('customerNumber')} disabled={fieldDisabled(false)} />
             </div>
             <div className="field">
               <label>Municipality</label>
-              <input value={form.municipalityId} onChange={set('municipalityId')} disabled={!isMutable} />
+              <input value={form.municipalityId} onChange={set('municipalityId')} disabled={fieldDisabled(false)} />
             </div>
           </div>
           <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
             <div className="field">
               <label>Vehicle ID</label>
-              <input value={form.vehicleId} onChange={set('vehicleId')} disabled={!isMutable} />
+              <input value={form.vehicleId} onChange={set('vehicleId')} disabled={fieldDisabled(false)} />
             </div>
             <div className="field">
               <label>Driver ID</label>
-              <input value={form.driverId} onChange={set('driverId')} disabled={!isMutable} />
+              <input value={form.driverId} onChange={set('driverId')} disabled={fieldDisabled(false)} />
             </div>
           </div>
         </div>
@@ -240,7 +259,7 @@ export default function EditBillingEventPage() {
         <div className="form-section">
           <div className="form-section-title">Comments</div>
           <div className="field">
-            <textarea value={form.comments} onChange={set('comments')} disabled={!isMutable}
+            <textarea value={form.comments} onChange={set('comments')} disabled={fieldDisabled(false)}
               style={{ width: '100%', minHeight: 80, padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical' }} />
           </div>
         </div>
@@ -250,11 +269,11 @@ export default function EditBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Waste Type <span className="optional">(optional)</span></label>
-              <input value={form.wasteType} onChange={set('wasteType')} disabled={!isMutable} placeholder="e.g. MIXED_WASTE, PAPER, BIO_WASTE" />
+              <input value={form.wasteType} onChange={set('wasteType')} disabled={fieldDisabled(false)} placeholder="e.g. MIXED_WASTE, PAPER, BIO_WASTE" />
             </div>
             <div className="field">
               <label>Receiving Site <span className="optional">(optional)</span></label>
-              <input value={form.receivingSite} onChange={set('receivingSite')} disabled={!isMutable} placeholder="e.g. Ämmässuo Waste Treatment Centre" />
+              <input value={form.receivingSite} onChange={set('receivingSite')} disabled={fieldDisabled(false)} placeholder="e.g. Ämmässuo Waste Treatment Centre" />
             </div>
           </div>
         </div>
@@ -264,11 +283,11 @@ export default function EditBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Contractor <span className="optional">(optional)</span></label>
-              <input value={form.contractor} onChange={set('contractor')} disabled={!isMutable} />
+              <input value={form.contractor} onChange={set('contractor')} disabled={fieldDisabled(false)} />
             </div>
             <div className="field">
               <label>Direction <span className="optional">(optional)</span></label>
-              <select value={form.direction} onChange={set('direction')} disabled={!isMutable}
+              <select value={form.direction} onChange={set('direction')} disabled={fieldDisabled(false)}
                 style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}>
                 <option value="">— Select —</option>
                 <option value="INBOUND">INBOUND</option>
@@ -278,8 +297,22 @@ export default function EditBillingEventPage() {
           </div>
           <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
             <div className="field">
+              <label>Property Group (Shared Service) <span className="optional">(optional)</span></label>
+              <select
+                value={form.sharedServiceGroupId}
+                onChange={set('sharedServiceGroupId')}
+                disabled={fieldDisabled(false)}
+                style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}
+              >
+                <option value="">— None —</option>
+                {propertyGroups.map(g => (
+                  <option key={g.id} value={String(g.id)}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
               <label>Shared Collection Group % <span className="optional">(optional)</span></label>
-              <input type="number" min="0" max="100" step="0.01" value={form.sharedServiceGroupPercentage} onChange={set('sharedServiceGroupPercentage')} disabled={!isMutable} />
+              <input type="number" min="0" max="100" step="0.01" value={form.sharedServiceGroupPercentage} onChange={set('sharedServiceGroupPercentage')} disabled={fieldDisabled(false)} />
             </div>
           </div>
         </div>

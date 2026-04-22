@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { transmitInvoice, getTransmissionStatus, getInvoiceImage, getExternalAttachments, recallInvoice } from '../../api/integration';
+import { useState, useEffect } from 'react';
+import { transmitInvoice, retransmitInvoice, getTransmissionStatus, getInvoiceImage, getExternalAttachments, recallInvoice } from '../../api/integration';
 
-export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externalReference, onStatusChange }) {
+export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externalReference, allowExternalRecall, onStatusChange }) {
   const [transmitResult, setTransmitResult] = useState(null);
   const [statusResult, setStatusResult] = useState(null);
   const [attachments, setAttachments] = useState(null);
@@ -10,6 +10,7 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
   const [showRecall, setShowRecall] = useState(false);
   const [recallForm, setRecallForm] = useState({ reason: '', internalComment: '' });
   const [recallResult, setRecallResult] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(null);
 
   async function handleTransmit() {
     setLoading('transmit');
@@ -41,12 +42,12 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
   async function handleFetchImage() {
     setLoading('image');
     setError(null);
+    if (pdfUrl) { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); }
     try {
       const blob = await getInvoiceImage(invoiceId);
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      setPdfUrl(URL.createObjectURL(blob));
     } catch (err) {
-      setError(err.message);
+      setError('The invoice image could not be retrieved. ' + err.message + ' Contact your administrator if the problem persists.');
     } finally {
       setLoading('');
     }
@@ -58,6 +59,20 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
     try {
       const result = await getExternalAttachments(invoiceId);
       setAttachments(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading('');
+    }
+  }
+
+  async function handleRetransmit() {
+    setLoading('retransmit');
+    setError(null);
+    try {
+      const result = await retransmitInvoice(invoiceId);
+      setTransmitResult(result);
+      if (onStatusChange) onStatusChange('SENT', result.externalReference);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,6 +95,12 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
       setLoading('');
     }
   }
+
+  useEffect(() => {
+    if (invoiceStatus === 'SENT' && externalReference) {
+      handleFetchAttachments();
+    }
+  }, [invoiceStatus, externalReference]);
 
   const isSent = invoiceStatus === 'SENT';
   const isReady = invoiceStatus === 'READY';
@@ -111,9 +132,16 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
           </>
         )}
         {isSent && (
-          <button onClick={() => setShowRecall(true)} style={btn('#dc2626')}>
-            Recall Invoice
-          </button>
+          <>
+            <button onClick={handleRetransmit} disabled={loading === 'retransmit'} style={btn('#d97706')}>
+              {loading === 'retransmit' ? 'Retransmitting…' : 'Retransmit (Updated Address)'}
+            </button>
+            {allowExternalRecall && (
+              <button onClick={() => setShowRecall(true)} style={btn('#dc2626')}>
+                Recall Invoice
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -135,11 +163,43 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
         <div style={{ marginBottom: 12 }}>
           {attachments.length === 0
             ? <p style={{ color: '#6b7280' }}>No external attachments found.</p>
-            : attachments.map((a, i) => (
-                <div key={i} style={{ padding: 8, border: '1px solid #e5e7eb', borderRadius: 4, marginBottom: 6 }}>
-                  {a.filename} ({a.mimeType}, {a.sizeBytes} bytes)
-                </div>
-              ))}
+            : attachments.map((a, i) => {
+                const href = a.contentBase64 ? `data:${a.mimeType};base64,${a.contentBase64}` : null;
+                const isImage = a.mimeType && a.mimeType.startsWith('image/');
+                const isPdf = a.mimeType === 'application/pdf';
+                return (
+                  <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: 6, marginBottom: 10, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f9fafb', borderBottom: href ? '1px solid #e5e7eb' : 'none' }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{a.filename}</span>
+                      <span style={{ fontSize: 12, color: '#6b7280' }}>{a.mimeType} &middot; {a.sizeBytes} bytes</span>
+                      {a.attachmentIdentifier && <code style={{ fontSize: 11, color: '#6b7280' }}>{a.attachmentIdentifier}</code>}
+                      {a.description && <span style={{ fontSize: 12, color: '#374151' }}>{a.description}</span>}
+                      {href && (
+                        <a href={href} download={a.filename}
+                          style={{ marginLeft: 'auto', padding: '4px 10px', background: '#2563eb', color: '#fff', borderRadius: 4, fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>
+                          Download
+                        </a>
+                      )}
+                    </div>
+                    {href && isPdf && (
+                      <iframe src={href} title={a.filename} style={{ width: '100%', height: 400, border: 'none', display: 'block' }} />
+                    )}
+                    {href && isImage && (
+                      <img src={href} alt={a.filename} style={{ maxWidth: '100%', display: 'block' }} />
+                    )}
+                  </div>
+                );
+              })}
+        </div>
+      )}
+
+      {pdfUrl && (
+        <div style={{ marginBottom: 12, border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Invoice PDF</span>
+            <button onClick={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#6b7280', lineHeight: 1 }}>&#x2715;</button>
+          </div>
+          <iframe src={pdfUrl} style={{ width: '100%', height: 500, border: 'none', display: 'block' }} title="Invoice PDF" />
         </div>
       )}
 

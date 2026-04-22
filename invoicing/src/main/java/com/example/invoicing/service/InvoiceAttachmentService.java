@@ -9,6 +9,9 @@ import com.example.invoicing.entity.invoice.Invoice;
 import com.example.invoicing.entity.invoice.dto.InvoiceAttachmentResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +34,9 @@ public class InvoiceAttachmentService {
 
     private static final int MAX_ATTACHMENTS = 10;
     private static final long MAX_TOTAL_BYTES = 1_048_576L; // 1 MB
+    private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
+        "application/pdf", "image/jpeg", "image/png"
+    );
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceAttachmentRepository attachmentRepository;
@@ -43,8 +51,9 @@ public class InvoiceAttachmentService {
                 "Cannot attach files to an invoice in " + invoice.getStatus() + " status");
         }
 
-        if (!"application/pdf".equalsIgnoreCase(file.getContentType())) {
-            throw new AttachmentValidationException("Only PDF/A format is accepted for invoice attachments");
+        String contentType = file.getContentType() != null ? file.getContentType().toLowerCase() : "";
+        if (!ALLOWED_MIME_TYPES.contains(contentType)) {
+            throw new AttachmentValidationException("Only PDF/A, JPEG, and PNG files are accepted for invoice attachments");
         }
 
         long currentCount = attachmentRepository.countByInvoiceId(invoiceId);
@@ -63,6 +72,10 @@ public class InvoiceAttachmentService {
             bytes = file.getBytes();
         } catch (IOException e) {
             throw new AttachmentValidationException("Failed to read attachment file: " + e.getMessage());
+        }
+
+        if ("application/pdf".equals(contentType)) {
+            validatePdfAConformance(bytes);
         }
 
         String sha1 = computeSha1(bytes);
@@ -96,6 +109,26 @@ public class InvoiceAttachmentService {
             throw new EntityNotFoundException("Attachment " + attachmentId + " not found on invoice " + invoiceId);
         }
         return att;
+    }
+
+    private void validatePdfAConformance(byte[] bytes) {
+        try (PDDocument doc = Loader.loadPDF(bytes)) {
+            PDDocumentCatalog catalog = doc.getDocumentCatalog();
+            if (catalog.getMetadata() == null) {
+                throw new AttachmentValidationException(
+                    "PDF does not contain XMP metadata required for PDF/A compliance");
+            }
+            byte[] xmpBytes = catalog.getMetadata().toByteArray();
+            String xmpContent = new String(xmpBytes, StandardCharsets.UTF_8);
+            if (!xmpContent.contains("pdfaid:part")) {
+                throw new AttachmentValidationException(
+                    "PDF does not conform to PDF/A standard — only PDF/A-compliant files are accepted");
+            }
+        } catch (AttachmentValidationException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new AttachmentValidationException("Failed to parse PDF for PDF/A validation: " + e.getMessage());
+        }
     }
 
     private String computeSha1(byte[] bytes) {

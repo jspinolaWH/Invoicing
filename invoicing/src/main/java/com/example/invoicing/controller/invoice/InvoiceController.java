@@ -3,6 +3,9 @@ import com.example.invoicing.service.InvoiceService;
 
 import com.example.invoicing.entity.invoice.dto.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,8 +24,17 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public List<InvoiceResponse> getByRunId(@RequestParam Long runId) {
-        return service.findByRunId(runId);
+    public ResponseEntity<?> getInvoices(
+            @RequestParam(required = false) Long runId,
+            @RequestParam(required = false) String billingType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        if (runId != null) {
+            return ResponseEntity.ok(service.findByRunId(runId));
+        }
+        Page<InvoiceResponse> result = service.findAll(
+            billingType, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "invoiceDate")));
+        return ResponseEntity.ok(result);
     }
 
     @PatchMapping("/{id}/text")

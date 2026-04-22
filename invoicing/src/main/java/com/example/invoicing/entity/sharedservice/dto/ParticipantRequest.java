@@ -11,4 +11,5 @@ public class ParticipantRequest {
     private BigDecimal sharePercentage;
     private LocalDate validFrom;
     private LocalDate validTo;
+    private Boolean includeIfZeroShare;
 }

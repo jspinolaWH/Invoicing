@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getSeries, createSeries, updateSeries, assignNumber } from '../../api/invoiceNumberSeries'
+import { getSeries, createSeries, updateSeries, deleteSeries, assignNumber } from '../../api/invoiceNumberSeries'
 import RelatedTasks from '../../components/RelatedTasks'
 import './VatRatesPage.css'
 import './InvoiceNumberSeriesPage.css'
@@ -8,7 +8,8 @@ const RELATED_TASKS = [
   { id: 'PD-309', label: '3.4.3 Invoice numbering sequence determination', href: 'https://ioteelab.atlassian.net/browse/PD-309' },
 ]
 
-const emptyForm = { name: '', prefix: '', formatPattern: '{PREFIX}-{YEAR}-{COUNTER:06d}' }
+const CATEGORIES = ['', 'SLUDGE', 'CREDIT', 'PUBLIC', 'PRIVATE', 'ANNUAL']
+const emptyForm = { name: '', prefix: '', formatPattern: '{PREFIX}-{YEAR}-{COUNTER:06d}', category: '' }
 const emptyErrors = { name: '', prefix: '', formatPattern: '' }
 
 function validate(form) {
@@ -76,7 +77,7 @@ export default function InvoiceNumberSeriesPage() {
 
   const openEdit = (s) => {
     setEditing(s)
-    setForm({ name: s.name, prefix: s.prefix, formatPattern: s.formatPattern })
+    setForm({ name: s.name, prefix: s.prefix, formatPattern: s.formatPattern, category: s.category || '' })
     setErrors(emptyErrors)
     setTouched({})
     setShowModal(true)
@@ -113,6 +114,7 @@ export default function InvoiceNumberSeriesPage() {
         name: form.name.trim(),
         prefix: form.prefix.trim(),
         formatPattern: form.formatPattern.trim(),
+        category: form.category || null,
       }
       if (editing) {
         await updateSeries(editing.id, payload)
@@ -125,6 +127,17 @@ export default function InvoiceNumberSeriesPage() {
       setError('Save failed. The series name may already exist.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // ── Delete ─────────────────────────────────────
+  const handleDelete = async (s) => {
+    if (!window.confirm(`Delete series "${s.name}"? This cannot be undone.`)) return
+    try {
+      await deleteSeries(s.id)
+      load()
+    } catch (e) {
+      setError(e.response?.data?.message || 'Delete failed. Series may be in use.')
     }
   }
 
@@ -174,6 +187,7 @@ export default function InvoiceNumberSeriesPage() {
             <tr>
               <th>Name</th>
               <th>Prefix</th>
+              <th>Category</th>
               <th>Format Pattern</th>
               <th>Current Counter</th>
               <th>Released</th>
@@ -182,13 +196,14 @@ export default function InvoiceNumberSeriesPage() {
           </thead>
           <tbody>
             {seriesList.length === 0 ? (
-              <tr><td colSpan={6} className="empty">No series found.</td></tr>
+              <tr><td colSpan={7} className="empty">No series found.</td></tr>
             ) : (
               seriesList.map((s) => (
                 <>
                   <tr key={s.id}>
                     <td><span className="code-badge">{s.name}</span></td>
                     <td><span className="unit-badge">{s.prefix}</span></td>
+                    <td className="muted">{s.category || '—'}</td>
                     <td className="pattern-cell">{s.formatPattern}</td>
                     <td><span className="counter-value">{s.currentCounter.toLocaleString()}</span></td>
                     <td className="muted">{s.releasedNumbersCount}</td>
@@ -200,12 +215,13 @@ export default function InvoiceNumberSeriesPage() {
                       >
                         Test Assign {assignPanelId === s.id ? '▲' : '▼'}
                       </button>
+                      <button className="btn-danger" onClick={() => handleDelete(s)}>Delete</button>
                     </td>
                   </tr>
 
                   {assignPanelId === s.id && (
                     <tr key={`${s.id}-assign`} className="assign-row">
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="assign-panel">
                           <div className="assign-panel-title">Test Number Assignment</div>
 
@@ -290,6 +306,18 @@ export default function InvoiceNumberSeriesPage() {
                 {errors.prefix && touched.prefix && (
                   <span className="field-error">{errors.prefix}</span>
                 )}
+              </div>
+
+              <div className="field">
+                <label>Category</label>
+                <select
+                  value={form.category}
+                  onChange={(e) => handleChange('category', e.target.value)}
+                >
+                  {CATEGORIES.map(c => (
+                    <option key={c} value={c}>{c || '— None —'}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="field">

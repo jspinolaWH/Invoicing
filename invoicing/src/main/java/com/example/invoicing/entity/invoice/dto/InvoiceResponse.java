@@ -15,6 +15,7 @@ public class InvoiceResponse {
     private String invoicingMode;
     private boolean reverseChargeVat;
     private String customText;
+    private String internalComment;
     private String status;
     private String invoiceType;
     private Long originalInvoiceId;
@@ -25,6 +26,9 @@ public class InvoiceResponse {
     private BigDecimal vatAmount;
     private Long customerId;
     private String customerName;
+    private boolean allowExternalRecall;
+    private String billingType;
+    private String projectReference;
     private List<InvoiceLineItemResponse> lineItems;
     private List<InvoiceAttachmentResponse> attachments;
     private List<CreditNoteSummary> creditNotes;

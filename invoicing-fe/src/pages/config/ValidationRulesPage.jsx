@@ -15,7 +15,7 @@ const RELATED_TASKS = [
   { id: 'PD-278', label: '3.3.4 Mandatory field validation', href: 'https://ioteelab.atlassian.net/browse/PD-278' },
 ]
 
-const RULE_TYPES = ['MANDATORY_FIELD', 'PRICE_CONSISTENCY', 'QUANTITY_THRESHOLD', 'CLASSIFICATION']
+const RULE_TYPES = ['MANDATORY_FIELD', 'PRICE_CONSISTENCY', 'QUANTITY_THRESHOLD', 'CLASSIFICATION', 'REPORTING_DATA_COMPLETENESS', 'VAT_ACCURACY']
 
 const emptyForm = {
   ruleType: 'MANDATORY_FIELD',

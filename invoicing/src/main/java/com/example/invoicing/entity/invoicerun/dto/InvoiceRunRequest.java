@@ -1,5 +1,6 @@
 package com.example.invoicing.entity.invoicerun.dto;
 
+import com.example.invoicing.entity.invoice.dto.BatchAttachmentRequest;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,4 +16,8 @@ public class InvoiceRunRequest {
     private String filterServiceType;
     private String filterLocation;
     private String filterServiceResponsibility;
+    private String filterBillingFrequency;
+    private Long numberSeriesId;
+    private Long templateId;
+    private BatchAttachmentRequest batchAttachment;
 }

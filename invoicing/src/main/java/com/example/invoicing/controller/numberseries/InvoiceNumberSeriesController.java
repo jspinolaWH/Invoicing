@@ -6,6 +6,7 @@ import com.example.invoicing.entity.numberseries.dto.InvoiceNumberSeriesResponse
 import com.example.invoicing.service.InvoiceNumberSeriesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +39,12 @@ public class InvoiceNumberSeriesController {
             @PathVariable Long id,
             @RequestBody InvoiceNumberSeriesRequest request) {
         return InvoiceNumberSeriesResponse.from(service.update(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 
     @PostMapping("/{id}/assign")

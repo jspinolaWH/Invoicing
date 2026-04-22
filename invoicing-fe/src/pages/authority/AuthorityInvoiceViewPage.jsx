@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listAuthorityInvoices, getAuthorityInvoiceImage } from '../../api/authority';
+import { listAuthorityInvoices, getAuthorityInvoiceImage, getAuthorityInvoiceAttachments } from '../../api/authority';
 
 export default function AuthorityInvoiceViewPage() {
   const [filters, setFilters] = useState({ customerId: '', dateFrom: '', dateTo: '' });
@@ -10,6 +10,11 @@ export default function AuthorityInvoiceViewPage() {
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [imageError, setImageError] = useState(null);
+  const [attachments, setAttachments] = useState(null);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [attachmentsError, setAttachmentsError] = useState(null);
 
   useEffect(() => {
     fetchInvoices();
@@ -40,17 +45,37 @@ export default function AuthorityInvoiceViewPage() {
     setApplied({ ...filters });
   }
 
+  async function handleFetchAttachments(invoiceId) {
+    setAttachmentsLoading(true);
+    setAttachmentsError(null);
+    setAttachments(null);
+    try {
+      const result = await getAuthorityInvoiceAttachments(invoiceId);
+      setAttachments(result);
+    } catch (err) {
+      setAttachmentsError('Attachments could not be retrieved. ' + err.message);
+    } finally {
+      setAttachmentsLoading(false);
+    }
+  }
+
   async function handleViewImage(invoiceId) {
     setImageLoading(true);
+    setImageError(null);
     try {
       const blob = await getAuthorityInvoiceImage(invoiceId);
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(URL.createObjectURL(blob));
     } catch (err) {
-      alert('Failed to load invoice image: ' + err.message);
+      setImageError('The invoice image could not be retrieved. ' + err.message + ' Contact your administrator if the problem persists.');
     } finally {
       setImageLoading(false);
     }
+  }
+
+  function handleClosePdf() {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
   }
 
   const statusBadge = (status) => {
@@ -113,7 +138,16 @@ export default function AuthorityInvoiceViewPage() {
               <tr><td colSpan={10} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>No invoices found.</td></tr>
             ) : data?.content?.map(inv => (
               <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6', cursor: 'pointer', background: selected?.id === inv.id ? '#eff6ff' : 'transparent' }}
-                onClick={() => setSelected(selected?.id === inv.id ? null : inv)}>
+                onClick={() => {
+                  if (selected?.id === inv.id) {
+                    setSelected(null);
+                    setAttachments(null);
+                    setAttachmentsError(null);
+                  } else {
+                    setSelected(inv);
+                    handleFetchAttachments(inv.id);
+                  }
+                }}>
                 <td style={{ padding: '9px 12px', fontWeight: 600 }}>{inv.invoiceNumber}</td>
                 <td style={{ padding: '9px 12px' }}>{inv.invoiceDate}</td>
                 <td style={{ padding: '9px 12px' }}>{inv.dueDate}</td>
@@ -124,10 +158,16 @@ export default function AuthorityInvoiceViewPage() {
                 <td style={{ padding: '9px 12px' }}>{inv.invoiceType}</td>
                 <td style={{ padding: '9px 12px' }}>{statusBadge(inv.status)}</td>
                 <td style={{ padding: '9px 12px' }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => handleViewImage(inv.id)} disabled={imageLoading}
-                    style={{ padding: '4px 10px', background: '#0891b2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
-                    {imageLoading ? '...' : 'View PDF'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => handleViewImage(inv.id)} disabled={imageLoading}
+                      style={{ padding: '4px 10px', background: '#0891b2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
+                      {imageLoading ? '...' : 'View PDF'}
+                    </button>
+                    <button onClick={() => { setSelected(inv); handleFetchAttachments(inv.id); }} disabled={attachmentsLoading}
+                      style={{ padding: '4px 10px', background: '#059669', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
+                      {attachmentsLoading ? '...' : 'Attachments'}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -146,12 +186,18 @@ export default function AuthorityInvoiceViewPage() {
         </div>
       )}
 
+      {imageError && (
+        <div style={{ color: '#dc2626', padding: 12, background: '#fee2e2', borderRadius: 6, marginTop: 12, border: '1px solid #fca5a5' }}>
+          {imageError}
+        </div>
+      )}
+
       {/* Expanded line items panel */}
       {selected && (
         <div style={{ marginTop: 20, background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 8, padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <h3 style={{ margin: 0 }}>Invoice {selected.invoiceNumber} &mdash; Line Items</h3>
-            <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 18 }}>&#x2715;</button>
+            <button onClick={() => { setSelected(null); setAttachments(null); setAttachmentsError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 18 }}>&#x2715;</button>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -181,6 +227,57 @@ export default function AuthorityInvoiceViewPage() {
               ))}
             </tbody>
           </table>
+
+          <div style={{ marginTop: 20 }}>
+            <h4 style={{ marginBottom: 10 }}>Attachments</h4>
+            {attachmentsLoading && <p style={{ color: '#6b7280' }}>Loading attachments&hellip;</p>}
+            {attachmentsError && (
+              <div style={{ color: '#dc2626', padding: 10, background: '#fee2e2', borderRadius: 6 }}>{attachmentsError}</div>
+            )}
+            {attachments !== null && !attachmentsLoading && (
+              attachments.length === 0
+                ? <p style={{ color: '#6b7280' }}>No attachments found for this invoice.</p>
+                : attachments.map((a, i) => {
+                    const href = a.contentBase64 ? `data:${a.mimeType};base64,${a.contentBase64}` : null;
+                    const isImage = a.mimeType && a.mimeType.startsWith('image/');
+                    const isPdf = a.mimeType === 'application/pdf';
+                    return (
+                      <div key={i} style={{ border: '1px solid #e5e7eb', borderRadius: 6, marginBottom: 10, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f9fafb', borderBottom: href ? '1px solid #e5e7eb' : 'none' }}>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{a.filename}</span>
+                          <span style={{ fontSize: 12, color: '#6b7280' }}>{a.mimeType} &middot; {a.sizeBytes} bytes</span>
+                          {a.attachmentIdentifier && <code style={{ fontSize: 11, color: '#6b7280' }}>{a.attachmentIdentifier}</code>}
+                          {a.description && <span style={{ fontSize: 12, color: '#374151' }}>{a.description}</span>}
+                          {href && (
+                            <a href={href} download={a.filename}
+                              style={{ marginLeft: 'auto', padding: '4px 10px', background: '#2563eb', color: '#fff', borderRadius: 4, fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>
+                              Download
+                            </a>
+                          )}
+                        </div>
+                        {href && isPdf && (
+                          <iframe src={href} title={a.filename} style={{ width: '100%', height: 400, border: 'none', display: 'block' }} />
+                        )}
+                        {href && isImage && (
+                          <img src={href} alt={a.filename} style={{ maxWidth: '100%', display: 'block' }} />
+                        )}
+                      </div>
+                    );
+                  })
+            )}
+          </div>
+        </div>
+      )}
+
+      {pdfUrl && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.65)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '90vw', height: '90vh', background: '#fff', borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>Invoice PDF</span>
+              <button onClick={handleClosePdf} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b7280', lineHeight: 1 }}>&#x2715;</button>
+            </div>
+            <iframe src={pdfUrl} style={{ flex: 1, border: 'none', width: '100%' }} title="Invoice PDF" />
+          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { batchCredit } from '../../api/invoices'
+import { batchCredit, bulkUpdateInvoiceText } from '../../api/invoices'
 import axios from 'axios'
 import '../masterdata/VatRatesPage.css'
 
@@ -15,13 +15,22 @@ export default function InvoiceListPage() {
   const [batchResult, setBatchResult] = useState(null)
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showTextModal, setShowTextModal] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [textResult, setTextResult] = useState(null)
+  const [textError, setTextError] = useState(null)
+  const [textSubmitting, setTextSubmitting] = useState(false)
+  const [billingTypeFilter, setBillingTypeFilter] = useState('')
 
   useEffect(() => {
-    axios.get('/api/v1/invoices?page=0&size=50')
+    setLoading(true)
+    const params = new URLSearchParams({ page: 0, size: 50 })
+    if (billingTypeFilter) params.set('billingType', billingTypeFilter)
+    axios.get(`/api/v1/invoices?${params.toString()}`)
       .then(r => setInvoices(r.data.content || r.data || []))
       .catch(() => setInvoices([]))
       .finally(() => setLoading(false))
-  }, [])
+  }, [billingTypeFilter])
 
   const creditableStatuses = ['SENT', 'COMPLETED']
   const toggleSelect = (id) => setSelected(prev =>
@@ -42,12 +51,30 @@ export default function InvoiceListPage() {
     }
   }
 
+  const handleBulkText = async () => {
+    setTextSubmitting(true); setTextError(null)
+    try {
+      await bulkUpdateInvoiceText(selected, bulkText)
+      setTextResult(selected.length)
+      setSelected([])
+      setShowTextModal(false)
+      setBulkText('')
+    } catch (e) {
+      setTextError(e.response?.data?.message || 'Bulk text update failed')
+    } finally {
+      setTextSubmitting(false)
+    }
+  }
+
   if (loading) return <div className="loading">Loading invoices…</div>
 
   return (
     <div className="page">
       <div className="page-header">
         <div className="page-header-text"><h1>Invoices</h1></div>
+        <div className="page-header-actions">
+          <button className="btn-primary" onClick={() => navigate('/runs/new')}>New Invoice Run</button>
+        </div>
       </div>
 
       {batchResult && (
@@ -61,17 +88,33 @@ export default function InvoiceListPage() {
         </div>
       )}
 
+      {textResult != null && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+          Custom text applied to <strong>{textResult}</strong> invoice{textResult !== 1 ? 's' : ''}.
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+        <label style={{ fontWeight: 500 }}>Billing Type</label>
+        <select value={billingTypeFilter} onChange={e => setBillingTypeFilter(e.target.value)} style={{ minWidth: 160 }}>
+          <option value="">All</option>
+          <option value="IMMEDIATE">Immediate</option>
+          <option value="CYCLE_BASED">Cycle-Based</option>
+        </select>
+      </div>
+
       {selected.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
           <span>{selected.length} selected</span>
           <button className="btn-danger" onClick={() => setShowModal(true)}>Batch Credit</button>
+          <button className="btn-secondary" onClick={() => setShowTextModal(true)}>Set Text</button>
           <button className="btn-secondary" onClick={() => setSelected([])}>Clear</button>
         </div>
       )}
 
       <table className="table">
         <thead>
-          <tr><th></th><th>Invoice #</th><th>Customer</th><th>Date</th><th>Net</th><th>Gross</th><th>Status</th></tr>
+          <tr><th></th><th>Invoice #</th><th>Customer</th><th>Date</th><th>Net</th><th>Gross</th><th>Status</th><th>Billing Type</th></tr>
         </thead>
         <tbody>
           {invoices.map(inv => (
@@ -88,8 +131,16 @@ export default function InvoiceListPage() {
               <td onClick={() => navigate(`/invoices/${inv.id}`)}>{inv.netAmount != null ? Number(inv.netAmount).toLocaleString('fi-FI', { style: 'currency', currency: 'EUR' }) : '—'}</td>
               <td onClick={() => navigate(`/invoices/${inv.id}`)}>{inv.grossAmount != null ? Number(inv.grossAmount).toLocaleString('fi-FI', { style: 'currency', currency: 'EUR' }) : '—'}</td>
               <td onClick={() => navigate(`/invoices/${inv.id}`)}><span className="badge badge-grey">{inv.status}</span></td>
+              <td onClick={() => navigate(`/invoices/${inv.id}`)}>{inv.billingType ? inv.billingType.replace('_', ' ') : '—'}</td>
             </tr>
           ))}
+          {invoices.length === 0 && (
+            <tr>
+              <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted, #888)' }}>
+                No invoices found. Generate invoices via an <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/runs/new')}>invoice run</span>.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 
@@ -110,6 +161,30 @@ export default function InvoiceListPage() {
               <button className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
               <button className="btn-danger" onClick={handleBatchCredit} disabled={submitting}>
                 {submitting ? 'Processing…' : 'Issue Credits'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showTextModal && (
+        <div className="modal-overlay" onClick={() => setShowTextModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Set Custom Text — {selected.length} invoice{selected.length !== 1 ? 's' : ''}</h3>
+            <div className="form-group">
+              <label>Custom text (shown on invoice and in FINVOICE)</label>
+              <textarea
+                value={bulkText}
+                onChange={e => setBulkText(e.target.value)}
+                rows={4}
+                style={{ width: '100%' }}
+                placeholder="Enter message to apply to all selected invoices…"
+              />
+            </div>
+            {textError && <div className="error-msg">{textError}</div>}
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', marginTop: 'var(--space-3)' }}>
+              <button className="btn-secondary" onClick={() => setShowTextModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleBulkText} disabled={textSubmitting}>
+                {textSubmitting ? 'Applying…' : 'Apply Text'}
               </button>
             </div>
           </div>

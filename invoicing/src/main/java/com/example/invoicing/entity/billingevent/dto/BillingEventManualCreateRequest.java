@@ -43,6 +43,8 @@ public class BillingEventManualCreateRequest {
     private String locationId;
     private String municipalityId;
     private String comments;
+    private String internalComments;
+    private String registrationNumber;
     private String contractor;
     private BillingEventDirection direction;
     private BigDecimal sharedServiceGroupPercentage;

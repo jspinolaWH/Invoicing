@@ -12,4 +12,5 @@ public class ParticipantResponse {
     private BigDecimal sharePercentage;
     private LocalDate validFrom;
     private LocalDate validTo;
+    private boolean includeIfZeroShare;
 }

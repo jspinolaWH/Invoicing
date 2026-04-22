@@ -5,14 +5,18 @@ import com.example.invoicing.entity.customer.dto.BillingAddressSyncRequest;
 import com.example.invoicing.entity.customer.BillingAddress;
 import com.example.invoicing.entity.customer.Customer;
 import com.example.invoicing.entity.customer.event.BillingAddressChangedEvent;
+import com.example.invoicing.entity.invoice.Invoice;
 import com.example.invoicing.repository.ActiveRunLockRepository;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
+import com.example.invoicing.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class BillingAddressSyncService {
     private final CustomerBillingProfileRepository customerRepository;
     private final ActiveRunLockRepository runLockRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final InvoiceRepository invoiceRepository;
 
     @Transactional
     public BillingAddressSyncResult syncFromWasteHero(BillingAddressSyncRequest request) {
@@ -56,7 +61,9 @@ public class BillingAddressSyncService {
             request.getCountryCode(),
             request.getStreetAddressAlt(),
             request.getCityAlt(),
-            request.getCountryCodeAlt()
+            request.getCountryCodeAlt(),
+            request.getEmailAddress(),
+            request.getEInvoicingAddress()
         );
         customer.getBillingProfile().setBillingAddress(updated);
         customerRepository.save(customer);
@@ -74,8 +81,17 @@ public class BillingAddressSyncService {
     }
 
     @EventListener
+    @Transactional
     public void onBillingAddressChanged(BillingAddressChangedEvent event) {
-        log.info("Billing address changed event received for customerId={} — downstream sync may be triggered",
+        log.info("Billing address changed for customerId={} — clearing cached FINVOICE XML on open invoices",
             event.getCustomerId());
+        List<Invoice> openInvoices = invoiceRepository.findOpenByCustomerId(event.getCustomerId());
+        for (Invoice invoice : openInvoices) {
+            invoice.setFinvoiceXml(null);
+        }
+        if (!openInvoices.isEmpty()) {
+            invoiceRepository.saveAll(openInvoices);
+            log.info("Cleared finvoiceXml on {} open invoice(s) for customerId={}", openInvoices.size(), event.getCustomerId());
+        }
     }
 }

@@ -69,12 +69,22 @@ public class BillingCycleService {
 
     public void advanceNextBillingDate(BillingCycle cycle) {
         LocalDate next = switch (cycle.getFrequency()) {
-            case MONTHLY   -> cycle.getNextBillingDate().plusMonths(1);
-            case QUARTERLY -> cycle.getNextBillingDate().plusMonths(3);
-            case ANNUAL    -> cycle.getNextBillingDate().plusYears(1);
+            case MONTHLY     -> cycle.getNextBillingDate().plusMonths(1);
+            case QUARTERLY   -> cycle.getNextBillingDate().plusMonths(3);
+            case SEMI_ANNUAL -> cycle.getNextBillingDate().plusMonths(6);
+            case ANNUAL      -> cycle.getNextBillingDate().plusYears(1);
         };
         cycle.setNextBillingDate(next);
         repository.save(cycle);
+    }
+
+    public LocalDate computePeriodStart(BillingCycle cycle) {
+        return switch (cycle.getFrequency()) {
+            case MONTHLY     -> cycle.getNextBillingDate().minusMonths(1);
+            case QUARTERLY   -> cycle.getNextBillingDate().minusMonths(3);
+            case SEMI_ANNUAL -> cycle.getNextBillingDate().minusMonths(6);
+            case ANNUAL      -> cycle.getNextBillingDate().minusYears(1);
+        };
     }
 
     private BillingCycle load(Long id) {

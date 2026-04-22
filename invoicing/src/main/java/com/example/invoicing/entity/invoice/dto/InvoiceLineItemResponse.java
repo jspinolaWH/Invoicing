@@ -18,4 +18,5 @@ public class InvoiceLineItemResponse {
     private String costCenterCode;
     private boolean bundled;
     private Integer lineOrder;
+    private BigDecimal sharedServiceTotalNet;
 }

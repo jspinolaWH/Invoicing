@@ -7,7 +7,8 @@ const RELATED_TASKS = [
   { id: 'PD-294', label: '3.4.26 Invoice surcharge configuration', href: 'https://ioteelab.atlassian.net/browse/PD-294' },
 ]
 const DELIVERY_METHODS = ['E_INVOICE', 'EMAIL', 'PAPER', 'DIRECT_PAYMENT']
-const emptyForm = { deliveryMethod: 'PAPER', amount: '', description: '', active: true }
+const CUSTOMER_TYPES = ['', 'PRIVATE', 'BUSINESS', 'MUNICIPALITY', 'AUTHORITY']
+const emptyForm = { deliveryMethod: 'PAPER', customerType: '', amount: '', description: '', active: true, exemptFirstInvoice: false, requiresTariffInclusion: false }
 
 export default function SurchargeConfigPage() {
   const [configs, setConfigs] = useState([])
@@ -38,7 +39,15 @@ export default function SurchargeConfigPage() {
   const openAdd = () => { setEditing(null); setForm(emptyForm); setFormError(null); setShowModal(true) }
   const openEdit = (c) => {
     setEditing(c)
-    setForm({ deliveryMethod: c.deliveryMethod, amount: c.amount, description: c.description ?? '', active: c.active })
+    setForm({
+      deliveryMethod: c.deliveryMethod,
+      customerType: c.customerType ?? '',
+      amount: c.amount,
+      description: c.description ?? '',
+      active: c.active,
+      exemptFirstInvoice: c.exemptFirstInvoice ?? false,
+      requiresTariffInclusion: c.requiresTariffInclusion ?? false,
+    })
     setFormError(null); setShowModal(true)
   }
   const close = () => { setShowModal(false); setEditing(null) }
@@ -47,7 +56,7 @@ export default function SurchargeConfigPage() {
     if (!form.amount) { setFormError('Amount is required.'); return }
     setSaving(true); setFormError(null)
     try {
-      const payload = { ...form, amount: parseFloat(form.amount) }
+      const payload = { ...form, amount: parseFloat(form.amount), customerType: form.customerType || null }
       if (editing) await updateSurchargeConfig(editing.id, payload)
       else await createSurchargeConfig(payload)
       close(); load()
@@ -98,15 +107,18 @@ export default function SurchargeConfigPage() {
       {loading ? <div className="loading">Loading...</div> : (
         <div style={{ opacity: globalEnabled ? 1 : 0.6 }}>
           <table className="data-table">
-            <thead><tr><th>Delivery Method</th><th>Amount (€)</th><th>Description</th><th>Active</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Delivery Method</th><th>Customer Type</th><th>Amount (€)</th><th>Description</th><th>Exempt 1st Invoice</th><th>Tariff Required</th><th>Active</th><th>Actions</th></tr></thead>
             <tbody>
               {configs.length === 0
-                ? <tr><td colSpan={5} className="empty">No surcharge configs found.</td></tr>
+                ? <tr><td colSpan={8} className="empty">No surcharge configs found.</td></tr>
                 : configs.map(c => (
                   <tr key={c.id}>
                     <td><span className="code-badge">{c.deliveryMethod}</span></td>
+                    <td>{c.customerType ? <span className="code-badge">{c.customerType}</span> : <span className="muted">All</span>}</td>
                     <td>{parseFloat(c.amount).toFixed(2)}</td>
                     <td>{c.description ?? <span className="muted">—</span>}</td>
+                    <td>{c.exemptFirstInvoice ? 'Yes' : <span className="muted">No</span>}</td>
+                    <td>{c.requiresTariffInclusion ? 'Yes' : <span className="muted">No</span>}</td>
                     <td>{c.active ? 'Yes' : <span className="muted">No</span>}</td>
                     <td className="actions">
                       <button className="btn-secondary" onClick={() => openEdit(c)}>Edit</button>
@@ -132,12 +144,19 @@ export default function SurchargeConfigPage() {
                   {DELIVERY_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
+              <div className="field"><label>Customer Type <span className="muted">(leave blank for all types)</span></label>
+                <select value={form.customerType} onChange={e => setForm({ ...form, customerType: e.target.value })} disabled={!!editing}>
+                  {CUSTOMER_TYPES.map(t => <option key={t} value={t}>{t || '— All customer types —'}</option>)}
+                </select>
+              </div>
               <div className="field"><label>Amount (€) <span className="required">*</span></label>
                 <input type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
               </div>
               <div className="field"><label>Description</label>
                 <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
+              <div className="field"><label><input type="checkbox" checked={form.exemptFirstInvoice} onChange={e => setForm({ ...form, exemptFirstInvoice: e.target.checked })} /> Exempt first invoice (no surcharge on customer's first invoice)</label></div>
+              <div className="field"><label><input type="checkbox" checked={form.requiresTariffInclusion} onChange={e => setForm({ ...form, requiresTariffInclusion: e.target.checked })} /> Require tariff inclusion (only apply if customer has an active contract)</label></div>
               <div className="field"><label><input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /> Active</label></div>
               {formError && <div className="error-msg">{formError}</div>}
             </div>

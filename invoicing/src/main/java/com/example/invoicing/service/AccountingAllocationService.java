@@ -30,7 +30,8 @@ public class AccountingAllocationService {
             AccountingAllocationRule rule = findBestRule(
                 event.getProduct().getId(),
                 event.getMunicipalityId(),
-                event.getMunicipalityId());
+                event.getMunicipalityId(),
+                ca.component());
 
             BigDecimal vatRate = event.getVatRate24() != null ? event.getVatRate24() : BigDecimal.ZERO;
             BigDecimal amountVat = computeVatAmount(ca.amount(), vatRate);
@@ -51,9 +52,9 @@ public class AccountingAllocationService {
         return entries;
     }
 
-    public AccountingAllocationRule findBestRule(Long productId, String region, String municipality) {
+    public AccountingAllocationRule findBestRule(Long productId, String region, String municipality, PriceComponent priceComponent) {
         List<AccountingAllocationRule> rules = ruleRepository.findMostSpecificRules(
-            productId, region, municipality);
+            productId, region, municipality, priceComponent);
         if (rules.isEmpty()) {
             throw new AllocationRuleNotFoundException(productId, region);
         }

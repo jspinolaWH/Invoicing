@@ -1,4 +1,5 @@
 package com.example.invoicing.entity.customer.dto;
+import com.example.invoicing.entity.classification.LegalClassification;
 import com.example.invoicing.entity.customer.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -13,13 +14,22 @@ public class BillingProfileRequest {
     private String businessId;
     @NotBlank private String languageCode;
     @NotNull private InvoicingMode invoicingMode;
+    private Long invoiceTemplateId;
+    private LegalClassification defaultLegalClassification;
+    private String defaultLedgerCode;
+    private boolean invoicePerProject;
+    private boolean allowExternalRecall;
+    @Pattern(regexp = "\\d{6,9}", message = "parentCustomerNumber must be 6-9 digits")
+    private String parentCustomerNumber;
 
     public BillingProfile toBillingProfile() {
         BillingAddress addr = new BillingAddress(
             billingAddress.getStreetAddress(), billingAddress.getPostalCode(),
             billingAddress.getCity(), billingAddress.getCountryCode(),
             billingAddress.getStreetAddressAlt(), billingAddress.getCityAlt(),
-            billingAddress.getCountryCodeAlt());
-        return new BillingProfile(customerIdNumber, deliveryMethod, addr, businessId, languageCode, invoicingMode);
+            billingAddress.getCountryCodeAlt(),
+            billingAddress.getEmailAddress(), billingAddress.getEInvoicingAddress());
+        BillingProfile profile = new BillingProfile(customerIdNumber, deliveryMethod, addr, businessId, languageCode, invoicingMode, invoiceTemplateId, defaultLegalClassification, defaultLedgerCode, invoicePerProject, allowExternalRecall);
+        return profile;
     }
 }

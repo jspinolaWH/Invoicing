@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getPropertyGroups, createPropertyGroup, getPropertyGroup, replaceParticipants, validatePropertyGroup } from '../../api/propertyGroups'
+import { getPropertyGroups, createPropertyGroup, getPropertyGroup, replaceParticipants, validatePropertyGroup, addParticipantRetroactive } from '../../api/propertyGroups'
 import '../masterdata/VatRatesPage.css'
 
 export default function PropertyGroupsPage() {
@@ -15,6 +15,9 @@ export default function PropertyGroupsPage() {
   const [groupDetail, setGroupDetail] = useState(null)
   const [participants, setParticipants] = useState([])
   const [validationResult, setValidationResult] = useState(null)
+  const [showRetroModal, setShowRetroModal] = useState(false)
+  const [retroForm, setRetroForm] = useState({ customerNumber: '', sharePercentage: '', validFrom: '' })
+  const [retroSaving, setRetroSaving] = useState(false)
 
   const load = async () => {
     setLoading(true); setError(null)
@@ -54,6 +57,7 @@ export default function PropertyGroupsPage() {
         sharePercentage: parseFloat(p.sharePercentage),
         validFrom: p.validFrom,
         validTo: p.validTo || null,
+        includeIfZeroShare: !!p.includeIfZeroShare,
       })))
       const v = (await validatePropertyGroup(selectedGroup.id)).data
       setValidationResult(v)
@@ -68,11 +72,44 @@ export default function PropertyGroupsPage() {
   }
 
   const addParticipantRow = () => {
-    setParticipants(prev => [...prev, { customerNumber: '', sharePercentage: '', validFrom: '', validTo: '' }])
+    setParticipants(prev => [...prev, { customerNumber: '', sharePercentage: '', validFrom: '', validTo: '', includeIfZeroShare: false }])
+  }
+
+  const handleEqualise = () => {
+    const n = participants.length
+    if (n === 0) return
+    const base = Math.floor(100 / n * 100) / 100
+    const lastShare = parseFloat((100 - base * (n - 1)).toFixed(2))
+    setParticipants(prev => prev.map((p, i) => ({ ...p, sharePercentage: i === n - 1 ? lastShare : base })))
   }
 
   const removeParticipantRow = (idx) => {
     setParticipants(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleAddRetroactive = async () => {
+    if (!retroForm.customerNumber.trim() || !retroForm.sharePercentage || !retroForm.validFrom) return
+    setRetroSaving(true)
+    try {
+      await addParticipantRetroactive(selectedGroup.id, {
+        customerNumber: retroForm.customerNumber.trim(),
+        sharePercentage: parseFloat(retroForm.sharePercentage),
+        validFrom: retroForm.validFrom,
+        adjustOtherParticipants: false,
+      })
+      setShowRetroModal(false)
+      setRetroForm({ customerNumber: '', sharePercentage: '', validFrom: '' })
+      setSuccessMsg('Participant added retroactively — affected events have been redistributed.')
+      setTimeout(() => setSuccessMsg(null), 5000)
+      const detail = (await getPropertyGroup(selectedGroup.id)).data
+      setGroupDetail(detail)
+      setParticipants(detail.participants.map(p => ({ ...p })))
+      const v = (await validatePropertyGroup(selectedGroup.id)).data
+      setValidationResult(v)
+      load()
+    } catch (e) {
+      setError(e?.response?.data || 'Retroactive add failed.')
+    } finally { setRetroSaving(false) }
   }
 
   const totalShare = participants.reduce((sum, p) => sum + (parseFloat(p.sharePercentage) || 0), 0)
@@ -134,7 +171,7 @@ export default function PropertyGroupsPage() {
 
             <table className="data-table">
               <thead>
-                <tr><th>Customer Number</th><th>Share %</th><th>Valid From</th><th>Valid To</th><th>Actions</th></tr>
+                <tr><th>Customer Number</th><th>Share %</th><th>Valid From</th><th>Valid To</th><th>Include if 0%</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {participants.map((p, idx) => (
@@ -143,6 +180,7 @@ export default function PropertyGroupsPage() {
                     <td><input type="number" step="0.01" value={p.sharePercentage} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, sharePercentage: e.target.value } : x))} style={{ width: 80 }} /></td>
                     <td><input type="date" value={p.validFrom ?? ''} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, validFrom: e.target.value } : x))} /></td>
                     <td><input type="date" value={p.validTo ?? ''} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, validTo: e.target.value || null } : x))} /></td>
+                    <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!p.includeIfZeroShare} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, includeIfZeroShare: e.target.checked } : x))} /></td>
                     <td><button className="btn-danger" onClick={() => removeParticipantRow(idx)}>Remove</button></td>
                   </tr>
                 ))}
@@ -151,6 +189,10 @@ export default function PropertyGroupsPage() {
 
             <div style={{ marginTop: 'var(--space-3)', display: 'flex', gap: 'var(--space-3)' }}>
               <button className="btn-secondary" onClick={addParticipantRow}>+ Add Row</button>
+              <button className="btn-secondary" onClick={handleEqualise} disabled={participants.length === 0}>Equalise</button>
+              <button className="btn-secondary" onClick={() => { setRetroForm({ customerNumber: '', sharePercentage: '', validFrom: '' }); setShowRetroModal(true) }}>
+                + Add Retroactively
+              </button>
               <button className="btn-primary" onClick={handleSaveParticipants} disabled={saving || !totalValid}>
                 {saving ? 'Saving…' : 'Save Participants'}
               </button>
@@ -173,6 +215,45 @@ export default function PropertyGroupsPage() {
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
               <button className="btn-primary" onClick={handleCreate} disabled={saving}>{saving ? 'Saving…' : 'Create'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRetroModal && selectedGroup && (
+        <div className="modal-overlay" onClick={() => setShowRetroModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add Participant Retroactively</h2>
+              <button className="modal-close" onClick={() => setShowRetroModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="muted" style={{ marginBottom: 'var(--space-3)' }}>
+                The new participant will be added to <strong>{selectedGroup.name}</strong> from the specified date.
+                All events from that date onwards will be redistributed with the updated participant set.
+              </p>
+              <div className="field">
+                <label>Customer Number *</label>
+                <input value={retroForm.customerNumber} onChange={e => setRetroForm(f => ({ ...f, customerNumber: e.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Share % *</label>
+                <input type="number" step="0.01" min="0" max="100" value={retroForm.sharePercentage} onChange={e => setRetroForm(f => ({ ...f, sharePercentage: e.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Valid From (historical date) *</label>
+                <input type="date" value={retroForm.validFrom} onChange={e => setRetroForm(f => ({ ...f, validFrom: e.target.value }))} />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowRetroModal(false)}>Cancel</button>
+              <button
+                className="btn-primary"
+                onClick={handleAddRetroactive}
+                disabled={retroSaving || !retroForm.customerNumber.trim() || !retroForm.sharePercentage || !retroForm.validFrom}
+              >
+                {retroSaving ? 'Adding…' : 'Add & Redistribute'}
+              </button>
             </div>
           </div>
         </div>

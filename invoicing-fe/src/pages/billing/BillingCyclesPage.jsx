@@ -7,7 +7,7 @@ const RELATED_TASKS = [
   { id: 'PD-291', label: '3.4.21 Billing cycles', href: 'https://ioteelab.atlassian.net/browse/PD-291' },
 ]
 
-const FREQUENCIES = ['MONTHLY', 'QUARTERLY', 'ANNUAL']
+const FREQUENCIES = ['MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL']
 const emptyForm = { customerNumber: '', frequency: 'MONTHLY', nextBillingDate: '', description: '', contractReference: '', propertyReference: '', serviceType: '', active: true }
 
 export default function BillingCyclesPage() {

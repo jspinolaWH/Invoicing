@@ -23,4 +23,10 @@ public class EInvoiceAddressController {
             @RequestBody @Valid EInvoiceAddressRequest request) {
         return ResponseEntity.ok(service.setAddress(customerId, request));
     }
+
+    @DeleteMapping
+    public ResponseEntity<Void> delete(@PathVariable Long customerId) {
+        service.clearAddress(customerId);
+        return ResponseEntity.noContent().build();
+    }
 }

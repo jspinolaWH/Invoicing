@@ -10,4 +10,7 @@ public class ProductRequest {
     private String code;
     private PricingUnit pricingUnit;
     private boolean reverseChargeVat;
+    private Long defaultAccountingAccountId;
+    private Long defaultCostCenterId;
+    private Long priceListId;
 }

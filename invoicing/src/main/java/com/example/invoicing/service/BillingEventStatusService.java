@@ -21,6 +21,7 @@ public class BillingEventStatusService {
     static final Map<BillingEventStatus, Set<BillingEventStatus>> ALLOWED_TRANSITIONS = Map.of(
         BillingEventStatus.DRAFT,            Set.of(BillingEventStatus.IN_PROGRESS),
         BillingEventStatus.IN_PROGRESS,      Set.of(BillingEventStatus.SENT, BillingEventStatus.PENDING_TRANSFER),
+        BillingEventStatus.FOR_CORRECTION,   Set.of(BillingEventStatus.IN_PROGRESS),
         BillingEventStatus.PENDING_TRANSFER, Set.of(BillingEventStatus.IN_PROGRESS),
         BillingEventStatus.SENT,             Set.of(BillingEventStatus.COMPLETED),
         BillingEventStatus.ERROR,            Set.of(BillingEventStatus.SENT),

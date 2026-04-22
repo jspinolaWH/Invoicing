@@ -11,18 +11,20 @@ public class InvoiceNumberSeriesResponse {
     private final String name;
     private final String prefix;
     private final String formatPattern;
+    private final String category;
     private final Long currentCounter;
     private final int releasedNumbersCount;
     private final String createdBy;
     private final Instant createdAt;
 
     private InvoiceNumberSeriesResponse(Long id, String name, String prefix, String formatPattern,
-                                        Long currentCounter, int releasedNumbersCount,
+                                        String category, Long currentCounter, int releasedNumbersCount,
                                         String createdBy, Instant createdAt) {
         this.id = id;
         this.name = name;
         this.prefix = prefix;
         this.formatPattern = formatPattern;
+        this.category = category;
         this.currentCounter = currentCounter;
         this.releasedNumbersCount = releasedNumbersCount;
         this.createdBy = createdBy;
@@ -32,7 +34,7 @@ public class InvoiceNumberSeriesResponse {
     public static InvoiceNumberSeriesResponse from(InvoiceNumberSeries s) {
         return new InvoiceNumberSeriesResponse(
                 s.getId(), s.getName(), s.getPrefix(), s.getFormatPattern(),
-                s.getCurrentCounter(), s.getReleasedNumbers().size(),
+                s.getCategory(), s.getCurrentCounter(), s.getReleasedNumbers().size(),
                 s.getCreatedBy(), s.getCreatedAt());
     }
 }

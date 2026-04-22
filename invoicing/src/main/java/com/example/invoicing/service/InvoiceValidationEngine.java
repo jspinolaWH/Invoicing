@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +62,8 @@ public class InvoiceValidationEngine {
             case PRICE_CONSISTENCY -> evaluatePriceConsistency(line, invoice);
             case QUANTITY_THRESHOLD -> evaluateQuantityThreshold(rule, line);
             case CLASSIFICATION -> evaluateClassification(line);
+            case REPORTING_DATA_COMPLETENESS -> evaluateReportingDataCompleteness(line);
+            case VAT_ACCURACY -> evaluateVatAccuracy(line);
         };
     }
 
@@ -118,6 +121,36 @@ public class InvoiceValidationEngine {
     private Optional<String> evaluateClassification(InvoiceLineItem line) {
         if (line.getLegalClassification() == null) {
             return Optional.of("Legal classification is not set on line item " + line.getId());
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> evaluateVatAccuracy(InvoiceLineItem line) {
+        if (line.getNetAmount() == null || line.getGrossAmount() == null || line.getVatRate() == null) {
+            return Optional.empty();
+        }
+        BigDecimal expectedGross = line.getNetAmount()
+            .multiply(BigDecimal.ONE.add(line.getVatRate().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)))
+            .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal actualGross = line.getGrossAmount().setScale(2, RoundingMode.HALF_UP);
+        if (expectedGross.compareTo(actualGross) != 0) {
+            return Optional.of("VAT calculation inaccurate on line item " + line.getId()
+                + ": expected gross " + expectedGross + " (net=" + line.getNetAmount()
+                + " × (1+" + line.getVatRate() + "%)) but actual gross is " + actualGross);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> evaluateReportingDataCompleteness(InvoiceLineItem line) {
+        if (line.getLegalClassification() == null) {
+            return Optional.of("Reporting data incomplete: legalClassification missing on line item " + line.getId());
+        }
+        if (line.getVatRate() == null) {
+            return Optional.of("Reporting data incomplete: vatRate missing on line item " + line.getId());
+        }
+        if (line.getAccountingAccount() == null
+                && (line.getLedgerEntries() == null || line.getLedgerEntries().isEmpty())) {
+            return Optional.of("Reporting data incomplete: no accountingAccount or ledgerEntries on line item " + line.getId());
         }
         return Optional.empty();
     }

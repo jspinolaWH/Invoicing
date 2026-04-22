@@ -27,6 +27,8 @@ public interface BillingEventAuditLogRepository extends JpaRepository<BillingEve
 
     List<BillingEventAuditLog> findByFieldOrderByChangedAtDesc(String field);
 
+    List<BillingEventAuditLog> findByChangedByAndChangedAtOrderByBillingEventIdAsc(String changedBy, Instant changedAt);
+
     // -----------------------------------------------------------------------
     // Mutation guard — audit logs are insert-only
     // -----------------------------------------------------------------------

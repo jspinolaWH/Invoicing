@@ -3,6 +3,9 @@ package com.example.invoicing.service;
 import com.example.invoicing.entity.product.Product;
 import com.example.invoicing.entity.product.ProductTranslation;
 import com.example.invoicing.entity.product.dto.ProductRequest;
+import com.example.invoicing.repository.AccountingAccountRepository;
+import com.example.invoicing.repository.CostCenterRepository;
+import com.example.invoicing.repository.PriceListRepository;
 import com.example.invoicing.repository.ProductRepository;
 import com.example.invoicing.repository.ProductTranslationRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,6 +21,9 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductTranslationRepository translationRepository;
+    private final AccountingAccountRepository accountingAccountRepository;
+    private final CostCenterRepository costCenterRepository;
+    private final PriceListRepository priceListRepository;
 
     public List<Product> findAll() {
         return productRepository.findAll();
@@ -83,5 +89,32 @@ public class ProductService {
         p.setCode(request.getCode().toUpperCase().trim());
         p.setPricingUnit(request.getPricingUnit());
         p.setReverseChargeVat(request.isReverseChargeVat());
+
+        if (request.getDefaultAccountingAccountId() != null) {
+            p.setDefaultAccountingAccount(
+                    accountingAccountRepository.findById(request.getDefaultAccountingAccountId())
+                            .orElseThrow(() -> new EntityNotFoundException(
+                                    "AccountingAccount not found: " + request.getDefaultAccountingAccountId())));
+        } else {
+            p.setDefaultAccountingAccount(null);
+        }
+
+        if (request.getDefaultCostCenterId() != null) {
+            p.setDefaultCostCenter(
+                    costCenterRepository.findById(request.getDefaultCostCenterId())
+                            .orElseThrow(() -> new EntityNotFoundException(
+                                    "CostCenter not found: " + request.getDefaultCostCenterId())));
+        } else {
+            p.setDefaultCostCenter(null);
+        }
+
+        if (request.getPriceListId() != null) {
+            p.setPriceList(
+                    priceListRepository.findById(request.getPriceListId())
+                            .orElseThrow(() -> new EntityNotFoundException(
+                                    "PriceList not found: " + request.getPriceListId())));
+        } else {
+            p.setPriceList(null);
+        }
     }
 }

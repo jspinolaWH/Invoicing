@@ -3,6 +3,7 @@ package com.example.invoicing.controller.billingevent;
 import com.example.invoicing.service.DriverEventService;
 import com.example.invoicing.entity.driver.dto.RejectEventRequest;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
+import com.example.invoicing.entity.billingevent.BillingEventValidationStatus;
 import com.example.invoicing.entity.billingevent.audit.AuditLogQueryService;
 import com.example.invoicing.entity.billingevent.audit.dto.AuditLogEntryResponse;
 import com.example.invoicing.entity.billingevent.dto.*;
@@ -10,6 +11,7 @@ import com.example.invoicing.entity.billingevent.credit.dto.CreditTransferLinkRe
 import com.example.invoicing.entity.billingevent.credit.dto.CreditTransferRequest;
 import com.example.invoicing.entity.billingevent.credit.dto.CreditTransferResult;
 import com.example.invoicing.entity.billingevent.transfer.dto.*;
+import com.example.invoicing.entity.validation.BillingEventValidationLog;
 import com.example.invoicing.entity.validation.ValidationReport;
 import com.example.invoicing.service.BillingEventCreditTransferService;
 import com.example.invoicing.service.BillingEventService;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -86,11 +89,13 @@ public class BillingEventController {
         @RequestParam(required = false) Long productId,
         @RequestParam(required = false) Boolean excluded,
         @RequestParam(required = false) Boolean requiresReview,
+        @RequestParam(required = false) String serviceResponsibility,
+        @RequestParam(required = false) BillingEventValidationStatus validationStatus,
         Pageable pageable
     ) {
         return billingEventService.findFiltered(
             customerNumber, status, municipalityId, dateFrom, dateTo,
-            productId, excluded, requiresReview, pageable);
+            productId, excluded, requiresReview, serviceResponsibility, validationStatus, pageable);
     }
 
     @GetMapping("/{id}")
@@ -98,14 +103,33 @@ public class BillingEventController {
         return billingEventService.findById(id);
     }
 
+    @PreAuthorize("hasAnyRole('INVOICING', 'INVOICING_PRICING')")
     @PatchMapping("/{id}")
     public BillingEventResponse update(
         @PathVariable Long id,
         @Valid @RequestBody BillingEventUpdateRequest request,
+        @AuthenticationPrincipal String currentUser,
+        Authentication authentication
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        boolean pricingOnly = !hasRole(authentication, "INVOICING");
+        return billingEventService.update(id, request, user, pricingOnly);
+    }
+
+    private boolean hasRole(Authentication auth, String role) {
+        if (auth == null) return false;
+        return auth.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
+    }
+
+    @PreAuthorize("hasRole('INVOICING')")
+    @PostMapping("/{id}/approve-correction")
+    public BillingEventResponse approveCorrection(
+        @PathVariable Long id,
         @AuthenticationPrincipal String currentUser
     ) {
         String user = currentUser != null ? currentUser : "system";
-        return billingEventService.update(id, request, user);
+        return billingEventService.approveCorrection(id, user);
     }
 
     @PostMapping("/{id}/transition")
@@ -115,6 +139,32 @@ public class BillingEventController {
     ) {
         statusService.transitionTo(id, request.getTargetStatus());
         return billingEventService.findById(id);
+    }
+
+    // -----------------------------------------------------------------------
+    // SELECTIVE COMPONENT INVOICING (AC3)
+    // -----------------------------------------------------------------------
+    @PatchMapping("/{id}/components")
+    public BillingEventDetailResponse updateComponents(
+        @PathVariable Long id,
+        @RequestBody SelectiveComponentRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return billingEventService.updateComponentInclusion(id, request, user);
+    }
+
+    // -----------------------------------------------------------------------
+    // CONTRACTOR PAYMENT (AC5)
+    // -----------------------------------------------------------------------
+    @PostMapping("/{id}/contractor-payment")
+    public BillingEventDetailResponse recordContractorPayment(
+        @PathVariable Long id,
+        @Valid @RequestBody ContractorPaymentRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return billingEventService.recordContractorPayment(id, request, user);
     }
 
     // -----------------------------------------------------------------------
@@ -272,5 +322,23 @@ public class BillingEventController {
     @PostMapping("/validate")
     public ValidationReport validate(@Valid @RequestBody ValidateEventsRequest request) {
         return validationService.validate(request.getEventIds());
+    }
+
+    @GetMapping("/{id}/validation-failures")
+    public List<BillingEventValidationLog> getValidationFailures(@PathVariable Long id) {
+        return validationService.getValidationFailures(id);
+    }
+
+    // -----------------------------------------------------------------------
+    // VALIDATION OVERRIDE (AC 18 — PD-278)
+    // -----------------------------------------------------------------------
+    @PostMapping("/{id}/validation-override")
+    public BillingEventDetailResponse overrideValidation(
+        @PathVariable Long id,
+        @Valid @RequestBody ValidationOverrideRequest request,
+        @AuthenticationPrincipal String currentUser
+    ) {
+        String user = currentUser != null ? currentUser : "system";
+        return billingEventService.overrideValidation(id, request.getReason(), user);
     }
 }

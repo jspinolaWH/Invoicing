@@ -34,6 +34,13 @@ public class InvoiceRecallService {
                     + ". Only SENT invoices can be recalled.");
         }
 
+        if (invoice.getCustomer() == null
+                || invoice.getCustomer().getBillingProfile() == null
+                || !invoice.getCustomer().getBillingProfile().isAllowExternalRecall()) {
+            throw new CannotRecallException(
+                "External recall is not permitted for this company. Enable 'Allow external recall' in the customer billing profile.");
+        }
+
         boolean externalSuccess = false;
         if (invoice.getExternalReference() != null) {
             try {

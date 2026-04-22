@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/properties")
@@ -31,5 +32,12 @@ public class PropertyController {
     @GetMapping("/{id}")
     public ResponseEntity<PropertyDetailResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(propertyService.getPropertyDetail(id));
+    }
+
+    @PatchMapping("/{id}/template")
+    public ResponseEntity<PropertyDetailResponse> updateTemplate(
+            @PathVariable Long id,
+            @RequestBody Map<String, Long> body) {
+        return ResponseEntity.ok(propertyService.updateTemplate(id, body.get("invoiceTemplateId")));
     }
 }

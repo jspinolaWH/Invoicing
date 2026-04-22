@@ -2,14 +2,20 @@ import { useState } from 'react';
 import { previewPriceAdjustment, applyPriceAdjustment } from '../../api/retroactive';
 
 export default function PriceAdjustmentPage() {
+  const [selectionMode, setSelectionMode] = useState('dateRange'); // 'dateRange' | 'eventIds'
+  const [adjustmentType, setAdjustmentType] = useState('FIXED'); // 'FIXED' | 'PERCENTAGE'
   const [form, setForm] = useState({
     customerNumber: '',
     eventDateFrom: '',
     eventDateTo: '',
     productId: '',
+    serviceResponsibility: '',
+    eventIdsInput: '',
+    adjustmentValue: '',
     newWasteFeePrice: '',
     newTransportFeePrice: '',
     newEcoFeePrice: '',
+    performedBy: '',
     reason: '',
     internalComment: '',
   });
@@ -19,18 +25,38 @@ export default function PriceAdjustmentPage() {
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(false);
 
+  function parseEventIds(raw) {
+    if (!raw || !raw.trim()) return null;
+    return raw.split(',').map(s => s.trim()).filter(Boolean).map(Number).filter(n => !isNaN(n));
+  }
+
   function buildPayload() {
-    return {
+    const base = {
       customerNumber: form.customerNumber,
-      eventDateFrom: form.eventDateFrom || null,
-      eventDateTo: form.eventDateTo || null,
-      productId: form.productId ? Number(form.productId) : null,
-      newWasteFeePrice: form.newWasteFeePrice !== '' ? Number(form.newWasteFeePrice) : null,
-      newTransportFeePrice: form.newTransportFeePrice !== '' ? Number(form.newTransportFeePrice) : null,
-      newEcoFeePrice: form.newEcoFeePrice !== '' ? Number(form.newEcoFeePrice) : null,
+      performedBy: form.performedBy || null,
       reason: form.reason,
       internalComment: form.internalComment,
+      adjustmentType,
     };
+
+    if (selectionMode === 'eventIds') {
+      base.eventIds = parseEventIds(form.eventIdsInput);
+    } else {
+      base.eventDateFrom = form.eventDateFrom || null;
+      base.eventDateTo = form.eventDateTo || null;
+      base.productId = form.productId ? Number(form.productId) : null;
+      base.serviceResponsibility = form.serviceResponsibility || null;
+    }
+
+    if (adjustmentType === 'PERCENTAGE') {
+      base.adjustmentValue = form.adjustmentValue !== '' ? Number(form.adjustmentValue) : null;
+    } else {
+      base.newWasteFeePrice = form.newWasteFeePrice !== '' ? Number(form.newWasteFeePrice) : null;
+      base.newTransportFeePrice = form.newTransportFeePrice !== '' ? Number(form.newTransportFeePrice) : null;
+      base.newEcoFeePrice = form.newEcoFeePrice !== '' ? Number(form.newEcoFeePrice) : null;
+    }
+
+    return base;
   }
 
   async function handlePreview(e) {
@@ -77,25 +103,77 @@ export default function PriceAdjustmentPage() {
     </div>
   );
 
+  const toggleBtn = (active, label, onClick) => (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '6px 16px', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer',
+        background: active ? '#2563eb' : '#fff', color: active ? '#fff' : '#374151', fontWeight: active ? 700 : 400,
+      }}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
       <h2 style={{ marginBottom: 20 }}>Retroactive Price Adjustment</h2>
 
       <form onSubmit={handlePreview} style={{ background: '#f9f9f9', padding: 20, borderRadius: 8, marginBottom: 24 }}>
+
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ fontWeight: 600, marginRight: 12 }}>Selection mode:</span>
+          {toggleBtn(selectionMode === 'dateRange', 'Date Range', () => setSelectionMode('dateRange'))}
+          {' '}
+          {toggleBtn(selectionMode === 'eventIds', 'Specific Event IDs', () => setSelectionMode('eventIds'))}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>{field('Customer Number *', 'customerNumber', 'text', 'e.g. 123456789')}</div>
-          <div>{field('Product ID (optional)', 'productId', 'number')}</div>
-          <div>{field('Event Date From *', 'eventDateFrom', 'date')}</div>
-          <div>{field('Event Date To *', 'eventDateTo', 'date')}</div>
-          <div>{field('New Waste Fee Price', 'newWasteFeePrice', 'number', 'Leave blank to keep current')}</div>
-          <div>{field('New Transport Fee Price', 'newTransportFeePrice', 'number', 'Leave blank to keep current')}</div>
-          <div>{field('New Eco Fee Price', 'newEcoFeePrice', 'number', 'Leave blank to keep current')}</div>
+          <div>{field('Performed By', 'performedBy', 'text', 'e.g. john.doe')}</div>
+
+          {selectionMode === 'dateRange' ? (
+            <>
+              <div>{field('Event Date From *', 'eventDateFrom', 'date')}</div>
+              <div>{field('Event Date To *', 'eventDateTo', 'date')}</div>
+              <div>{field('Product ID (optional)', 'productId', 'number')}</div>
+              <div>{field('Service Responsibility (optional)', 'serviceResponsibility', 'text', 'e.g. MUNICIPAL')}</div>
+            </>
+          ) : (
+            <div style={{ gridColumn: '1 / -1' }}>
+              {field('Event IDs (comma-separated) *', 'eventIdsInput', 'text', 'e.g. 101, 102, 103')}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ fontWeight: 600, marginRight: 12 }}>Adjustment type:</span>
+          {toggleBtn(adjustmentType === 'FIXED', 'Fixed Amount', () => setAdjustmentType('FIXED'))}
+          {' '}
+          {toggleBtn(adjustmentType === 'PERCENTAGE', 'Percentage', () => setAdjustmentType('PERCENTAGE'))}
+        </div>
+
+        {adjustmentType === 'PERCENTAGE' ? (
+          <div style={{ maxWidth: 300, marginBottom: 12 }}>
+            {field('Percentage Adjustment (%)', 'adjustmentValue', 'number', 'e.g. 10 for +10%, -5 for -5%')}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div>{field('New Waste Fee Price', 'newWasteFeePrice', 'number', 'Leave blank to keep current')}</div>
+            <div>{field('New Transport Fee Price', 'newTransportFeePrice', 'number', 'Leave blank to keep current')}</div>
+            <div>{field('New Eco Fee Price', 'newEcoFeePrice', 'number', 'Leave blank to keep current')}</div>
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>{field('Reason', 'reason', 'text', 'e.g. Contract renegotiation')}</div>
+          <div />
         </div>
         {field('Internal Comment *', 'internalComment', 'text', 'Required for apply')}
 
         <button type="submit" disabled={loading} style={{ padding: '8px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-          {loading ? 'Loading\u2026' : 'Preview Changes'}
+          {loading ? 'Loading…' : 'Preview Changes'}
         </button>
       </form>
 
@@ -108,7 +186,7 @@ export default function PriceAdjustmentPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             <Stat label="Updated in-place" value={result.updatedInProgressCount} />
             <Stat label="Correction copies" value={result.correctionCopiesCreated} />
-            <Stat label="Total delta" value={`\u20ac ${Number(result.totalDelta || 0).toFixed(2)}`} />
+            <Stat label="Total delta" value={`€ ${Number(result.totalDelta || 0).toFixed(2)}`} />
           </div>
           {result.createdEventIds?.length > 0 && (
             <p style={{ marginTop: 12, color: '#166534' }}>Created event IDs: {result.createdEventIds.join(', ')}</p>
@@ -122,7 +200,7 @@ export default function PriceAdjustmentPage() {
             <Stat label="Total events" value={preview.totalEventCount} />
             <Stat label="In-progress" value={preview.inProgressCount} />
             <Stat label="Already billed" value={preview.billedCount} />
-            <Stat label="Net delta" value={`\u20ac ${Number(preview.totalDelta || 0).toFixed(2)}`} color={Number(preview.totalDelta) >= 0 ? '#16a34a' : '#dc2626'} />
+            <Stat label="Net delta" value={`€ ${Number(preview.totalDelta || 0).toFixed(2)}`} color={Number(preview.totalDelta) >= 0 ? '#16a34a' : '#dc2626'} />
           </div>
 
           {preview.billedCount > 0 && (
@@ -144,13 +222,13 @@ export default function PriceAdjustmentPage() {
                 <tr key={ev.eventId} style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <td style={{ padding: '7px 10px' }}>{ev.eventId}</td>
                   <td style={{ padding: '7px 10px' }}>{ev.eventDate}</td>
-                  <td style={{ padding: '7px 10px' }}>{ev.productCode || '\u2014'}</td>
+                  <td style={{ padding: '7px 10px' }}>{ev.productCode || '—'}</td>
                   <td style={{ padding: '7px 10px' }}>{ev.quantity}</td>
                   <td style={{ padding: '7px 10px' }}><StatusBadge status={ev.status} /></td>
-                  <td style={{ padding: '7px 10px' }}>\u20ac {Number(ev.currentNetAmount || 0).toFixed(2)}</td>
-                  <td style={{ padding: '7px 10px' }}>\u20ac {Number(ev.projectedNetAmount || 0).toFixed(2)}</td>
+                  <td style={{ padding: '7px 10px' }}>€ {Number(ev.currentNetAmount || 0).toFixed(2)}</td>
+                  <td style={{ padding: '7px 10px' }}>€ {Number(ev.projectedNetAmount || 0).toFixed(2)}</td>
                   <td style={{ padding: '7px 10px', color: Number(ev.delta) >= 0 ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
-                    {Number(ev.delta) >= 0 ? '+' : ''}\u20ac {Number(ev.delta || 0).toFixed(2)}
+                    {Number(ev.delta) >= 0 ? '+' : ''}€ {Number(ev.delta || 0).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -161,7 +239,7 @@ export default function PriceAdjustmentPage() {
             <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, padding: 16 }}>
               <p style={{ margin: '0 0 12px' }}><strong>Are you sure?</strong> This will modify {preview.totalEventCount} billing event(s). This action cannot be undone.</p>
               <button onClick={handleApply} disabled={loading} style={{ padding: '8px 20px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 8 }}>
-                {loading ? 'Applying\u2026' : 'Confirm Apply'}
+                {loading ? 'Applying…' : 'Confirm Apply'}
               </button>
               <button onClick={() => setConfirming(false)} style={{ padding: '8px 20px', background: '#fff', border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer' }}>
                 Cancel

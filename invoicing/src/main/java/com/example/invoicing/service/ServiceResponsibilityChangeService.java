@@ -1,14 +1,20 @@
 package com.example.invoicing.service;
+import com.example.invoicing.entity.billingevent.audit.BillingEventAuditLog;
 import com.example.invoicing.entity.billingevent.dto.AffectedEventSummary;
 import com.example.invoicing.entity.billingevent.dto.ResponsibilityChangeResult;
 import com.example.invoicing.entity.billingevent.dto.ResponsibilityChangePreview;
 import com.example.invoicing.entity.billingevent.dto.ResponsibilityChangeRequest;
+import com.example.invoicing.entity.billingevent.retroactive.ServiceResponsibilityChangeLog;
+import com.example.invoicing.entity.billingevent.retroactive.ServiceResponsibilityChangedEvent;
 
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
+import com.example.invoicing.repository.BillingEventAuditLogRepository;
 import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.ServiceResponsibilityChangeLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +30,9 @@ import java.util.List;
 public class ServiceResponsibilityChangeService {
 
     private final BillingEventRepository billingEventRepository;
+    private final BillingEventAuditLogRepository auditLogRepository;
+    private final ServiceResponsibilityChangeLogRepository changeLogRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public ResponsibilityChangePreview preview(ResponsibilityChangeRequest request) {
@@ -67,12 +77,15 @@ public class ServiceResponsibilityChangeService {
     }
 
     @Transactional
-    public ResponsibilityChangeResult apply(ResponsibilityChangeRequest request) {
+    public ResponsibilityChangeResult apply(ResponsibilityChangeRequest request, String actor) {
         if (request.getInternalComment() == null || request.getInternalComment().isBlank()) {
             throw new IllegalArgumentException("internalComment is required");
         }
         validateBase(request);
         List<BillingEvent> events = resolveEvents(request);
+
+        String changeRunId = UUID.randomUUID().toString();
+        Instant now = Instant.now();
 
         int movedInProgress = 0;
         int correctionCopies = 0;
@@ -83,19 +96,34 @@ public class ServiceResponsibilityChangeService {
             boolean isBilled = e.getStatus() == BillingEventStatus.SENT
                 || e.getStatus() == BillingEventStatus.COMPLETED;
 
+            String previousCustomer = e.getCustomerNumber();
+            String previousResponsibility = e.getServiceResponsibility();
+
             if (!isBilled) {
                 e.setCustomerNumber(request.getToCustomerNumber());
+                if (request.getNewServiceResponsibility() != null) {
+                    e.setServiceResponsibility(request.getNewServiceResponsibility());
+                }
                 billingEventRepository.save(e);
                 movedInProgress++;
+
+                writeAuditLog(e.getId(), "customerNumber", previousCustomer,
+                    request.getToCustomerNumber(), actor, now, request.getReason());
+                if (request.getNewServiceResponsibility() != null) {
+                    writeAuditLog(e.getId(), "serviceResponsibility", previousResponsibility,
+                        request.getNewServiceResponsibility(), actor, now, request.getReason());
+                }
             } else {
                 e.setExcluded(true);
                 e.setExclusionReason("SERVICE_RESPONSIBILITY_CHANGE: " + request.getReason());
                 e.setExcludedBy("SYSTEM");
-                e.setExcludedAt(Instant.now());
+                e.setExcludedAt(now);
                 billingEventRepository.save(e);
                 excludedCount++;
 
-                BillingEvent copy = copyEvent(e, request.getToCustomerNumber());
+                writeAuditLog(e.getId(), "excluded", "false", "true", actor, now, request.getReason());
+
+                BillingEvent copy = copyEvent(e, request.getToCustomerNumber(), request.getNewServiceResponsibility());
                 copy.setCorrectedFromEventId(e.getId());
                 BillingEvent saved = billingEventRepository.save(copy);
                 createdEventIds.add(saved.getId());
@@ -103,9 +131,34 @@ public class ServiceResponsibilityChangeService {
             }
         }
 
-        log.info("Service responsibility change applied: {} moved, {} copies created for {} → {}",
+        changeLogRepository.save(ServiceResponsibilityChangeLog.builder()
+            .changeRunId(changeRunId)
+            .appliedBy(actor)
+            .appliedAt(now)
+            .fromCustomerNumber(request.getFromCustomerNumber())
+            .toCustomerNumber(request.getToCustomerNumber())
+            .previousResponsibility(null)
+            .newResponsibility(request.getNewServiceResponsibility())
+            .changeEffectiveDate(request.getChangeEffectiveDate())
+            .affectedCount(events.size())
+            .movedInProgressCount(movedInProgress)
+            .correctionCopiesCreated(correctionCopies)
+            .reason(request.getReason())
+            .build());
+
+        eventPublisher.publishEvent(new ServiceResponsibilityChangedEvent(
+            this,
+            changeRunId,
+            request.getFromCustomerNumber(),
+            request.getToCustomerNumber(),
+            request.getNewServiceResponsibility(),
+            request.getChangeEffectiveDate(),
+            events.size(),
+            actor));
+
+        log.info("Service responsibility change applied: {} moved, {} copies created for {} → {} (runId={})",
             movedInProgress, correctionCopies,
-            request.getFromCustomerNumber(), request.getToCustomerNumber());
+            request.getFromCustomerNumber(), request.getToCustomerNumber(), changeRunId);
 
         return ResponsibilityChangeResult.builder()
             .fromCustomerNumber(request.getFromCustomerNumber())
@@ -120,6 +173,19 @@ public class ServiceResponsibilityChangeService {
             .build();
     }
 
+    private void writeAuditLog(Long eventId, String field, String oldValue, String newValue,
+                               String changedBy, Instant changedAt, String reason) {
+        auditLogRepository.save(BillingEventAuditLog.builder()
+            .billingEventId(eventId)
+            .field(field)
+            .oldValue(oldValue)
+            .newValue(newValue)
+            .changedBy(changedBy)
+            .changedAt(changedAt)
+            .reason(reason != null ? reason : "SERVICE_RESPONSIBILITY_CHANGE")
+            .build());
+    }
+
     private List<BillingEvent> resolveEvents(ResponsibilityChangeRequest request) {
         if (request.getSpecificEventIds() != null && !request.getSpecificEventIds().isEmpty()) {
             List<BillingEvent> events = billingEventRepository.findAllById(request.getSpecificEventIds());
@@ -131,7 +197,8 @@ public class ServiceResponsibilityChangeService {
             request.getFromCustomerNumber(),
             request.getEventDateFrom(),
             request.getEventDateTo(),
-            request.getProductId()
+            request.getProductId(),
+            null
         );
     }
 
@@ -148,7 +215,7 @@ public class ServiceResponsibilityChangeService {
         }
     }
 
-    private BillingEvent copyEvent(BillingEvent original, String targetCustomerNumber) {
+    private BillingEvent copyEvent(BillingEvent original, String targetCustomerNumber, String newServiceResponsibility) {
         BillingEvent copy = new BillingEvent();
         copy.setEventDate(original.getEventDate());
         copy.setProduct(original.getProduct());
@@ -160,6 +227,8 @@ public class ServiceResponsibilityChangeService {
         copy.setVatRate0(original.getVatRate0());
         copy.setVatRate24(original.getVatRate24());
         copy.setLegalClassification(original.getLegalClassification());
+        copy.setServiceResponsibility(
+            newServiceResponsibility != null ? newServiceResponsibility : original.getServiceResponsibility());
         copy.setAccountingAccount(original.getAccountingAccount());
         copy.setCostCenter(original.getCostCenter());
         copy.setMunicipalityId(original.getMunicipalityId());

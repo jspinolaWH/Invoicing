@@ -1,8 +1,12 @@
 package com.example.invoicing.service;
 
 import com.example.invoicing.entity.billingevent.BillingEvent;
+import com.example.invoicing.entity.billingevent.BillingEventValidationStatus;
 import com.example.invoicing.entity.validation.*;
 import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.BillingEventValidationLogRepository;
+import com.example.invoicing.repository.CustomerBillingProfileRepository;
+import com.example.invoicing.repository.EInvoiceAddressRepository;
 import com.example.invoicing.repository.ValidationRuleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -18,26 +24,51 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class BillingEventValidationService {
 
     private final BillingEventRepository billingEventRepository;
     private final ValidationRuleRepository validationRuleRepository;
+    private final BillingEventValidationLogRepository validationLogRepository;
+    private final CustomerBillingProfileRepository customerProfileRepository;
+    private final EInvoiceAddressRepository eInvoiceAddressRepository;
 
     public ValidationReport validate(List<Long> eventIds) {
         List<BillingEvent> events = billingEventRepository.findAllById(eventIds);
         List<ValidationRule> activeRules = validationRuleRepository.findAllActive();
 
         List<ValidationFailure> failures = new ArrayList<>();
+        List<BillingEventValidationLog> logs = new ArrayList<>();
+        Instant now = Instant.now();
         int passed = 0;
 
         for (BillingEvent event : events) {
             List<ValidationFailure> eventFailures = validateEvent(event, activeRules);
-            if (eventFailures.isEmpty()) {
-                passed++;
-            } else {
+            boolean hasFailing = !eventFailures.isEmpty();
+            if (hasFailing) {
                 failures.addAll(eventFailures);
+                for (ValidationFailure f : eventFailures) {
+                    logs.add(BillingEventValidationLog.builder()
+                        .billingEventId(event.getId())
+                        .ruleType(f.getRule())
+                        .ruleCode(f.getRuleCode())
+                        .severity(f.getSeverity())
+                        .field(f.getField())
+                        .description(f.getDescription())
+                        .validatedAt(now)
+                        .build());
+                }
+                event.setValidationStatus(BillingEventValidationStatus.FAILED);
+            } else {
+                passed++;
+                event.setValidationStatus(BillingEventValidationStatus.PASSED);
             }
+            event.setLastValidatedAt(now);
+        }
+
+        billingEventRepository.saveAll(events);
+        if (!logs.isEmpty()) {
+            validationLogRepository.saveAll(logs);
         }
 
         long blocking = failures.stream().filter(f -> f.getSeverity() == ValidationSeverity.BLOCKING).count();
@@ -52,6 +83,10 @@ public class BillingEventValidationService {
             .build();
     }
 
+    public List<BillingEventValidationLog> getValidationFailures(Long eventId) {
+        return validationLogRepository.findByBillingEventIdOrderByValidatedAtDesc(eventId);
+    }
+
     public List<ValidationFailure> validateEvent(BillingEvent event, List<ValidationRule> rules) {
         List<ValidationFailure> failures = new ArrayList<>();
         for (ValidationRule rule : rules) {
@@ -59,7 +94,9 @@ public class BillingEventValidationService {
                 case MANDATORY_FIELD    -> checkMandatoryField(event, rule, failures);
                 case PRICE_CONSISTENCY  -> checkPriceConsistency(event, rule, failures);
                 case QUANTITY_THRESHOLD -> checkQuantityThreshold(event, rule, failures);
-                case CLASSIFICATION     -> checkClassification(event, rule, failures);
+                case CLASSIFICATION                -> checkClassification(event, rule, failures);
+                case REPORTING_DATA_COMPLETENESS  -> checkReportingDataCompleteness(event, rule, failures);
+                case VAT_ACCURACY                 -> checkVatAccuracy(event, rule, failures);
             }
         }
         return failures;
@@ -81,6 +118,26 @@ public class BillingEventValidationService {
             case "accountingAccount"   -> event.getAccountingAccount() == null;
             case "costCenter"          -> event.getCostCenter() == null;
             case "legalClassification" -> event.getLegalClassification() == null;
+            case "vatRate0"            -> event.getVatRate0() == null;
+            case "vatRate24"           -> event.getVatRate24() == null;
+            case "serviceResponsibility" -> event.getServiceResponsibility() == null || event.getServiceResponsibility().isBlank();
+            case "billingProfile.businessId" -> {
+                var opt = customerProfileRepository.findByBillingProfile_CustomerIdNumber(event.getCustomerNumber());
+                yield opt.isEmpty() || opt.get().getBillingProfile() == null
+                    || opt.get().getBillingProfile().getBusinessId() == null
+                    || opt.get().getBillingProfile().getBusinessId().isBlank();
+            }
+            case "billingProfile.billingAddress" -> {
+                var opt = customerProfileRepository.findByBillingProfile_CustomerIdNumber(event.getCustomerNumber());
+                yield opt.isEmpty() || opt.get().getBillingProfile() == null
+                    || opt.get().getBillingProfile().getBillingAddress() == null
+                    || opt.get().getBillingProfile().getBillingAddress().getStreetAddress() == null
+                    || opt.get().getBillingProfile().getBillingAddress().getStreetAddress().isBlank();
+            }
+            case "billingProfile.eInvoiceAddress" -> {
+                var opt = customerProfileRepository.findByBillingProfile_CustomerIdNumber(event.getCustomerNumber());
+                yield opt.isEmpty() || eInvoiceAddressRepository.findByCustomer_Id(opt.get().getId()).isEmpty();
+            }
             default -> false;
         };
 
@@ -121,6 +178,62 @@ public class BillingEventValidationService {
                     + ". Negative prices are only valid for credit events.")
                 .build());
         }
+
+        String toleranceStr = configValue(rule, "tolerance");
+        if (toleranceStr != null && event.getProduct() != null) {
+            try {
+                BigDecimal tolerancePct = new BigDecimal(toleranceStr);
+                checkFeeDeviation(event, rule, failures, "wasteFeePrice",
+                    event.getWasteFeePrice(), event.getProduct().getDefaultWasteFee(), tolerancePct);
+                checkFeeDeviation(event, rule, failures, "transportFeePrice",
+                    event.getTransportFeePrice(), event.getProduct().getDefaultTransportFee(), tolerancePct);
+                checkFeeDeviation(event, rule, failures, "ecoFeePrice",
+                    event.getEcoFeePrice(), event.getProduct().getDefaultEcoFee(), tolerancePct);
+            } catch (NumberFormatException ignored) { }
+        }
+
+        String priceListIdStr = configValue(rule, "priceListId");
+        if (priceListIdStr != null && event.getProduct() != null) {
+            try {
+                Long configuredPriceListId = Long.parseLong(priceListIdStr);
+                var productPriceList = event.getProduct().getPriceList();
+                if (productPriceList == null || !configuredPriceListId.equals(productPriceList.getId())) {
+                    failures.add(ValidationFailure.builder()
+                        .entityId(event.getId())
+                        .entityType("BILLING_EVENT")
+                        .ruleCode("PRICE_LIST_MISMATCH")
+                        .rule("PRICE_CONSISTENCY")
+                        .field("product.priceList")
+                        .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
+                        .description("Product '" + event.getProduct().getCode()
+                            + "' is not associated with required price list (id=" + configuredPriceListId
+                            + ") on event " + event.getId())
+                        .build());
+                }
+            } catch (NumberFormatException ignored) { }
+        }
+    }
+
+    private void checkFeeDeviation(BillingEvent event, ValidationRule rule, List<ValidationFailure> failures,
+                                    String fieldName, BigDecimal actual, BigDecimal expected, BigDecimal tolerancePct) {
+        if (actual == null || expected == null || expected.compareTo(BigDecimal.ZERO) == 0) return;
+        BigDecimal deviation = actual.subtract(expected).abs()
+            .divide(expected.abs(), 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100));
+        if (deviation.compareTo(tolerancePct) > 0) {
+            failures.add(ValidationFailure.builder()
+                .entityId(event.getId())
+                .entityType("BILLING_EVENT")
+                .ruleCode("PRICE_DEVIATION_EXCEEDED")
+                .rule("PRICE_CONSISTENCY")
+                .field(fieldName)
+                .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
+                .description(fieldName + " deviates by "
+                    + deviation.setScale(1, RoundingMode.HALF_UP)
+                    + "% from product default, exceeding configured tolerance of "
+                    + tolerancePct + "% on event " + event.getId())
+                .build());
+        }
     }
 
     private void checkQuantityThreshold(BillingEvent event, ValidationRule rule,
@@ -158,6 +271,65 @@ public class BillingEventValidationService {
                 .field("legalClassification")
                 .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
                 .description("Legal classification is not set on event " + event.getId())
+                .build());
+        }
+    }
+
+    private void checkReportingDataCompleteness(BillingEvent event, ValidationRule rule,
+                                                 List<ValidationFailure> failures) {
+        if (event.getLegalClassification() == null) {
+            failures.add(ValidationFailure.builder()
+                .entityId(event.getId()).entityType("BILLING_EVENT")
+                .ruleCode("MISSING_LEGAL_CLASSIFICATION").rule("REPORTING_DATA_COMPLETENESS")
+                .field("legalClassification")
+                .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
+                .description("Reporting data incomplete: legalClassification missing on event " + event.getId())
+                .build());
+        }
+        if (event.getVatRate0() == null && event.getVatRate24() == null) {
+            failures.add(ValidationFailure.builder()
+                .entityId(event.getId()).entityType("BILLING_EVENT")
+                .ruleCode("MISSING_VAT_RATE").rule("REPORTING_DATA_COMPLETENESS")
+                .field("vatRate")
+                .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
+                .description("Reporting data incomplete: no VAT rate configured on event " + event.getId())
+                .build());
+        }
+        if (event.getAccountingAccount() == null) {
+            failures.add(ValidationFailure.builder()
+                .entityId(event.getId()).entityType("BILLING_EVENT")
+                .ruleCode("MISSING_ACCOUNTING_ACCOUNT").rule("REPORTING_DATA_COMPLETENESS")
+                .field("accountingAccount")
+                .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
+                .description("Reporting data incomplete: accountingAccount missing on event " + event.getId())
+                .build());
+        }
+    }
+
+    private void checkVatAccuracy(BillingEvent event, ValidationRule rule,
+                                   List<ValidationFailure> failures) {
+        if (event.getVatRate0() != null
+                && (event.getVatRate0().compareTo(BigDecimal.ZERO) < 0
+                    || event.getVatRate0().compareTo(BigDecimal.valueOf(100)) > 0)) {
+            failures.add(ValidationFailure.builder()
+                .entityId(event.getId()).entityType("BILLING_EVENT")
+                .ruleCode("INVALID_VAT_RATE_RANGE").rule("VAT_ACCURACY")
+                .field("vatRate0")
+                .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
+                .description("vatRate0 value " + event.getVatRate0()
+                    + " is out of valid range [0,100] on event " + event.getId())
+                .build());
+        }
+        if (event.getVatRate24() != null
+                && (event.getVatRate24().compareTo(BigDecimal.ZERO) < 0
+                    || event.getVatRate24().compareTo(BigDecimal.valueOf(100)) > 0)) {
+            failures.add(ValidationFailure.builder()
+                .entityId(event.getId()).entityType("BILLING_EVENT")
+                .ruleCode("INVALID_VAT_RATE_RANGE").rule("VAT_ACCURACY")
+                .field("vatRate24")
+                .severity(rule.isBlocking() ? ValidationSeverity.BLOCKING : ValidationSeverity.WARNING)
+                .description("vatRate24 value " + event.getVatRate24()
+                    + " is out of valid range [0,100] on event " + event.getId())
                 .build());
         }
     }

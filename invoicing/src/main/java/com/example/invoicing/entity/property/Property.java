@@ -82,4 +82,7 @@ public class Property extends BaseAuditEntity {
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PropertyOwner> owners = new ArrayList<>();
+
+    @Column(name = "invoice_template_id")
+    private Long invoiceTemplateId;
 }

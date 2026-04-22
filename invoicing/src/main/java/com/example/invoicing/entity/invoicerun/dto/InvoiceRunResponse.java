@@ -19,6 +19,12 @@ public class InvoiceRunResponse {
     private String filterMunicipality;
     private LocalDate filterPeriodFrom;
     private LocalDate filterPeriodTo;
+    private BigDecimal filterMinAmount;
+    private String filterCustomerType;
+    private String filterServiceType;
+    private String filterLocation;
+    private String filterServiceResponsibility;
+    private String filterBillingFrequency;
     private Integer reportTotalChecked;
     private Integer reportPassed;
     private Integer reportBlockingCount;
@@ -26,6 +32,10 @@ public class InvoiceRunResponse {
     private Instant scheduledSendAt;
     private Instant sentAt;
     private String cancellationReason;
+    private String batchAttachmentIdentifier;
+    private String batchAttachmentFilename;
+    private String batchAttachmentMimeType;
+    private String batchAttachmentSecurityClass;
 
     public static InvoiceRunResponse from(InvoiceRun run) {
         return InvoiceRunResponse.builder()
@@ -39,6 +49,12 @@ public class InvoiceRunResponse {
             .filterMunicipality(run.getFilterMunicipality())
             .filterPeriodFrom(run.getFilterPeriodFrom())
             .filterPeriodTo(run.getFilterPeriodTo())
+            .filterMinAmount(run.getFilterMinAmount())
+            .filterCustomerType(run.getFilterCustomerType())
+            .filterServiceType(run.getFilterServiceType())
+            .filterLocation(run.getFilterLocation())
+            .filterServiceResponsibility(run.getFilterServiceResponsibility())
+            .filterBillingFrequency(run.getFilterBillingFrequency())
             .reportTotalChecked(run.getReportTotalChecked())
             .reportPassed(run.getReportPassed())
             .reportBlockingCount(run.getReportBlockingCount())
@@ -46,6 +62,10 @@ public class InvoiceRunResponse {
             .scheduledSendAt(run.getScheduledSendAt())
             .sentAt(run.getSentAt())
             .cancellationReason(run.getCancellationReason())
+            .batchAttachmentIdentifier(run.getBatchAttachmentIdentifier())
+            .batchAttachmentFilename(run.getBatchAttachmentFilename())
+            .batchAttachmentMimeType(run.getBatchAttachmentMimeType())
+            .batchAttachmentSecurityClass(run.getBatchAttachmentSecurityClass())
             .build();
     }
 }

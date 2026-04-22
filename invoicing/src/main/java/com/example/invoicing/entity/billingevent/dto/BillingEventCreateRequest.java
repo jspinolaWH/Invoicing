@@ -53,6 +53,8 @@ public class BillingEventCreateRequest {
     private String sharedServiceGroupId;
     private BigDecimal sharedServiceGroupPercentage;
     private String comments;
+    private String internalComments;
+    private String registrationNumber;
     private String projectId;
     private LegalClassification legalClassification;
     private String wasteType;

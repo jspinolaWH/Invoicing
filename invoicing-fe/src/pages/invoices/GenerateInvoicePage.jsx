@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { previewInvoice } from '../../api/invoices'
+import { createRun } from '../../api/invoiceRuns'
 import SimulationPreviewPanel from './components/SimulationPreviewPanel'
 import '../masterdata/VatRatesPage.css'
 
@@ -10,6 +11,7 @@ export default function GenerateInvoicePage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [previewing, setPreviewing] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [report, setReport] = useState(null)
   const [error, setError] = useState(null)
 
@@ -28,6 +30,20 @@ export default function GenerateInvoicePage() {
     } catch (e) {
       setError(e?.response?.data || 'Preview failed.')
     } finally { setPreviewing(false) }
+  }
+
+  const handleGenerate = async () => {
+    setGenerating(true); setError(null)
+    try {
+      const res = await createRun({
+        filterPeriodFrom: dateFrom,
+        filterPeriodTo: dateTo,
+        simulationMode: false,
+      })
+      navigate(`/runs/${res.data.id}`)
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Invoice generation failed.')
+    } finally { setGenerating(false) }
   }
 
   return (
@@ -72,11 +88,11 @@ export default function GenerateInvoicePage() {
             )}
             <button
               className="btn-primary"
-              disabled={blockingCount > 0}
-              onClick={() => alert('Confirm & Generate: connect to POST /api/v1/invoice-runs (step 38)')}
+              disabled={blockingCount > 0 || generating}
+              onClick={handleGenerate}
               style={{ marginTop: 'var(--space-3)' }}
             >
-              Confirm & Generate
+              {generating ? 'Generating…' : 'Confirm & Generate'}
             </button>
           </div>
         </>

@@ -1,12 +1,16 @@
 package com.example.invoicing.controller.run;
+import com.example.invoicing.entity.invoice.dto.BatchAttachmentRequest;
 import com.example.invoicing.entity.invoicerun.dto.CancellationResult;
 import com.example.invoicing.service.InvoiceCancellationService;
 import com.example.invoicing.service.InvoiceRunOrchestratorService;
 import com.example.invoicing.service.InvoiceRunService;
 
 import com.example.invoicing.entity.invoicerun.InvoiceRun;
+import com.example.invoicing.entity.invoicerun.InvoiceRunStatus;
 import com.example.invoicing.entity.invoicerun.dto.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +22,14 @@ public class InvoiceRunController {
     private final InvoiceRunService invoiceRunService;
     private final InvoiceRunOrchestratorService orchestratorService;
     private final com.example.invoicing.service.InvoiceCancellationService cancellationService;
+
+    @GetMapping
+    public Page<InvoiceRunResponse> listRuns(
+            @RequestParam(required = false) InvoiceRunStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return invoiceRunService.findAll(status, PageRequest.of(page, size));
+    }
 
     @PostMapping
     public ResponseEntity<InvoiceRunResponse> createRun(@RequestBody InvoiceRunRequest request) {
@@ -47,5 +59,11 @@ public class InvoiceRunController {
     @PostMapping("/{id}/send")
     public InvoiceRunResponse send(@PathVariable Long id) {
         return invoiceRunService.triggerSend(id);
+    }
+
+    @PostMapping("/{id}/batch-attachment")
+    public InvoiceRunResponse setBatchAttachment(@PathVariable Long id,
+                                                  @RequestBody BatchAttachmentRequest request) {
+        return invoiceRunService.setBatchAttachment(id, request);
     }
 }

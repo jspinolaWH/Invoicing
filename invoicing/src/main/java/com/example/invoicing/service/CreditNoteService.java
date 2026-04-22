@@ -100,8 +100,7 @@ public class CreditNoteService {
             .map(InvoiceLineItem::getGrossAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         creditNote.setVatAmount(creditNote.getGrossAmount().subtract(creditNote.getNetAmount()));
 
-        String creditNumber = assignNextCreditNumber();
-        creditNote.setInvoiceNumber(creditNumber);
+        creditNote.setInvoiceNumber(original.getInvoiceNumber());
 
         try {
             String xml = finvoiceBuilderService.build(creditNote);

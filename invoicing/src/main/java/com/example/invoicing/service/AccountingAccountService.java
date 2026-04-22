@@ -58,4 +58,9 @@ public class AccountingAccountService {
     public void delete(Long id) {
         repository.delete(findById(id));
     }
+
+    public List<AccountingAccount> search(String q) {
+        if (q == null || q.isBlank()) return List.of();
+        return repository.searchByCodeOrName(q.trim());
+    }
 }

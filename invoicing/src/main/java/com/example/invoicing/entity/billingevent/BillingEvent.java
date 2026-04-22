@@ -92,6 +92,12 @@ public class BillingEvent extends BaseAuditEntity {
     @Column(length = 2000)
     private String comments;
 
+    @Column(name = "internal_comments", length = 2000)
+    private String internalComments;
+
+    @Column(name = "registration_number", length = 50)
+    private String registrationNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private BillingEventStatus status = BillingEventStatus.IN_PROGRESS;
@@ -168,4 +174,53 @@ public class BillingEvent extends BaseAuditEntity {
 
     @Column(name = "original_eco_fee_price", precision = 19, scale = 4)
     private BigDecimal originalEcoFeePrice;
+
+    @Column(name = "service_responsibility", length = 100)
+    private String serviceResponsibility;
+
+    @Column(name = "responsibility_area", length = 100)
+    private String responsibilityArea;
+
+    @Column(name = "product_group", length = 100)
+    private String productGroup;
+
+    // Selective component invoicing (AC3)
+    @Column(name = "include_waste_fee", nullable = false)
+    private boolean includeWasteFee = true;
+
+    @Column(name = "include_transport_fee", nullable = false)
+    private boolean includeTransportFee = true;
+
+    @Column(name = "include_eco_fee", nullable = false)
+    private boolean includeEcoFee = true;
+
+    // Contractor payment tracking (AC5)
+    @Column(name = "contractor_payment_status", length = 20)
+    private String contractorPaymentStatus;
+
+    @Column(name = "contractor_payment_notes", length = 1000)
+    private String contractorPaymentNotes;
+
+    @Column(name = "contractor_payment_recorded_by", length = 100)
+    private String contractorPaymentRecordedBy;
+
+    @Column(name = "contractor_payment_recorded_at")
+    private Instant contractorPaymentRecordedAt;
+
+    // Validation status tracking (PD-278)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "validation_status", length = 20)
+    private BillingEventValidationStatus validationStatus = BillingEventValidationStatus.PENDING;
+
+    @Column(name = "last_validated_at")
+    private Instant lastValidatedAt;
+
+    @Column(name = "validation_override_reason", length = 1000)
+    private String validationOverrideReason;
+
+    @Column(name = "validation_overridden_by", length = 100)
+    private String validationOverriddenBy;
+
+    @Column(name = "validation_overridden_at")
+    private Instant validationOverriddenAt;
 }

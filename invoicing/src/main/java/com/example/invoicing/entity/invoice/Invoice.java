@@ -100,4 +100,10 @@ public class Invoice extends BaseAuditEntity {
 
     @Column(name = "transmitted_at")
     private Instant transmittedAt;
+
+    @Column(name = "billing_type", length = 20)
+    private String billingType;
+
+    @Column(name = "project_reference", length = 200)
+    private String projectReference;
 }

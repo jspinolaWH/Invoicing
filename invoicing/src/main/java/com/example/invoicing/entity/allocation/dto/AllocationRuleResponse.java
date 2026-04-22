@@ -17,6 +17,7 @@ public class AllocationRuleResponse {
     private Long accountingAccountId;
     private String accountingAccountCode;
     private String accountingAccountName;
+    private String priceComponent;
     private Integer specificityScore;
     private String description;
     private boolean active;

@@ -5,6 +5,7 @@ import com.example.invoicing.integration.ExternalTransmissionResult;
 import com.example.invoicing.service.InvoiceTransmissionService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,11 @@ public class InvoiceTransmissionController {
         return ResponseEntity.ok(transmissionService.transmit(id));
     }
 
+    @PostMapping("/{id}/retransmit")
+    public ResponseEntity<ExternalTransmissionResult> retransmit(@PathVariable Long id) {
+        return ResponseEntity.ok(transmissionService.retransmit(id));
+    }
+
     @GetMapping("/{id}/transmission-status")
     public TransmissionStatusResponse getTransmissionStatus(@PathVariable Long id) {
         return transmissionService.fetchStatus(id);
@@ -30,10 +36,16 @@ public class InvoiceTransmissionController {
 
     @GetMapping(value = "/{id}/image", produces = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<byte[]> getImage(@PathVariable Long id) {
-        byte[] imageBytes = transmissionService.fetchImage(id);
-        return ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_PDF)
-            .body(imageBytes);
+        try {
+            byte[] imageBytes = transmissionService.fetchImage(id);
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(imageBytes);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body(e.getMessage().getBytes());
+        }
     }
 
     @GetMapping("/{id}/external-attachments")

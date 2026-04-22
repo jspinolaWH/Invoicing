@@ -39,9 +39,12 @@ public class SurchargeConfigController {
     public SurchargeConfigResponse create(@Valid @RequestBody SurchargeConfigRequest req) {
         SurchargeConfig config = SurchargeConfig.builder()
             .deliveryMethod(req.getDeliveryMethod())
+            .customerType(req.getCustomerType())
             .amount(req.getAmount())
             .description(req.getDescription())
             .active(req.isActive())
+            .exemptFirstInvoice(req.isExemptFirstInvoice())
+            .requiresTariffInclusion(req.isRequiresTariffInclusion())
             .globalSurchargeEnabled(surchargeService.isGlobalSurchargeEnabled())
             .build();
         return toResponse(repository.save(config));
@@ -53,6 +56,8 @@ public class SurchargeConfigController {
         config.setAmount(req.getAmount());
         config.setDescription(req.getDescription());
         config.setActive(req.isActive());
+        config.setExemptFirstInvoice(req.isExemptFirstInvoice());
+        config.setRequiresTariffInclusion(req.isRequiresTariffInclusion());
         return toResponse(repository.save(config));
     }
 
@@ -79,10 +84,13 @@ public class SurchargeConfigController {
         return SurchargeConfigResponse.builder()
             .id(c.getId())
             .deliveryMethod(c.getDeliveryMethod())
+            .customerType(c.getCustomerType())
             .amount(c.getAmount())
             .description(c.getDescription())
             .active(c.isActive())
             .globalSurchargeEnabled(c.isGlobalSurchargeEnabled())
+            .exemptFirstInvoice(c.isExemptFirstInvoice())
+            .requiresTariffInclusion(c.isRequiresTariffInclusion())
             .createdAt(c.getCreatedAt())
             .createdBy(c.getCreatedBy())
             .build();

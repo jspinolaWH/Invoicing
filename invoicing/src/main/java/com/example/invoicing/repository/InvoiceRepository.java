@@ -42,4 +42,29 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
         @Param("dateTo") java.time.LocalDate dateTo,
         org.springframework.data.domain.Pageable pageable
     );
+
+    boolean existsByInvoiceNumberSeriesId(Long seriesId);
+
+    boolean existsByCustomer_Id(Long customerId);
+
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE (:billingType IS NULL OR i.billingType = :billingType)
+        ORDER BY i.invoiceDate DESC
+        """)
+    Page<Invoice> findFiltered(
+        @Param("billingType") String billingType,
+        Pageable pageable
+    );
+
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE (:dateFrom IS NULL OR i.invoiceDate >= :dateFrom)
+          AND (:dateTo IS NULL OR i.invoiceDate <= :dateTo)
+          AND i.invoiceType = 'STANDARD'
+        """)
+    List<Invoice> findForVatReport(
+        @Param("dateFrom") java.time.LocalDate dateFrom,
+        @Param("dateTo") java.time.LocalDate dateTo
+    );
 }

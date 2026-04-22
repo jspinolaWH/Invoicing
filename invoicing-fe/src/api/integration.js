@@ -24,6 +24,12 @@ export async function getExternalAttachments(id) {
   return res.json();
 }
 
+export async function retransmitInvoice(id) {
+  const res = await fetch(`${BASE}/invoices/${id}/retransmit`, { method: 'POST' });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function recallInvoice(id, data) {
   const res = await fetch(`${BASE}/invoices/${id}/recall`, {
     method: 'POST',

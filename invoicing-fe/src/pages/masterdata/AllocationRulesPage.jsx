@@ -4,20 +4,22 @@ import {
   deleteAllocationRule, resolveAllocationRule,
 } from '../../api/allocationRules'
 import { getProducts } from '../../api/products'
-import { getAccounts } from '../../api/accountingAccounts'
+import { searchAccounts } from '../../api/accountingAccounts'
+import SearchableAutocomplete from '../../components/SearchableAutocomplete'
 import RelatedTasks from '../../components/RelatedTasks'
 import './VatRatesPage.css'
+
+const PRICE_COMPONENTS = ['WASTE_FEE', 'TRANSPORT_FEE', 'ECO_FEE', 'SURCHARGE', 'ADJUSTMENT']
 
 const RELATED_TASKS = [
   { id: 'PD-291', label: '3.4.21 Accounting allocation rules', href: 'https://ioteelab.atlassian.net/browse/PD-291' },
 ]
 
-const emptyForm = { productId: '', accountingAccountId: '', region: '', municipality: '', description: '' }
+const emptyForm = { productId: '', accountingAccountId: '', accountSearch: '', region: '', municipality: '', priceComponent: '', description: '' }
 
 export default function AllocationRulesPage() {
   const [rules, setRules] = useState([])
   const [products, setProducts] = useState([])
-  const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [showModal, setShowModal] = useState(false)
@@ -31,6 +33,7 @@ export default function AllocationRulesPage() {
   const [resolveProductId, setResolveProductId] = useState('')
   const [resolveRegion, setResolveRegion] = useState('')
   const [resolveMunicipality, setResolveMunicipality] = useState('')
+  const [resolvePriceComponent, setResolvePriceComponent] = useState('')
   const [resolveResult, setResolveResult] = useState(null)
   const [resolveError, setResolveError] = useState(null)
 
@@ -50,7 +53,6 @@ export default function AllocationRulesPage() {
   useEffect(() => {
     load()
     getProducts().then(r => setProducts(r.data)).catch(() => {})
-    getAccounts().then(r => setAccounts(r.data)).catch(() => {})
   }, [])
 
   const openAdd = () => {
@@ -65,8 +67,12 @@ export default function AllocationRulesPage() {
     setForm({
       productId: rule.productId ?? '',
       accountingAccountId: rule.accountingAccountId ?? '',
+      accountSearch: rule.accountingAccountCode && rule.accountingAccountName
+        ? `${rule.accountingAccountCode} — ${rule.accountingAccountName}`
+        : '',
       region: rule.region ?? '',
       municipality: rule.municipality ?? '',
+      priceComponent: rule.priceComponent ?? '',
       description: rule.description ?? '',
     })
     setFormError(null)
@@ -93,6 +99,7 @@ export default function AllocationRulesPage() {
         accountingAccountId: Number(form.accountingAccountId),
         region: form.region || null,
         municipality: form.municipality || null,
+        priceComponent: form.priceComponent || null,
         description: form.description || null,
       }
       if (editingRule) {
@@ -135,6 +142,7 @@ export default function AllocationRulesPage() {
         productId: resolveProductId,
         region: resolveRegion || undefined,
         municipality: resolveMunicipality || undefined,
+        priceComponent: resolvePriceComponent || undefined,
       })
       setResolveResult(res.data)
     } catch {
@@ -171,6 +179,7 @@ export default function AllocationRulesPage() {
               <th>Product</th>
               <th>Region</th>
               <th>Municipality</th>
+              <th>Price Component</th>
               <th>Account</th>
               <th>Specificity</th>
               <th>Active</th>
@@ -179,13 +188,14 @@ export default function AllocationRulesPage() {
           </thead>
           <tbody>
             {rules.length === 0 ? (
-              <tr><td colSpan={7} className="empty">No allocation rules found.</td></tr>
+              <tr><td colSpan={8} className="empty">No allocation rules found.</td></tr>
             ) : (
               rules.map((r) => (
                 <tr key={r.id} style={{ opacity: r.active ? 1 : 0.5 }}>
                   <td><span className="code-badge">{r.productCode}</span> {r.productName}</td>
                   <td>{r.region ?? <span className="muted">—</span>}</td>
                   <td>{r.municipality ?? <span className="muted">—</span>}</td>
+                  <td>{r.priceComponent ? <span className="code-badge">{r.priceComponent}</span> : <span className="muted">—</span>}</td>
                   <td>{r.accountingAccountCode} — {r.accountingAccountName}</td>
                   <td><span className="code-badge">{specificityLabel(r.specificityScore)}</span></td>
                   <td>{r.active ? 'Yes' : <span className="muted">No</span>}</td>
@@ -221,6 +231,13 @@ export default function AllocationRulesPage() {
             <label>Municipality</label>
             <input value={resolveMunicipality} onChange={e => setResolveMunicipality(e.target.value)} placeholder="optional" />
           </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>Price Component</label>
+            <select value={resolvePriceComponent} onChange={e => setResolvePriceComponent(e.target.value)}>
+              <option value="">— Any —</option>
+              {PRICE_COMPONENTS.map(pc => <option key={pc} value={pc}>{pc.replace(/_/g, ' ')}</option>)}
+            </select>
+          </div>
           <button className="btn-secondary" onClick={handleResolve}>Resolve</button>
         </div>
         {resolveError && <div className="error-msg" style={{ marginTop: 'var(--space-3)' }}>{resolveError}</div>}
@@ -250,9 +267,25 @@ export default function AllocationRulesPage() {
               </div>
               <div className="field">
                 <label>Accounting Account <span className="required">*</span></label>
-                <select value={form.accountingAccountId} onChange={e => setForm({ ...form, accountingAccountId: e.target.value })}>
-                  <option value="">— select —</option>
-                  {accounts.map(a => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+                <SearchableAutocomplete
+                  value={form.accountSearch}
+                  onChange={(raw) => setForm({ ...form, accountSearch: raw, accountingAccountId: '' })}
+                  onSelect={(a) => setForm({ ...form, accountingAccountId: a.id, accountSearch: `${a.code} — ${a.name}` })}
+                  onSearch={searchAccounts}
+                  placeholder="Type account code or name…"
+                  renderOption={(a) => (
+                    <div>
+                      <span style={{ fontWeight: 600 }}>{a.code}</span>
+                      {a.name ? <span style={{ marginLeft: 8, color: 'var(--color-text-secondary)' }}>{a.name}</span> : null}
+                    </div>
+                  )}
+                />
+              </div>
+              <div className="field">
+                <label>Price Component <span className="optional">(optional)</span></label>
+                <select value={form.priceComponent} onChange={e => setForm({ ...form, priceComponent: e.target.value })}>
+                  <option value="">— Any (catch-all) —</option>
+                  {PRICE_COMPONENTS.map(pc => <option key={pc} value={pc}>{pc.replace(/_/g, ' ')}</option>)}
                 </select>
               </div>
               <div className="field">

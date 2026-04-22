@@ -15,10 +15,15 @@ export default function AttachmentUploadZone({ invoiceId, attachments = [], onUp
   const remaining = MAX_TOTAL_BYTES - currentBytes
   const atLimit = attachments.length >= MAX_COUNT
 
+  const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png']
+  const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
+
   const handleFile = async (file) => {
     setError(null)
-    if (!file.name.endsWith('.pdf') && file.type !== 'application/pdf') {
-      setError('Only PDF files are accepted.'); return
+    const lowerName = file.name.toLowerCase()
+    const hasAllowedExt = ALLOWED_EXTENSIONS.some(ext => lowerName.endsWith(ext))
+    if (!hasAllowedExt && !ALLOWED_MIME_TYPES.includes(file.type)) {
+      setError('Only PDF/A, JPEG, and PNG files are accepted.'); return
     }
     if (attachments.length >= MAX_COUNT) {
       setError('Maximum 10 attachments reached.'); return
@@ -43,10 +48,10 @@ export default function AttachmentUploadZone({ invoiceId, attachments = [], onUp
           <div className="label">{attachments.length} / {MAX_COUNT} files &nbsp;·&nbsp; {(remaining / 1024).toFixed(0)} KB remaining</div>
           <button className="btn-secondary" disabled={atLimit || uploading}
             onClick={() => inputRef.current?.click()}>
-            {uploading ? 'Uploading…' : '+ Upload PDF'}
+            {uploading ? 'Uploading…' : '+ Upload File'}
           </button>
         </div>
-        <input ref={inputRef} type="file" accept=".pdf,application/pdf" style={{ display: 'none' }}
+        <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" style={{ display: 'none' }}
           onChange={e => { if (e.target.files[0]) handleFile(e.target.files[0]); e.target.value = '' }} />
       </div>
       {atLimit && <div className="error-msg" style={{ marginTop: 'var(--space-2)' }}>Maximum 10 attachments reached.</div>}

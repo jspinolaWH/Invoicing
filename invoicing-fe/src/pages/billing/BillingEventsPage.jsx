@@ -25,11 +25,18 @@ const RELATED_TASKS = [
   { id: 'PD-275', label: '3.4.x Credit & Transfer',           href: 'https://ioteelab.atlassian.net/browse/PD-275' },
 ]
 
-const STATUSES = ['DRAFT', 'PENDING_TRANSFER', 'IN_PROGRESS', 'SENT', 'COMPLETED', 'ERROR']
+const STATUSES = ['DRAFT', 'PENDING_TRANSFER', 'IN_PROGRESS', 'FOR_CORRECTION', 'SENT', 'COMPLETED', 'ERROR']
 const EXCLUDED_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'false', label: 'Active only' },
   { value: 'true', label: 'Excluded only' },
+]
+const VALIDATION_STATUSES = [
+  { value: '', label: 'All validation' },
+  { value: 'PENDING', label: 'Not yet validated' },
+  { value: 'PASSED', label: 'Passed' },
+  { value: 'FAILED', label: 'Failed' },
+  { value: 'OVERRIDDEN', label: 'Overridden' },
 ]
 
 export default function BillingEventsPage() {
@@ -51,6 +58,7 @@ export default function BillingEventsPage() {
   const [filters, setFilters] = useState({
     customerNumber: '', status: '', municipalityId: '',
     dateFrom: '', dateTo: '', excluded: '',
+    productId: '', serviceResponsibility: '', validationStatus: '',
   })
   const [statusCounts, setStatusCounts] = useState(null)
 
@@ -66,6 +74,9 @@ export default function BillingEventsPage() {
       if (filters.dateFrom) params.dateFrom = filters.dateFrom
       if (filters.dateTo) params.dateTo = filters.dateTo
       if (filters.excluded !== '') params.excluded = filters.excluded
+      if (filters.productId) params.productId = filters.productId
+      if (filters.serviceResponsibility) params.serviceResponsibility = filters.serviceResponsibility
+      if (filters.validationStatus) params.validationStatus = filters.validationStatus
       const res = await getBillingEvents(params)
       setEvents(res.data.content ?? [])
       setTotalPages(res.data.totalPages ?? 1)
@@ -80,26 +91,30 @@ export default function BillingEventsPage() {
 
   const loadStatusCounts = async () => {
     try {
-      const [draft, pendingTransfer, inProgress, sent, completed, error, excluded] = await Promise.all([
+      const [draft, pendingTransfer, inProgress, forCorrection, sent, completed, error, excluded, validationFailed] = await Promise.all([
         getBillingEvents({ status: 'DRAFT',            size: 1, page: 0 }),
         getBillingEvents({ status: 'PENDING_TRANSFER', size: 1, page: 0 }),
         getBillingEvents({ status: 'IN_PROGRESS',      size: 1, page: 0 }),
+        getBillingEvents({ status: 'FOR_CORRECTION',   size: 1, page: 0 }),
         getBillingEvents({ status: 'SENT',             size: 1, page: 0 }),
         getBillingEvents({ status: 'COMPLETED',        size: 1, page: 0 }),
         getBillingEvents({ status: 'ERROR',            size: 1, page: 0 }),
         getBillingEvents({ excluded: 'true',           size: 1, page: 0 }),
+        getBillingEvents({ validationStatus: 'FAILED', size: 1, page: 0 }),
       ])
       setStatusCounts({
-        DRAFT:            draft.data.totalElements ?? 0,
-        PENDING_TRANSFER: pendingTransfer.data.totalElements ?? 0,
-        IN_PROGRESS:      inProgress.data.totalElements ?? 0,
-        SENT:             sent.data.totalElements ?? 0,
-        COMPLETED:        completed.data.totalElements ?? 0,
-        ERROR:            error.data.totalElements ?? 0,
-        EXCLUDED:         excluded.data.totalElements ?? 0,
+        DRAFT:              draft.data.totalElements ?? 0,
+        PENDING_TRANSFER:   pendingTransfer.data.totalElements ?? 0,
+        IN_PROGRESS:        inProgress.data.totalElements ?? 0,
+        FOR_CORRECTION:     forCorrection.data.totalElements ?? 0,
+        SENT:               sent.data.totalElements ?? 0,
+        COMPLETED:          completed.data.totalElements ?? 0,
+        ERROR:              error.data.totalElements ?? 0,
+        EXCLUDED:           excluded.data.totalElements ?? 0,
+        VALIDATION_FAILED:  validationFailed.data.totalElements ?? 0,
       })
     } catch {
-      setStatusCounts({ DRAFT: 0, PENDING_TRANSFER: 0, IN_PROGRESS: 0, SENT: 0, COMPLETED: 0, ERROR: 0, EXCLUDED: 0 })
+      setStatusCounts({ DRAFT: 0, PENDING_TRANSFER: 0, IN_PROGRESS: 0, FOR_CORRECTION: 0, SENT: 0, COMPLETED: 0, ERROR: 0, EXCLUDED: 0, VALIDATION_FAILED: 0 })
     }
   }
 
@@ -156,8 +171,12 @@ export default function BillingEventsPage() {
 
       <RelatedTasks tasks={RELATED_TASKS} />
 
-      <StatStrip counts={statusCounts} onStatusClick={(status) => {
-        setFilters(f => ({ ...f, status }))
+      <StatStrip counts={statusCounts} onStatusClick={(status, validationFilter) => {
+        if (validationFilter) {
+          setFilters(f => ({ ...f, validationStatus: validationFilter, status: '' }))
+        } else {
+          setFilters(f => ({ ...f, status, validationStatus: '' }))
+        }
         load(0)
       }} />
 
@@ -183,8 +202,21 @@ export default function BillingEventsPage() {
           onChange={e => setFilters(f => ({ ...f, excluded: e.target.value }))}>
           {EXCLUDED_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        <input
+          placeholder="Product ID" value={filters.productId} style={{ width: 100 }}
+          type="number"
+          onChange={e => setFilters(f => ({ ...f, productId: e.target.value }))}
+        />
+        <input
+          placeholder="Service Responsibility" value={filters.serviceResponsibility} style={{ width: 160 }}
+          onChange={e => setFilters(f => ({ ...f, serviceResponsibility: e.target.value }))}
+        />
+        <select value={filters.validationStatus}
+          onChange={e => setFilters(f => ({ ...f, validationStatus: e.target.value }))}>
+          {VALIDATION_STATUSES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
         <button type="submit" className="btn-secondary">Apply</button>
-        <button type="button" className="btn-secondary" onClick={() => { setFilters({ customerNumber: '', status: '', municipalityId: '', dateFrom: '', dateTo: '', excluded: '' }); load(0) }}>
+        <button type="button" className="btn-secondary" onClick={() => { setFilters({ customerNumber: '', status: '', municipalityId: '', dateFrom: '', dateTo: '', excluded: '', productId: '', serviceResponsibility: '', validationStatus: '' }); load(0) }}>
           Clear
         </button>
       </form>
@@ -238,6 +270,7 @@ export default function BillingEventsPage() {
                 <th>Qty</th>
                 <th>Classification</th>
                 <th>Status</th>
+                <th>Validation</th>
                 <th>Origin</th>
                 <th>Actions</th>
               </tr>
@@ -275,13 +308,14 @@ export default function BillingEventsPage() {
                       <span className="origin-badge" style={{ color: '#92400e', borderColor: '#d97706', marginLeft: 4 }}>Override</span>
                     )}
                   </td>
+                  <td><ValidationStatusBadge status={evt.validationStatus} /></td>
                   <td><span className="origin-badge">{evt.origin ?? '—'}</span></td>
                   <td>
                     <div className="actions">
                       <button className="btn-secondary" onClick={() => navigate(`/billing-events/${evt.id}`)}>
                         View
                       </button>
-                      {(evt.status === 'DRAFT' || evt.status === 'IN_PROGRESS' || evt.status === 'ERROR') && (
+                      {(evt.status === 'DRAFT' || evt.status === 'IN_PROGRESS' || evt.status === 'FOR_CORRECTION' || evt.status === 'ERROR') && (
                         <button className="btn-secondary" onClick={() => navigate(`/billing-events/${evt.id}/edit`)}>
                           Edit
                         </button>
@@ -337,31 +371,46 @@ export default function BillingEventsPage() {
 // Stat strip
 // -----------------------------------------------------------------------
 const STAT_CONFIG = [
-  { key: 'DRAFT',            label: 'Draft',            color: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
-  { key: 'PENDING_TRANSFER', label: 'Pending Transfer', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
-  { key: 'IN_PROGRESS',      label: 'In Progress',      color: '#92400e', bg: '#fffbeb', border: '#fcd34d' },
-  { key: 'SENT',             label: 'Sent',             color: 'var(--color-status-info-text)',   bg: 'var(--color-status-info-bg)',   border: 'var(--color-status-info-border)'   },
-  { key: 'COMPLETED',        label: 'Completed',        color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)' },
-  { key: 'ERROR',            label: 'Error',            color: '#b91c1c', bg: '#fff1f2', border: '#fecdd3' },
-  { key: 'EXCLUDED',         label: 'Excluded',         color: 'var(--color-text-secondary)', bg: 'var(--color-bg-table-header)', border: 'var(--color-border-subtle)', noClick: true },
+  { key: 'DRAFT',             label: 'Draft',            color: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
+  { key: 'PENDING_TRANSFER',  label: 'Pending Transfer', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  { key: 'IN_PROGRESS',       label: 'In Progress',      color: '#92400e', bg: '#fffbeb', border: '#fcd34d' },
+  { key: 'FOR_CORRECTION',    label: 'For Correction',   color: '#7c3aed', bg: '#faf5ff', border: '#d8b4fe' },
+  { key: 'SENT',              label: 'Sent',             color: 'var(--color-status-info-text)',   bg: 'var(--color-status-info-bg)',   border: 'var(--color-status-info-border)'   },
+  { key: 'COMPLETED',         label: 'Completed',        color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)' },
+  { key: 'ERROR',             label: 'Error',            color: '#b91c1c', bg: '#fff1f2', border: '#fecdd3' },
+  { key: 'VALIDATION_FAILED', label: 'Validation Failed', color: '#b45309', bg: '#fffbeb', border: '#fcd34d', validationFilter: 'FAILED' },
+  { key: 'EXCLUDED',          label: 'Excluded',         color: 'var(--color-text-secondary)', bg: 'var(--color-bg-table-header)', border: 'var(--color-border-subtle)', noClick: true },
 ]
 
 function StatStrip({ counts, onStatusClick }) {
   return (
     <div className="stat-strip">
-      {STAT_CONFIG.map(({ key, label, color, bg, border, noClick }) => (
+      {STAT_CONFIG.map(({ key, label, color, bg, border, noClick, validationFilter }) => (
         <button
           key={key}
           className="stat-card"
           style={{ borderColor: border, background: bg, cursor: noClick ? 'default' : 'pointer' }}
-          onClick={() => !noClick && onStatusClick(key)}
+          onClick={() => !noClick && onStatusClick(key, validationFilter)}
           title={noClick ? 'Excluded events (display only)' : `Filter by ${label}`}
         >
-          <span className="stat-count" style={{ color }}>{counts === null ? '—' : counts[key]}</span>
+          <span className="stat-count" style={{ color }}>{counts === null ? '—' : (counts[key] ?? 0)}</span>
           <span className="stat-label">{label}</span>
         </button>
       ))}
     </div>
+  )
+}
+
+function ValidationStatusBadge({ status }) {
+  if (!status || status === 'PENDING') return <span className="origin-badge" style={{ color: '#6b7280', borderColor: '#9ca3af' }}>—</span>
+  const cfg = {
+    PASSED:    { color: 'var(--color-status-active-text)', bg: 'var(--color-status-active-bg)', border: 'var(--color-status-active-border)', label: 'Passed' },
+    FAILED:    { color: '#b91c1c', bg: '#fff1f2', border: '#fecdd3', label: 'Failed' },
+    OVERRIDDEN: { color: '#b45309', bg: '#fffbeb', border: '#fcd34d', label: 'Override' },
+  }[status]
+  if (!cfg) return null
+  return (
+    <span className="origin-badge" style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.border }}>{cfg.label}</span>
   )
 }
 

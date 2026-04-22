@@ -11,6 +11,7 @@ public class BillingProfileResponse {
     private BillingProfileDto billingProfile;
     private String lastModifiedBy;
     private Instant lastModifiedAt;
+    private String parentCustomerNumber;
 
     public static BillingProfileResponse from(Customer c) {
         return BillingProfileResponse.builder()
@@ -18,6 +19,7 @@ public class BillingProfileResponse {
             .customerType(c.getCustomerType())
             .billingProfile(BillingProfileDto.from(c.getBillingProfile()))
             .lastModifiedBy(c.getLastModifiedBy()).lastModifiedAt(c.getLastModifiedAt())
+            .parentCustomerNumber(c.getParentCustomerNumber())
             .build();
     }
 }

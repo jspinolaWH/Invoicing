@@ -27,4 +27,7 @@ public class SharedServiceParticipant extends BaseAuditEntity {
 
     @Column(name = "valid_to")
     private LocalDate validTo;
+
+    @Column(name = "include_if_zero_share", nullable = false, columnDefinition = "boolean DEFAULT false")
+    private boolean includeIfZeroShare = false;
 }

@@ -2,6 +2,7 @@ package com.example.invoicing.entity.billingevent.dto;
 
 import com.example.invoicing.entity.billingevent.BillingEventDirection;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
+import com.example.invoicing.entity.billingevent.BillingEventValidationStatus;
 import com.example.invoicing.entity.classification.LegalClassification;
 import lombok.Builder;
 import lombok.Data;
@@ -48,4 +49,13 @@ public class BillingEventResponse {
     private String receivingSite;
     private boolean priceOverridden;
     private String pendingTransferCustomerNumber;
+    // Selective component invoicing (AC3)
+    private boolean includeWasteFee;
+    private boolean includeTransportFee;
+    private boolean includeEcoFee;
+    // Contractor payment (AC5)
+    private String contractorPaymentStatus;
+    // Validation status (PD-278)
+    private BillingEventValidationStatus validationStatus;
+    private java.time.Instant lastValidatedAt;
 }

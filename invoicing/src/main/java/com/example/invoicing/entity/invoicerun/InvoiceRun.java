@@ -42,6 +42,9 @@ public class InvoiceRun extends BaseAuditEntity {
     @Column(name = "filter_service_responsibility", length = 50)
     private String filterServiceResponsibility;
 
+    @Column(name = "filter_billing_frequency", length = 20)
+    private String filterBillingFrequency;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private InvoiceRunStatus status = InvoiceRunStatus.PENDING;
@@ -93,4 +96,22 @@ public class InvoiceRun extends BaseAuditEntity {
 
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
+
+    @Column(name = "number_series_id")
+    private Long numberSeriesId;
+
+    @Column(name = "template_id")
+    private Long templateId;
+
+    @Column(name = "batch_attachment_identifier", length = 255)
+    private String batchAttachmentIdentifier;
+
+    @Column(name = "batch_attachment_filename", length = 255)
+    private String batchAttachmentFilename;
+
+    @Column(name = "batch_attachment_mime_type", length = 100)
+    private String batchAttachmentMimeType;
+
+    @Column(name = "batch_attachment_security_class", length = 20)
+    private String batchAttachmentSecurityClass;
 }

@@ -12,6 +12,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+// Method-level security is active via @EnableMethodSecurity.
+// Defined roles: INVOICING (internal staff), AUTHORITY_VIEWER (municipal read-only access).
+// Role enforcement is applied via @PreAuthorize on individual controllers.
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {

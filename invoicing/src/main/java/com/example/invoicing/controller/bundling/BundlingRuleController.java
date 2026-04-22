@@ -5,6 +5,7 @@ import com.example.invoicing.entity.bundling.dto.BundlingRuleRequest;
 import com.example.invoicing.entity.bundling.dto.BundlingRuleResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,8 +25,9 @@ public class BundlingRuleController {
     @PutMapping
     public List<BundlingRuleResponse> replace(
         @PathVariable String customerNumber,
-        @RequestBody List<@Valid BundlingRuleRequest> rules
+        @RequestBody List<@Valid BundlingRuleRequest> rules,
+        @AuthenticationPrincipal String currentUser
     ) {
-        return service.replaceAll(customerNumber, rules);
+        return service.replaceAll(customerNumber, rules, currentUser != null ? currentUser : "system");
     }
 }

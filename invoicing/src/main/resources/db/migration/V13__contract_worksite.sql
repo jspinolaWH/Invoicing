@@ -1,0 +1,1 @@
+ALTER TABLE contracts ADD COLUMN work_site VARCHAR(200);

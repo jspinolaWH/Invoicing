@@ -1,5 +1,6 @@
 package com.example.invoicing.controller.allocation;
 
+import com.example.invoicing.entity.account.PriceComponent;
 import com.example.invoicing.entity.allocation.dto.AllocationResolveResponse;
 import com.example.invoicing.entity.allocation.dto.AllocationRuleRequest;
 import com.example.invoicing.entity.allocation.dto.AllocationRuleResponse;
@@ -50,8 +51,9 @@ public class AccountingAllocationRuleController {
     public AllocationResolveResponse resolve(
         @RequestParam Long productId,
         @RequestParam(required = false) String region,
-        @RequestParam(required = false) String municipality
+        @RequestParam(required = false) String municipality,
+        @RequestParam(required = false) PriceComponent priceComponent
     ) {
-        return ruleService.resolve(productId, region, municipality);
+        return ruleService.resolve(productId, region, municipality, priceComponent);
     }
 }

@@ -14,4 +14,6 @@ public class ResponsibilityChangeRequest {
     private List<Long> specificEventIds;
     private String reason;
     private String internalComment;
+    private String newServiceResponsibility;
+    private LocalDate changeEffectiveDate;
 }

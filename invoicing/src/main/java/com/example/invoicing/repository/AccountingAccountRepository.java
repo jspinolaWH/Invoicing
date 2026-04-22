@@ -18,4 +18,7 @@ public interface AccountingAccountRepository extends JpaRepository<AccountingAcc
     List<AccountingAccount> findCurrentlyActive(@Param("today") LocalDate today);
 
     Optional<AccountingAccount> findByCode(String code);
+
+    @Query("SELECT a FROM AccountingAccount a WHERE LOWER(a.code) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(a.name) LIKE LOWER(CONCAT('%', :q, '%')) ORDER BY a.code")
+    List<AccountingAccount> searchByCodeOrName(@Param("q") String q);
 }

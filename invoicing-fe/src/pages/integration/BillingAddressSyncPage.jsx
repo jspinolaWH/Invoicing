@@ -11,6 +11,8 @@ export default function BillingAddressSyncPage() {
     streetAddressAlt: '',
     cityAlt: '',
     countryCodeAlt: '',
+    emailAddress: '',
+    eInvoicingAddress: '',
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,8 @@ export default function BillingAddressSyncPage() {
           <div>{field('Alt Street Address', 'streetAddressAlt')}</div>
           <div>{field('Alt City', 'cityAlt')}</div>
           <div>{field('Alt Country Code', 'countryCodeAlt')}</div>
+          <div>{field('Email Address', 'emailAddress')}</div>
+          <div>{field('E-Invoicing Address', 'eInvoicingAddress')}</div>
         </div>
         <button type="submit" disabled={loading} style={{ marginTop: 8, padding: '8px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
           {loading ? 'Syncing\u2026' : 'Sync Address'}

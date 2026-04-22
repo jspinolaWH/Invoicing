@@ -35,6 +35,11 @@ public class AccountingAccountController {
         return accounts.stream().map(AccountingAccountResponse::from).toList();
     }
 
+    @GetMapping("/search")
+    public List<AccountingAccountResponse> search(@RequestParam String q) {
+        return service.search(q).stream().map(AccountingAccountResponse::from).toList();
+    }
+
     @GetMapping("/{id}")
     public AccountingAccountResponse getById(@PathVariable Long id) {
         return AccountingAccountResponse.from(service.findById(id));

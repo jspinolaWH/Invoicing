@@ -338,8 +338,8 @@ public class DataSeeder implements CommandLineRunner {
             if (customerRepository.findByBillingProfile_CustomerIdNumber(s.number()).isEmpty()) {
                 customerRepository.save(customer(s.name(), s.type(),
                     new BillingProfile(s.number(), s.delivery(),
-                        new BillingAddress(s.street(), s.postal(), s.city(), "FI", null, null, null),
-                        s.businessId(), s.lang(), s.mode())));
+                        new BillingAddress(s.street(), s.postal(), s.city(), "FI", null, null, null, null, null),
+                        s.businessId(), s.lang(), s.mode(), null, null, null, false, false)));
                 created++;
             }
         }

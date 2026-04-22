@@ -3,6 +3,7 @@ package com.example.invoicing.service;
 import com.example.invoicing.entity.numberseries.InvoiceNumberSeries;
 import com.example.invoicing.entity.numberseries.dto.InvoiceNumberSeriesRequest;
 import com.example.invoicing.repository.InvoiceNumberSeriesRepository;
+import com.example.invoicing.repository.InvoiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.List;
 public class InvoiceNumberSeriesService {
 
     private final InvoiceNumberSeriesRepository repository;
+    private final InvoiceRepository invoiceRepository;
 
     public List<InvoiceNumberSeries> findAll() {
         return repository.findAll();
@@ -37,27 +39,34 @@ public class InvoiceNumberSeriesService {
     @Transactional
     public InvoiceNumberSeries update(Long id, InvoiceNumberSeriesRequest request) {
         InvoiceNumberSeries s = findById(id);
-        // Counter is never updated via the API — only assignNextNumber increments it
-        s.setName(request.getName().trim());
-        s.setPrefix(request.getPrefix().trim().toUpperCase());
-        s.setFormatPattern(request.getFormatPattern().trim());
+        applyRequest(s, request);
         return repository.save(s);
     }
 
-    /**
-     * Atomically assigns the next invoice number.
-     * Uses a pessimistic write lock so concurrent calls cannot get the same counter value.
-     * In simulation mode the counter is never incremented — returns a preview placeholder.
-     */
+    @Transactional
+    public void delete(Long id) {
+        InvoiceNumberSeries series = findById(id);
+        if (invoiceRepository.existsByInvoiceNumberSeriesId(id)) {
+            throw new IllegalStateException(
+                "Cannot delete series '" + series.getName() + "' because it has been used on one or more invoices");
+        }
+        repository.delete(series);
+    }
+
     @Transactional
     public String assignNextNumber(Long seriesId, boolean simulationMode) {
         if (simulationMode) {
-            // Per 06-cross-cutting.md: never increment real counter in simulation
             return "SIMULATION-PREVIEW";
         }
 
         InvoiceNumberSeries series = repository.findByIdForUpdate(seriesId)
                 .orElseThrow(() -> new EntityNotFoundException("InvoiceNumberSeries not found: " + seriesId));
+
+        if (!series.getReleasedNumbers().isEmpty()) {
+            String reused = series.getReleasedNumbers().remove(series.getReleasedNumbers().size() - 1);
+            repository.save(series);
+            return reused;
+        }
 
         long next = series.getCurrentCounter() + 1;
         series.setCurrentCounter(next);
@@ -66,10 +75,6 @@ public class InvoiceNumberSeriesService {
         return formatNumber(series, next);
     }
 
-    /**
-     * Records a released number (e.g. cancelled invoice).
-     * Released numbers are never re-assigned — kept for auditing only.
-     */
     @Transactional
     public void releaseNumber(Long seriesId, String number) {
         InvoiceNumberSeries series = findById(seriesId);
@@ -78,9 +83,18 @@ public class InvoiceNumberSeriesService {
     }
 
     private void applyRequest(InvoiceNumberSeries s, InvoiceNumberSeriesRequest request) {
+        validateFormatPattern(request.getFormatPattern());
         s.setName(request.getName().trim());
         s.setPrefix(request.getPrefix().trim().toUpperCase());
         s.setFormatPattern(request.getFormatPattern().trim());
+        s.setCategory(request.getCategory() != null ? request.getCategory().trim() : null);
+    }
+
+    private void validateFormatPattern(String pattern) {
+        if (pattern == null || !pattern.contains("{COUNTER:06d}")) {
+            throw new IllegalArgumentException(
+                "Format pattern must contain the token {COUNTER:06d} to ensure unique counter-based numbering");
+        }
     }
 
     private String formatNumber(InvoiceNumberSeries series, long counter) {

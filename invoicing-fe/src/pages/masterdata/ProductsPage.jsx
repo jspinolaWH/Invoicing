@@ -3,6 +3,10 @@ import {
   getProducts, createProduct, updateProduct, deleteProduct,
   upsertTranslation, deleteTranslation,
 } from '../../api/products'
+import { searchAccounts } from '../../api/accountingAccounts'
+import { getCostCenters } from '../../api/costCenters'
+import { getPriceLists } from '../../api/priceLists'
+import SearchableAutocomplete from '../../components/SearchableAutocomplete'
 import RelatedTasks from '../../components/RelatedTasks'
 import './VatRatesPage.css'
 import './ProductsPage.css'
@@ -14,15 +18,24 @@ const LOCALE_LABELS = { fi: 'Finnish', sv: 'Swedish', en: 'English' }
 const RELATED_TASKS = [
   { id: 'PD-308', label: '3.4.4 Invoice data based on language selection', href: 'https://ioteelab.atlassian.net/browse/PD-308' },
   { id: 'PD-300', label: '3.4.12 Reverse charge VAT', href: 'https://ioteelab.atlassian.net/browse/PD-300' },
+  { id: 'PD-296', label: '3.4.16 Cost centers and accounts', href: 'https://ioteelab.atlassian.net/browse/PD-296' },
 ]
 
-const emptyForm = { code: '', pricingUnit: 'PCS', reverseChargeVat: false }
+const emptyForm = {
+  code: '',
+  pricingUnit: 'PCS',
+  reverseChargeVat: false,
+  defaultAccountingAccountId: '',
+  accountSearch: '',
+  defaultCostCenterId: '',
+  priceListId: '',
+}
 const emptyErrors = { code: '', pricingUnit: '' }
 
 function validate(form) {
   const errors = { ...emptyErrors }
-  if (!form.code.trim())       errors.code = 'Code is required.'
-  if (!form.pricingUnit)       errors.pricingUnit = 'Pricing unit is required.'
+  if (!form.code.trim())   errors.code = 'Code is required.'
+  if (!form.pricingUnit)   errors.pricingUnit = 'Pricing unit is required.'
   return errors
 }
 
@@ -42,6 +55,8 @@ function validateTranslation(form) {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([])
+  const [costCenters, setCostCenters] = useState([])
+  const [priceLists, setPriceLists] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [localeFilter, setLocaleFilter] = useState('')
@@ -66,8 +81,14 @@ export default function ProductsPage() {
     setError(null)
     try {
       const params = localeFilter ? { locale: localeFilter } : {}
-      const res = await getProducts(params)
-      setProducts(res.data)
+      const [productsRes, costCentersRes, priceListsRes] = await Promise.all([
+        getProducts(params),
+        getCostCenters(),
+        getPriceLists(),
+      ])
+      setProducts(productsRes.data)
+      setCostCenters(costCentersRes.data)
+      setPriceLists(priceListsRes.data)
     } catch {
       setError('Failed to load products.')
     } finally {
@@ -88,7 +109,15 @@ export default function ProductsPage() {
 
   const openEdit = (p) => {
     setEditing(p)
-    setForm({ code: p.code, pricingUnit: p.pricingUnit, reverseChargeVat: p.reverseChargeVat })
+    setForm({
+      code: p.code,
+      pricingUnit: p.pricingUnit,
+      reverseChargeVat: p.reverseChargeVat,
+      defaultAccountingAccountId: p.defaultAccountingAccountId ?? '',
+      accountSearch: p.defaultAccountingAccountCode || '',
+      defaultCostCenterId: p.defaultCostCenterId ?? '',
+      priceListId: p.priceListId ?? '',
+    })
     setErrors(emptyErrors)
     setTouched({})
     setShowModal(true)
@@ -125,6 +154,9 @@ export default function ProductsPage() {
         code: form.code.trim(),
         pricingUnit: form.pricingUnit,
         reverseChargeVat: form.reverseChargeVat,
+        defaultAccountingAccountId: form.defaultAccountingAccountId || null,
+        defaultCostCenterId: form.defaultCostCenterId || null,
+        priceListId: form.priceListId || null,
       }
       if (editing) {
         await updateProduct(editing.id, payload)
@@ -203,8 +235,6 @@ export default function ProductsPage() {
     }
   }
 
-  const expandedProduct = products.find((p) => p.id === expandedId)
-
   return (
     <div className="page">
       <div className="page-header">
@@ -241,13 +271,16 @@ export default function ProductsPage() {
               <th>Code</th>
               <th>Pricing Unit</th>
               <th>Reverse Charge VAT</th>
+              <th>Default Account</th>
+              <th>Default Cost Center</th>
+              <th>Price List</th>
               <th>Translations</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {products.length === 0 ? (
-              <tr><td colSpan={5} className="empty">No products found.</td></tr>
+              <tr><td colSpan={8} className="empty">No products found.</td></tr>
             ) : (
               products.map((p) => (
                 <>
@@ -257,6 +290,21 @@ export default function ProductsPage() {
                     <td>
                       {p.reverseChargeVat
                         ? <span className="rc-badge">Reverse Charge</span>
+                        : <span className="muted">—</span>}
+                    </td>
+                    <td>
+                      {p.defaultAccountingAccountCode
+                        ? <span className="code-badge">{p.defaultAccountingAccountCode}</span>
+                        : <span className="muted">—</span>}
+                    </td>
+                    <td>
+                      {p.defaultCostCenterCode
+                        ? <span className="code-badge">{p.defaultCostCenterCode}</span>
+                        : <span className="muted">—</span>}
+                    </td>
+                    <td>
+                      {p.priceListCode
+                        ? <span className="code-badge">{p.priceListCode}</span>
                         : <span className="muted">—</span>}
                     </td>
                     <td>
@@ -276,7 +324,7 @@ export default function ProductsPage() {
 
                   {expandedId === p.id && (
                     <tr key={`${p.id}-translations`} className="translations-row">
-                      <td colSpan={5}>
+                      <td colSpan={8}>
                         <div className="translations-panel">
                           <div className="translations-panel-title">Translations</div>
 
@@ -410,6 +458,59 @@ export default function ProductsPage() {
                   <span>Reverse Charge VAT</span>
                   <span className="optional">(B2B — VAT liability shifts to buyer)</span>
                 </label>
+              </div>
+
+              <div className="field">
+                <label>Default Accounting Account <span className="optional">(optional)</span></label>
+                <SearchableAutocomplete
+                  value={form.accountSearch}
+                  onChange={(raw) => setForm((f) => ({ ...f, accountSearch: raw, defaultAccountingAccountId: '' }))}
+                  onSelect={(a) => setForm((f) => ({ ...f, defaultAccountingAccountId: a.id, accountSearch: `${a.code} — ${a.name}` }))}
+                  onSearch={searchAccounts}
+                  placeholder="Type account code or name…"
+                  renderOption={(a) => (
+                    <div>
+                      <span style={{ fontWeight: 600 }}>{a.code}</span>
+                      {a.name ? <span style={{ marginLeft: 8, color: 'var(--color-text-secondary)' }}>{a.name}</span> : null}
+                    </div>
+                  )}
+                />
+                {form.defaultAccountingAccountId && (
+                  <button
+                    type="button"
+                    className="btn-link"
+                    style={{ fontSize: 12, marginTop: 4 }}
+                    onClick={() => setForm((f) => ({ ...f, defaultAccountingAccountId: '', accountSearch: '' }))}
+                  >
+                    Clear account
+                  </button>
+                )}
+              </div>
+
+              <div className="field">
+                <label>Default Cost Center <span className="optional">(optional)</span></label>
+                <select
+                  value={form.defaultCostCenterId}
+                  onChange={(e) => handleChange('defaultCostCenterId', e.target.value)}
+                >
+                  <option value="">— None —</option>
+                  {costCenters.map((cc) => (
+                    <option key={cc.id} value={cc.id}>{cc.compositeCode}{cc.description ? ` — ${cc.description}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Price List <span className="optional">(optional)</span></label>
+                <select
+                  value={form.priceListId}
+                  onChange={(e) => handleChange('priceListId', e.target.value)}
+                >
+                  <option value="">— None —</option>
+                  {priceLists.map((pl) => (
+                    <option key={pl.id} value={pl.id}>{pl.code} — {pl.name}</option>
+                  ))}
+                </select>
               </div>
 
             </div>

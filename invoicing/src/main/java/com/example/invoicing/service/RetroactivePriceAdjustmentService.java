@@ -1,5 +1,7 @@
 package com.example.invoicing.service;
+import com.example.invoicing.entity.billingevent.dto.AdjustmentType;
 import com.example.invoicing.entity.billingevent.dto.AffectedEventEntry;
+import com.example.invoicing.entity.billingevent.dto.PriceAdjustmentAuditLog;
 import com.example.invoicing.entity.billingevent.dto.PriceAdjustmentResult;
 import com.example.invoicing.entity.billingevent.dto.PriceAdjustmentPreview;
 import com.example.invoicing.entity.billingevent.dto.PriceAdjustmentRequest;
@@ -7,15 +9,18 @@ import com.example.invoicing.entity.billingevent.dto.PriceAdjustmentRequest;
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.billingevent.BillingEventStatus;
 import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.PriceAdjustmentAuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,16 +28,12 @@ import java.util.List;
 public class RetroactivePriceAdjustmentService {
 
     private final BillingEventRepository billingEventRepository;
+    private final PriceAdjustmentAuditLogRepository auditLogRepository;
 
     @Transactional(readOnly = true)
     public PriceAdjustmentPreview preview(PriceAdjustmentRequest request) {
         validateBase(request);
-        List<BillingEvent> events = billingEventRepository.findByCustomerAndPeriod(
-            request.getCustomerNumber(),
-            request.getEventDateFrom(),
-            request.getEventDateTo(),
-            request.getProductId()
-        );
+        List<BillingEvent> events = fetchEvents(request);
 
         List<AffectedEventEntry> entries = new ArrayList<>();
         BigDecimal totalCurrentNet = BigDecimal.ZERO;
@@ -40,13 +41,22 @@ public class RetroactivePriceAdjustmentService {
         int inProgressCount = 0;
         int billedCount = 0;
 
+        BigDecimal multiplier = percentageMultiplier(request);
+
         for (BillingEvent e : events) {
-            BigDecimal projWaste = request.getNewWasteFeePrice() != null
-                ? request.getNewWasteFeePrice() : orZero(e.getWasteFeePrice());
-            BigDecimal projTransport = request.getNewTransportFeePrice() != null
-                ? request.getNewTransportFeePrice() : orZero(e.getTransportFeePrice());
-            BigDecimal projEco = request.getNewEcoFeePrice() != null
-                ? request.getNewEcoFeePrice() : orZero(e.getEcoFeePrice());
+            BigDecimal projWaste, projTransport, projEco;
+            if (multiplier != null) {
+                projWaste = orZero(e.getWasteFeePrice()).multiply(multiplier).setScale(4, RoundingMode.HALF_UP);
+                projTransport = orZero(e.getTransportFeePrice()).multiply(multiplier).setScale(4, RoundingMode.HALF_UP);
+                projEco = orZero(e.getEcoFeePrice()).multiply(multiplier).setScale(4, RoundingMode.HALF_UP);
+            } else {
+                projWaste = request.getNewWasteFeePrice() != null
+                    ? request.getNewWasteFeePrice() : orZero(e.getWasteFeePrice());
+                projTransport = request.getNewTransportFeePrice() != null
+                    ? request.getNewTransportFeePrice() : orZero(e.getTransportFeePrice());
+                projEco = request.getNewEcoFeePrice() != null
+                    ? request.getNewEcoFeePrice() : orZero(e.getEcoFeePrice());
+            }
 
             BigDecimal qty = orZero(e.getQuantity());
             BigDecimal currentNet = qty.multiply(
@@ -99,20 +109,17 @@ public class RetroactivePriceAdjustmentService {
         }
         validateBase(request);
 
-        List<BillingEvent> events = billingEventRepository.findByCustomerAndPeriod(
-            request.getCustomerNumber(),
-            request.getEventDateFrom(),
-            request.getEventDateTo(),
-            request.getProductId()
-        );
+        List<BillingEvent> events = fetchEvents(request);
 
         int updatedInProgress = 0;
         int correctionCopiesCreated = 0;
         int excludedCount = 0;
         BigDecimal totalDelta = BigDecimal.ZERO;
         List<Long> createdEventIds = new ArrayList<>();
+        List<Long> affectedSourceIds = new ArrayList<>();
 
         for (BillingEvent e : events) {
+            affectedSourceIds.add(e.getId());
             BigDecimal qty = orZero(e.getQuantity());
             BigDecimal currentNet = qty.multiply(
                 orZero(e.getWasteFeePrice()).add(orZero(e.getTransportFeePrice())).add(orZero(e.getEcoFeePrice()))
@@ -151,6 +158,18 @@ public class RetroactivePriceAdjustmentService {
             }
         }
 
+        auditLogRepository.save(PriceAdjustmentAuditLog.builder()
+            .customerNumber(request.getCustomerNumber())
+            .performedBy(request.getPerformedBy())
+            .reason(request.getReason())
+            .internalComment(request.getInternalComment())
+            .adjustmentType(request.getAdjustmentType() != null ? request.getAdjustmentType() : AdjustmentType.FIXED)
+            .adjustmentValue(request.getAdjustmentValue())
+            .appliedAt(Instant.now())
+            .affectedEventIds(affectedSourceIds.stream().map(String::valueOf).collect(Collectors.joining(",")))
+            .totalDelta(totalDelta)
+            .build());
+
         log.info("Retroactive price adjustment applied for customer {}: {} in-progress updated, {} correction copies created",
             request.getCustomerNumber(), updatedInProgress, correctionCopiesCreated);
 
@@ -167,19 +186,54 @@ public class RetroactivePriceAdjustmentService {
             .build();
     }
 
+    private List<BillingEvent> fetchEvents(PriceAdjustmentRequest request) {
+        if (request.getEventIds() != null && !request.getEventIds().isEmpty()) {
+            return billingEventRepository.findAllById(request.getEventIds());
+        }
+        return billingEventRepository.findByCustomerAndPeriod(
+            request.getCustomerNumber(),
+            request.getEventDateFrom(),
+            request.getEventDateTo(),
+            request.getProductId(),
+            request.getServiceResponsibility()
+        );
+    }
+
     private void validateBase(PriceAdjustmentRequest request) {
         if (request.getCustomerNumber() == null || request.getCustomerNumber().isBlank())
             throw new IllegalArgumentException("customerNumber is required");
-        if (request.getEventDateFrom() == null || request.getEventDateTo() == null)
-            throw new IllegalArgumentException("eventDateFrom and eventDateTo are required");
-        if (request.getEventDateFrom().isAfter(request.getEventDateTo()))
-            throw new IllegalArgumentException("eventDateFrom must not be after eventDateTo");
+        boolean hasEventIds = request.getEventIds() != null && !request.getEventIds().isEmpty();
+        if (!hasEventIds) {
+            if (request.getEventDateFrom() == null || request.getEventDateTo() == null)
+                throw new IllegalArgumentException("eventDateFrom and eventDateTo are required when eventIds not provided");
+            if (request.getEventDateFrom().isAfter(request.getEventDateTo()))
+                throw new IllegalArgumentException("eventDateFrom must not be after eventDateTo");
+        }
     }
 
     private void applyPrices(BillingEvent e, PriceAdjustmentRequest req) {
-        if (req.getNewWasteFeePrice() != null) e.setWasteFeePrice(req.getNewWasteFeePrice());
-        if (req.getNewTransportFeePrice() != null) e.setTransportFeePrice(req.getNewTransportFeePrice());
-        if (req.getNewEcoFeePrice() != null) e.setEcoFeePrice(req.getNewEcoFeePrice());
+        BigDecimal multiplier = percentageMultiplier(req);
+        if (multiplier != null) {
+            if (e.getWasteFeePrice() != null)
+                e.setWasteFeePrice(e.getWasteFeePrice().multiply(multiplier).setScale(4, RoundingMode.HALF_UP));
+            if (e.getTransportFeePrice() != null)
+                e.setTransportFeePrice(e.getTransportFeePrice().multiply(multiplier).setScale(4, RoundingMode.HALF_UP));
+            if (e.getEcoFeePrice() != null)
+                e.setEcoFeePrice(e.getEcoFeePrice().multiply(multiplier).setScale(4, RoundingMode.HALF_UP));
+        } else {
+            if (req.getNewWasteFeePrice() != null) e.setWasteFeePrice(req.getNewWasteFeePrice());
+            if (req.getNewTransportFeePrice() != null) e.setTransportFeePrice(req.getNewTransportFeePrice());
+            if (req.getNewEcoFeePrice() != null) e.setEcoFeePrice(req.getNewEcoFeePrice());
+        }
+    }
+
+    private BigDecimal percentageMultiplier(PriceAdjustmentRequest req) {
+        if (req.getAdjustmentType() == AdjustmentType.PERCENTAGE && req.getAdjustmentValue() != null) {
+            return BigDecimal.ONE.add(
+                req.getAdjustmentValue().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
+            );
+        }
+        return null;
     }
 
     private BillingEvent copyEvent(BillingEvent original) {

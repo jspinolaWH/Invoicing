@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getProperty } from '../../api/properties'
+import { getProperty, updatePropertyTemplate } from '../../api/properties'
+import { getTemplates } from '../../api/invoiceTemplates'
 import '../masterdata/VatRatesPage.css'
 import '../billing/BillingEventsPage.css'
 
@@ -12,13 +13,35 @@ export default function PropertyDetailPage() {
   const navigate = useNavigate()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [templates, setTemplates] = useState([])
+  const [templateId, setTemplateId] = useState('')
+  const [templateSaving, setTemplateSaving] = useState(false)
+  const [templateSaved, setTemplateSaved] = useState(false)
 
   useEffect(() => {
-    getProperty(id)
-      .then(r => setProperty(r.data))
+    Promise.all([getProperty(id), getTemplates()])
+      .then(([propRes, tplRes]) => {
+        setProperty(propRes.data)
+        setTemplateId(propRes.data.invoiceTemplateId ?? '')
+        setTemplates(tplRes.data ?? [])
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleSaveTemplate = async () => {
+    setTemplateSaving(true)
+    setTemplateSaved(false)
+    try {
+      const res = await updatePropertyTemplate(id, { invoiceTemplateId: templateId ? Number(templateId) : null })
+      setProperty(res.data)
+      setTemplateSaved(true)
+    } catch {
+      // silent — user can retry
+    } finally {
+      setTemplateSaving(false)
+    }
+  }
 
   if (loading) return <div className="loading">Loading property…</div>
   if (!property) return <div className="error-msg">Property not found.</div>
@@ -79,6 +102,27 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Invoice Template */}
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Invoice Template</h2>
+        {templateSaved && <div className="success-msg" style={{ marginBottom: 8 }}>Template saved.</div>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <select
+            value={templateId}
+            onChange={e => { setTemplateId(e.target.value); setTemplateSaved(false) }}
+            style={{ minWidth: 260 }}
+          >
+            <option value="">— No template override —</option>
+            {templates.map(t => (
+              <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
+            ))}
+          </select>
+          <button className="btn-primary" onClick={handleSaveTemplate} disabled={templateSaving}>
+            {templateSaving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
 
       {/* R4 — Owners */}
       <div>

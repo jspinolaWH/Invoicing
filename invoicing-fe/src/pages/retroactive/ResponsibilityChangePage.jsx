@@ -1,5 +1,19 @@
 import { useState } from 'react';
-import { previewResponsibilityChange, applyResponsibilityChange } from '../../api/retroactive';
+import {
+  previewResponsibilityChange,
+  applyResponsibilityChange,
+  fetchResponsibilityChangeReport,
+  fetchChangeRunEvents,
+} from '../../api/retroactive';
+
+const SERVICE_RESPONSIBILITY_OPTIONS = [
+  { value: '', label: '— unchanged —' },
+  { value: 'MUNICIPALITY', label: 'Municipality' },
+  { value: 'PRIVATE_COLLECTOR', label: 'Private Collector' },
+  { value: 'CONTRACT_HOLDER', label: 'Contract Holder' },
+  { value: 'SHARED', label: 'Shared' },
+  { value: 'OWNER', label: 'Owner' },
+];
 
 export default function ResponsibilityChangePage() {
   const [form, setForm] = useState({
@@ -11,12 +25,20 @@ export default function ResponsibilityChangePage() {
     specificEventIds: '',
     reason: '',
     internalComment: '',
+    newServiceResponsibility: '',
+    changeEffectiveDate: '',
   });
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [reportLogs, setReportLogs] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [expandedRunId, setExpandedRunId] = useState(null);
+  const [runEvents, setRunEvents] = useState({});
+  const [runEventsLoading, setRunEventsLoading] = useState(null);
 
   function buildPayload() {
     const specificIds = form.specificEventIds.trim()
@@ -31,6 +53,8 @@ export default function ResponsibilityChangePage() {
       specificEventIds: specificIds,
       reason: form.reason,
       internalComment: form.internalComment,
+      newServiceResponsibility: form.newServiceResponsibility || null,
+      changeEffectiveDate: form.changeEffectiveDate || null,
     };
   }
 
@@ -58,10 +82,42 @@ export default function ResponsibilityChangePage() {
       const data = await applyResponsibilityChange(buildPayload());
       setResult(data);
       setPreview(null);
+      loadReport();
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadReport(customerNumber) {
+    setReportLoading(true);
+    try {
+      const data = await fetchResponsibilityChangeReport({ customerNumber: customerNumber || undefined });
+      setReportLogs(data);
+      setShowReport(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setReportLoading(false);
+    }
+  }
+
+  async function toggleRunEvents(changeRunId) {
+    if (expandedRunId === changeRunId) {
+      setExpandedRunId(null);
+      return;
+    }
+    setExpandedRunId(changeRunId);
+    if (runEvents[changeRunId]) return;
+    setRunEventsLoading(changeRunId);
+    try {
+      const data = await fetchChangeRunEvents(changeRunId);
+      setRunEvents(prev => ({ ...prev, [changeRunId]: data }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRunEventsLoading(null);
     }
   }
 
@@ -78,6 +134,19 @@ export default function ResponsibilityChangePage() {
     </div>
   );
 
+  const selectField = (label, key, options) => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>{label}</label>
+      <select
+        value={form[key]}
+        onChange={ev => setForm(f => ({ ...f, [key]: ev.target.value }))}
+        style={{ width: '100%', padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc' }}
+      >
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
       <h2 style={{ marginBottom: 20 }}>Service Responsibility Change</h2>
@@ -88,6 +157,8 @@ export default function ResponsibilityChangePage() {
           <div>{field('To Customer Number *', 'toCustomerNumber', 'text', 'New responsible customer')}</div>
           <div>{field('Event Date From', 'eventDateFrom', 'date')}</div>
           <div>{field('Event Date To', 'eventDateTo', 'date')}</div>
+          <div>{field('Change Effective Date', 'changeEffectiveDate', 'date')}</div>
+          <div>{selectField('New Service Responsibility', 'newServiceResponsibility', SERVICE_RESPONSIBILITY_OPTIONS)}</div>
           <div>{field('Product ID (optional)', 'productId', 'number')}</div>
           <div>{field('Specific Event IDs (optional)', 'specificEventIds', 'text', 'Comma-separated IDs, overrides date range')}</div>
           <div>{field('Reason', 'reason', 'text', 'e.g. Ownership transfer')}</div>
@@ -95,7 +166,7 @@ export default function ResponsibilityChangePage() {
         </div>
 
         <button type="submit" disabled={loading} style={{ padding: '8px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-          {loading ? 'Loading\u2026' : 'Preview Changes'}
+          {loading ? 'Loading…' : 'Preview Changes'}
         </button>
       </form>
 
@@ -149,7 +220,7 @@ export default function ResponsibilityChangePage() {
                 <tr key={ev.eventId} style={{ borderBottom: '1px solid #e5e7eb' }}>
                   <td style={{ padding: '7px 10px' }}>{ev.eventId}</td>
                   <td style={{ padding: '7px 10px' }}>{ev.eventDate}</td>
-                  <td style={{ padding: '7px 10px' }}>{ev.productCode || '\u2014'}</td>
+                  <td style={{ padding: '7px 10px' }}>{ev.productCode || '—'}</td>
                   <td style={{ padding: '7px 10px' }}>{ev.quantity}</td>
                   <td style={{ padding: '7px 10px' }}><StatusBadge status={ev.status} /></td>
                   <td style={{ padding: '7px 10px' }}>&euro; {Number(ev.totalFeeAmount || 0).toFixed(2)}</td>
@@ -162,7 +233,7 @@ export default function ResponsibilityChangePage() {
             <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, padding: 16 }}>
               <p style={{ margin: '0 0 12px' }}><strong>Are you sure?</strong> This will transfer {preview.totalEventCount} event(s) from <strong>{preview.fromCustomerNumber}</strong> to <strong>{preview.toCustomerNumber}</strong>.</p>
               <button onClick={handleApply} disabled={loading} style={{ padding: '8px 20px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 8 }}>
-                {loading ? 'Applying\u2026' : 'Confirm Apply'}
+                {loading ? 'Applying…' : 'Confirm Apply'}
               </button>
               <button onClick={() => setConfirming(false)} style={{ padding: '8px 20px', background: '#fff', border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer' }}>
                 Cancel
@@ -175,6 +246,91 @@ export default function ResponsibilityChangePage() {
           )}
         </div>
       )}
+
+      <div style={{ marginTop: 40, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>Responsibility Change History</h3>
+          <button
+            onClick={() => loadReport()}
+            disabled={reportLoading}
+            style={{ padding: '6px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+          >
+            {reportLoading ? 'Loading…' : 'Load Report'}
+          </button>
+        </div>
+
+        {showReport && reportLogs && (
+          reportLogs.length === 0 ? (
+            <p style={{ color: '#6b7280' }}>No responsibility changes recorded yet.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6' }}>
+                  {['Applied At', 'Applied By', 'From', 'To', 'Previous Responsibility', 'New Responsibility', 'Effective Date', 'Affected', 'Reason', ''].map(h => (
+                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {reportLogs.map(log => (
+                  <>
+                    <tr key={log.changeRunId} style={{ borderBottom: expandedRunId === log.changeRunId ? 'none' : '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>{log.appliedAt ? new Date(log.appliedAt).toLocaleString() : '—'}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.appliedBy}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.fromCustomerNumber}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.toCustomerNumber}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.previousResponsibility || '—'}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.newResponsibility || '—'}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.changeEffectiveDate || '—'}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.affectedCount}</td>
+                      <td style={{ padding: '7px 10px' }}>{log.reason || '—'}</td>
+                      <td style={{ padding: '7px 10px' }}>
+                        <button
+                          onClick={() => toggleRunEvents(log.changeRunId)}
+                          style={{ padding: '3px 10px', fontSize: 12, background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer' }}
+                        >
+                          {runEventsLoading === log.changeRunId ? '…' : expandedRunId === log.changeRunId ? 'Hide' : 'View Events'}
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedRunId === log.changeRunId && (
+                      <tr key={`${log.changeRunId}-detail`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <td colSpan={10} style={{ padding: '0 0 12px 24px', background: '#f9fafb' }}>
+                          {runEvents[log.changeRunId]?.length === 0 ? (
+                            <p style={{ color: '#6b7280', margin: '8px 0' }}>No audit entries found for this run.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginTop: 8 }}>
+                              <thead>
+                                <tr style={{ background: '#e5e7eb' }}>
+                                  {['Event ID', 'Field', 'Old Value', 'New Value', 'Changed By', 'Changed At'].map(h => (
+                                    <th key={h} style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid #d1d5db', whiteSpace: 'nowrap' }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(runEvents[log.changeRunId] || []).map(entry => (
+                                  <tr key={entry.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                    <td style={{ padding: '5px 10px' }}>{entry.billingEventId}</td>
+                                    <td style={{ padding: '5px 10px' }}>{entry.field}</td>
+                                    <td style={{ padding: '5px 10px' }}>{entry.oldValue || '—'}</td>
+                                    <td style={{ padding: '5px 10px' }}>{entry.newValue || '—'}</td>
+                                    <td style={{ padding: '5px 10px' }}>{entry.changedBy}</td>
+                                    <td style={{ padding: '5px 10px', whiteSpace: 'nowrap' }}>{entry.changedAt ? new Date(entry.changedAt).toLocaleString() : '—'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          )
+        )}
+      </div>
     </div>
   );
 }

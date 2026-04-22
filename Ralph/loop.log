@@ -1,0 +1,274 @@
+[2026-04-21T12:51:05Z] RALPH_LOOP_START Project=/mnt/c/Users/drasm/Desktop/Invoicing Total=52 Passing=0 Remaining=52 MaxIter=3
+[2026-04-21T12:51:10Z] START PD-427 "Invoicing REST API" — iteration 1
+[2026-04-21T12:52:52Z] PASS PD-427 "Invoicing REST API" — no acceptance criteria
+[2026-04-21T12:52:58Z] START PD-364 "3.1.17 Retroactive changes to service responsibilities" — iteration 1
+[2026-04-21T12:59:02Z] GAPS_FOUND PD-364 "3.1.17 Retroactive changes to service responsibilities" — 7 of 8 criteria have gaps
+[2026-04-21T13:06:24Z] FIX_APPLIED PD-364 "3.1.17 Retroactive changes" — 7 gaps fixed
+[2026-04-21T13:06:24Z] START PD-364 "3.1.17 Retroactive changes to service responsibilities" — iteration 2
+[2026-04-21T13:12:08Z] GAPS_FOUND PD-364 — iteration 2, 2 gaps remain
+[2026-04-21T13:15:08Z] FIX_APPLIED PD-364 — iteration 2 fixes applied
+[2026-04-21T13:15:08Z] START PD-364 "3.1.17 Retroactive changes" — iteration 3
+[2026-04-21T13:17:46Z] PASS PD-364 "3.1.17 Retroactive changes" — passed on iteration 3
+[2026-04-21T13:17:51Z] START PD-363 "3.1.18 Alert when euro limit is exceeded" — iteration 1
+[2026-04-21T13:21:40Z] GAPS_FOUND PD-363 "3.1.18 Alert when euro limit is exceeded" — iteration 1
+[2026-04-21T13:30:09Z] FIX_APPLIED PD-363 — 7 gaps fixed
+[2026-04-21T13:30:09Z] START PD-363 "3.1.18 Alert when euro limit is exceeded" — iteration 2
+[2026-04-21T13:34:24Z] GAPS_FOUND PD-363 — iteration 2, 1 gap remains (detail page)
+[2026-04-21T13:39:31Z] FIX_APPLIED PD-363 — iteration 2 fixes applied
+[2026-04-21T13:39:31Z] START PD-363 "3.1.18 Alert when euro limit is exceeded" — iteration 3
+[2026-04-21T13:41:03Z] PASS PD-363 "3.1.18 Alert when euro limit" — passed on iteration 3
+[2026-04-21T13:41:08Z] START PD-344 "3.2.18 Transfer of billing events" — iteration 1
+[2026-04-21T13:44:04Z] PASS PD-344 "3.2.18 Transfer of billing events" — passes
+[2026-04-21T13:44:08Z] START PD-319 "3.3.14 Price changes for unbilled events" — iteration 1
+[2026-04-21T13:46:34Z] GAPS_FOUND PD-319 "3.3.14 Price changes for unbilled events" — iteration 1
+[2026-04-21T13:49:57Z] FIX_APPLIED PD-319 — 3 gaps fixed
+[2026-04-21T13:49:57Z] START PD-319 "3.3.14 Price changes for unbilled events" — iteration 2
+[2026-04-21T13:53:33Z] GAPS_FOUND PD-319 — iteration 2, service responsibility filter gap remains
+[2026-04-21T13:54:42Z] FIX_APPLIED PD-319 — iteration 2
+[2026-04-21T13:54:42Z] START PD-319 "3.3.14 Price changes for unbilled events" — iteration 3
+[2026-04-21T13:58:01Z] PASS PD-319 "3.3.14 Price changes for unbilled events" — passed on iteration 3
+[2026-04-21T13:58:06Z] START PD-318 "3.3.18 Editing billing events" — iteration 1
+[2026-04-21T14:02:52Z] GAPS_FOUND PD-318 "3.3.18 Editing billing events" — iteration 1
+[2026-04-21T14:07:39Z] FIX_APPLIED PD-318 — 4 gaps fixed
+[2026-04-21T14:07:39Z] START PD-318 "3.3.18 Editing billing events" — iteration 2
+[2026-04-21T14:11:20Z] PASS PD-318 "3.3.18 Editing billing events" — passed on iteration 2
+[2026-04-21T14:11:25Z] START PD-310 "3.4.2 FINVOICE data" — iteration 1
+[2026-04-21T14:15:13Z] GAPS_FOUND PD-310 "3.4.2 FINVOICE data" — iteration 1
+[2026-04-21T14:18:04Z] FIX_APPLIED PD-310 — 2 gaps fixed
+[2026-04-21T14:18:04Z] START PD-310 "3.4.2 FINVOICE data" — iteration 2
+[2026-04-21T14:20:56Z] GAPS_FOUND PD-310 — iteration 2, ExternalInvoicingClient stub gap remains
+[2026-04-21T14:24:17Z] FIX_APPLIED PD-310 — iteration 2 fix applied
+[2026-04-21T14:24:17Z] START PD-310 "3.4.2 FINVOICE data" — iteration 3
+[2026-04-21T14:27:36Z] PASS PD-310 "3.4.2 FINVOICE data" — passed on iteration 3
+[2026-04-21T14:27:40Z] START PD-309 "3.4.3 Invoice numbering sequence determination" — iteration 1
+[2026-04-21T14:30:44Z] GAPS_FOUND PD-309 — iteration 1
+[2026-04-21T14:38:46Z] FIX_APPLIED PD-309 — 5 gaps fixed
+[2026-04-21T14:38:46Z] START PD-309 "3.4.3 Invoice numbering" — iteration 2
+[2026-04-21T14:43:03Z] GAPS_FOUND PD-309 — iteration 2, 2 gaps remain
+[2026-04-21T14:45:19Z] FIX_APPLIED PD-309 — iteration 2
+[2026-04-21T14:45:19Z] START PD-309 "3.4.3 Invoice numbering" — iteration 3
+[2026-04-21T14:46:50Z] PASS PD-309 "3.4.3 Invoice numbering" — passed on iteration 3
+[2026-04-21T14:46:55Z] START PD-308 "3.4.4 Invoice data based on language selection" — iteration 1
+[2026-04-21T14:50:08Z] GAPS_FOUND PD-308 — iteration 1
+[2026-04-21T14:53:11Z] FIX_APPLIED PD-308 — 3 gaps fixed
+[2026-04-21T14:53:11Z] START PD-308 "3.4.4 Invoice data based on language" — iteration 2
+[2026-04-21T14:57:43Z] PASS PD-308 "3.4.4 Invoice data based on language" — passed on iteration 2
+[2026-04-21T14:57:47Z] START PD-307 "3.4.5 Invoice template selection" — iteration 1
+[2026-04-21T15:01:00Z] GAPS_FOUND PD-307 — iteration 1
+[2026-04-21T15:09:18Z] FIX_APPLIED PD-307 — 4 gaps fixed
+[2026-04-21T15:09:18Z] START PD-307 "3.4.5 Invoice template selection" — iteration 2
+[2026-04-21T15:13:16Z] GAPS_FOUND PD-307 — iteration 2, property/contract hierarchy gap remains
+[2026-04-21T15:15:34Z] FIX_APPLIED PD-307 — iteration 2
+[2026-04-21T15:15:34Z] START PD-307 "3.4.5 Invoice template selection" — iteration 3
+[2026-04-21T15:19:41Z] MAX_ITERATIONS PD-307 "3.4.5 Invoice template selection" — flagged for manual review
+[2026-04-21T15:19:46Z] START PD-306 "3.4.6 Displaying invoice image" — iteration 1
+[2026-04-21T15:22:49Z] GAPS_FOUND PD-306 — iteration 1
+[2026-04-21T15:28:16Z] FIX_APPLIED PD-306 — 3 gaps fixed
+[2026-04-21T15:28:16Z] START PD-306 "3.4.6 Displaying invoice image" — iteration 2
+[2026-04-21T15:31:33Z] PASS PD-306 "3.4.6 Displaying invoice image" — passed on iteration 2
+[2026-04-21T15:31:37Z] START PD-305 "3.4.7 PDF attachment to invoice" — iteration 1
+[2026-04-21T15:35:12Z] GAPS_FOUND PD-305 — iteration 1
+[2026-04-21T15:37:06Z] FIX_APPLIED PD-305 — 2 gaps fixed
+[2026-04-21T15:37:06Z] START PD-305 "3.4.7 PDF attachment to invoice" — iteration 2
+[2026-04-21T15:40:11Z] PASS PD-305 "3.4.7 PDF attachment to invoice" — passed on iteration 2
+[2026-04-21T15:40:16Z] START PD-304 "3.4.8 PDF attachment to invoice batch" — iteration 1
+[2026-04-21T15:43:21Z] GAPS_FOUND PD-304 — iteration 1
+[2026-04-21T15:49:16Z] FIX_APPLIED PD-304 — 5 gaps fixed
+[2026-04-21T15:49:16Z] START PD-304 "3.4.8 PDF attachment to invoice batch" — iteration 2
+[2026-04-21T15:53:36Z] PASS PD-304 "3.4.8 PDF attachment to invoice batch" — passed on iteration 2
+[2026-04-21T15:53:40Z] START PD-303 "3.4.9 Displaying invoice image" — iteration 1
+[2026-04-21T15:57:22Z] GAPS_FOUND PD-303 — iteration 1
+[2026-04-21T15:59:45Z] FIX_APPLIED PD-303 — 3 gaps fixed
+[2026-04-21T15:59:45Z] START PD-303 "3.4.9 Displaying invoice image" — iteration 2
+[2026-04-21T16:04:28Z] GAPS_FOUND PD-303 — iteration 2, auto-load + DTO fields missing
+[2026-04-21T16:07:05Z] FIX_APPLIED PD-303 — iteration 2
+[2026-04-21T16:07:05Z] START PD-303 "3.4.9 Displaying invoice image" — iteration 3
+[2026-04-21T16:11:19Z] PASS PD-303 "3.4.9 Displaying invoice image" — passed on iteration 3
+[2026-04-21T16:11:23Z] START PD-302 "3.4.10 Custom and bulk invoice texts" — iteration 1
+[2026-04-21T16:15:39Z] GAPS_FOUND PD-302 — iteration 1
+[2026-04-21T16:16:58Z] FIX_APPLIED PD-302 — 1 gap fixed
+[2026-04-21T16:16:58Z] START PD-302 "3.4.10 Custom and bulk invoice texts" — iteration 2
+[2026-04-21T16:18:42Z] PASS PD-302 "3.4.10 Custom and bulk invoice texts" — passed on iteration 2
+[2026-04-21T16:18:46Z] START PD-301 "3.4.11 Gross or net invoicing" — iteration 1
+[2026-04-21T16:22:07Z] GAPS_FOUND PD-301 — iteration 1
+[2026-04-21T16:24:57Z] FIX_APPLIED PD-301 — 4 gaps fixed
+[2026-04-21T16:24:57Z] START PD-301 "3.4.11 Gross or net invoicing" — iteration 2
+[2026-04-21T16:28:45Z] PASS PD-301 "3.4.11 Gross or net invoicing" — passed on iteration 2
+[2026-04-21T16:28:48Z] START PD-300 "3.4.12 Reverse charge VAT" — iteration 1
+[2026-04-21T16:33:15Z] GAPS_FOUND PD-300 — iteration 1
+[2026-04-21T16:38:19Z] FIX_APPLIED PD-300 — 3 gaps fixed
+[2026-04-21T16:38:19Z] START PD-300 "3.4.12 Reverse charge VAT" — iteration 2
+[2026-04-21T16:41:41Z] PASS PD-300 "3.4.12 Reverse charge VAT" — passed on iteration 2
+[2026-04-21T16:41:45Z] START PD-299 "3.4.13 Billing event details" — iteration 1
+[2026-04-21T16:46:08Z] GAPS_FOUND PD-299 — iteration 1
+[2026-04-21T16:48:47Z] FIX_APPLIED PD-299 — 3 gaps fixed
+[2026-04-21T16:48:47Z] START PD-299 "3.4.13 Billing event details" — iteration 2
+[2026-04-21T16:51:18Z] PASS PD-299 "3.4.13 Billing event details" — passed on iteration 2
+[2026-04-21T16:51:22Z] START PD-298 "3.4.14 Billing data details" — iteration 1
+[2026-04-21T16:54:35Z] PASS PD-298 "3.4.14 Billing data details" — passes
+[2026-04-21T16:54:39Z] START PD-297 "3.4.15 Billing event status information" — iteration 1
+[2026-04-21T16:59:03Z] GAPS_FOUND PD-297 — 1 gap (billing events in customer profile)
+[2026-04-21T17:01:00Z] FIX_APPLIED PD-297 — 1 gap fixed
+[2026-04-21T17:01:00Z] START PD-297 "3.4.15 Billing event status" — iteration 2
+[2026-04-21T17:02:00Z] PASS PD-297 "3.4.15 Billing event status" — passed on iteration 2
+[2026-04-21T17:02:04Z] START PD-296 "3.4.16 Cost centers and accounts" — iteration 1
+[2026-04-21T17:05:58Z] GAPS_FOUND PD-296 — iteration 1
+[2026-04-21T17:13:52Z] FIX_APPLIED PD-296 — 4 gaps fixed
+[2026-04-21T17:13:52Z] START PD-296 "3.4.16 Cost centers and accounts" — iteration 2
+[2026-04-21T17:18:14Z] PASS PD-296 "3.4.16 Cost centers and accounts" — passed on iteration 2
+[2026-04-21T17:18:19Z] START PD-295 "3.4.17 Account and cost center data" — iteration 1
+[2026-04-21T17:22:47Z] GAPS_FOUND PD-295 — iteration 1
+[2026-04-21T17:31:32Z] FIX_APPLIED PD-295 — 2 gaps fixed
+[2026-04-21T17:31:32Z] START PD-295 "3.4.17 Account and cost center data" — iteration 2
+[2026-04-21T17:36:38Z] PASS PD-295 "3.4.17 Account and cost center data" — passed on iteration 2
+[2026-04-21T17:36:43Z] START PD-294 "3.4.18 Billing surcharge" — iteration 1
+[2026-04-21T17:40:39Z] GAPS_FOUND PD-294 — iteration 1
+[2026-04-21T17:48:38Z] FIX_APPLIED PD-294 — 5 gaps fixed
+[2026-04-21T17:48:38Z] START PD-294 "3.4.18 Billing surcharge" — iteration 2
+[2026-04-21T17:50:19Z] PASS PD-294 "3.4.18 Billing surcharge" — passed on iteration 2
+[2026-04-21T17:50:23Z] START PD-293 "3.4.19 Invoice batch filtering" — iteration 1
+[2026-04-21T17:54:38Z] GAPS_FOUND PD-293 — iteration 1
+[2026-04-21T17:59:41Z] FIX_APPLIED PD-293 — 4 gaps fixed, 1 skipped
+[2026-04-21T17:59:41Z] START PD-293 "3.4.19 Invoice batch filtering" — iteration 2
+[2026-04-21T18:03:58Z] GAPS_FOUND PD-293 — iteration 2, DTO + run detail display gap
+[2026-04-21T18:05:08Z] FIX_APPLIED PD-293 — iteration 2
+[2026-04-21T18:05:08Z] START PD-293 "3.4.19 Invoice batch filtering" — iteration 3
+[2026-04-21T18:07:53Z] PASS PD-293 "3.4.19 Invoice batch filtering" — passed on iteration 3
+[2026-04-21T18:07:59Z] START PD-292 "3.4.20 Billing restrictions" — iteration 1
+[2026-04-21T18:11:35Z] GAPS_FOUND PD-292 — iteration 1
+[2026-04-21T18:18:15Z] FIX_APPLIED PD-292 — 4 gaps fixed
+[2026-04-21T18:18:15Z] START PD-292 "3.4.20 Billing restrictions" — iteration 2
+[2026-04-21T18:23:14Z] GAPS_FOUND PD-292 — iteration 2, SEMI_ANNUAL missing from BillingCyclesPage
+[2026-04-21T18:23:46Z] FIX_APPLIED PD-292 — iteration 2
+[2026-04-21T18:23:46Z] START PD-292 "3.4.20 Billing restrictions" — iteration 3
+[2026-04-21T18:27:55Z] PASS PD-292 "3.4.20 Billing restrictions" — passed on iteration 3
+[2026-04-21T18:28:01Z] START PD-291 "3.4.21 Billing cycles" — iteration 1
+[2026-04-21T18:31:07Z] GAPS_FOUND PD-291 — iteration 1
+[2026-04-21T18:39:34Z] FIX_APPLIED PD-291 — 3 gaps fixed
+[2026-04-21T18:39:34Z] START PD-291 "3.4.21 Billing cycles" — iteration 2
+[2026-04-21T18:43:33Z] PASS PD-291 "3.4.21 Billing cycles" — passed on iteration 2
+[2026-04-21T18:43:37Z] START PD-290 "3.4.22 Billing data generation, bundling" — iteration 1
+[2026-04-21T18:48:10Z] GAPS_FOUND PD-290 — iteration 1
+[2026-04-21T18:50:27Z] FIX_APPLIED PD-290 — 2 gaps fixed
+[2026-04-21T18:50:27Z] START PD-290 "3.4.22 Billing data generation, bundling" — iteration 2
+[2026-04-21T18:51:26Z] PASS PD-290 "3.4.22 Billing data generation, bundling" — passed on iteration 2
+[2026-04-21T18:51:29Z] START PD-289 "3.4.23 Accounts receivable data" — iteration 1
+[2026-04-21T18:54:53Z] GAPS_FOUND PD-289 — iteration 1
+[2026-04-21T19:01:54Z] FIX_APPLIED PD-289 — 4 gaps fixed
+[2026-04-21T19:01:54Z] START PD-289 "3.4.23 Accounts receivable data" — iteration 2
+[2026-04-21T19:04:03Z] PASS PD-289 "3.4.23 Accounts receivable data" — passed on iteration 2
+[2026-04-21T19:04:06Z] START PD-288 "3.4.24 Seasonal fees" — iteration 1
+[2026-04-21T19:08:58Z] PASS PD-288 "3.4.24 Seasonal fees" — passes
+[2026-04-21T19:09:02Z] START PD-287 "3.4.25 Projects" — iteration 1
+[2026-04-21T19:11:54Z] GAPS_FOUND PD-287 — iteration 1
+[2026-04-21T19:26:58Z] FIX_APPLIED PD-287 — 6 gaps fixed
+[2026-04-21T19:26:58Z] START PD-287 "3.4.25 Projects" — iteration 2
+[2026-04-21T19:31:55Z] GAPS_FOUND PD-287 — iteration 2, 2 gaps remain (project reference display, hierarchy service)
+[2026-04-21T19:36:31Z] FIX_APPLIED PD-287 — iteration 2
+[2026-04-21T19:36:31Z] START PD-287 "3.4.25 Projects" — iteration 3
+[2026-04-21T19:38:07Z] PASS PD-287 "3.4.25 Projects" — passed on iteration 3
+[2026-04-21T19:38:12Z] START PD-286 "3.4.27 Minimum fee" — iteration 1
+[2026-04-21T19:41:23Z] GAPS_FOUND PD-286 — iteration 1
+[2026-04-21T19:44:00Z] FIX_APPLIED PD-286 — 2 gaps fixed
+[2026-04-21T19:44:00Z] START PD-286 "3.4.27 Minimum fee" — iteration 2
+[2026-04-21T19:48:16Z] GAPS_FOUND PD-286 — iteration 2, contract date proration gap
+[2026-04-21T19:50:55Z] FIX_APPLIED PD-286 — iteration 2
+[2026-04-21T19:50:55Z] START PD-286 "3.4.27 Minimum fee" — iteration 3
+[2026-04-21T19:56:59Z] PASS PD-286 "3.4.27 Minimum fee" — passed on iteration 3
+[2026-04-21T19:57:07Z] START PD-285 "3.4.28 Private and public law invoices" — iteration 1
+[2026-04-21T20:01:04Z] PASS PD-285 "3.4.28 Private and public law invoices" — passes
+[2026-04-21T20:01:04Z] START PD-284 "3.4.29 Public and private law sales billing" — iteration 1
+[2026-04-21T20:05:02Z] PASS PD-284 "3.4.29 Public and private law sales billing" — passes
+[2026-04-21T20:05:02Z] START PD-283 "3.4.30 Manual creation of billing events" — iteration 1
+[2026-04-21T20:08:31Z] PASS PD-283 "3.4.30 Manual creation of billing events" — passes
+[2026-04-21T20:08:31Z] START PD-282 "3.4.31 Editing e-invoice data" — iteration 1
+[2026-04-21T20:11:40Z] PASS PD-282 "3.4.31 Editing e-invoice data" — passes
+[2026-04-21T20:11:40Z] START PD-281 "3.4.32 Updating billing information via API" — iteration 1
+[2026-04-21T20:18:08Z] GAPS_FOUND PD-281 "3.4.32 Updating billing information via API" — iteration 1
+[2026-04-21T20:26:09Z] FIX_APPLIED PD-281 — 3 gaps fixed
+[2026-04-21T20:26:09Z] START PD-281 "3.4.32 Updating billing information via API" — iteration 2
+[2026-04-21T20:31:10Z] PASS PD-281 "3.4.32 Updating billing information via API" — passed on iteration 2
+[2026-04-21T20:31:14Z] START PD-280 "3.4.33 Shared service events on the invoice" — iteration 1
+[2026-04-21T20:35:47Z] GAPS_FOUND PD-280 — iteration 1
+[2026-04-21T20:39:58Z] FIX_APPLIED PD-280 — 3 gaps fixed
+[2026-04-21T20:39:58Z] START PD-280 "3.4.33 Shared service events" — iteration 2
+[2026-04-21T20:46:15Z] GAPS_FOUND PD-280 — iteration 2, 2 gaps remain
+[2026-04-21T20:49:16Z] FIX_APPLIED PD-280 — iteration 2
+[2026-04-21T20:49:16Z] START PD-280 "3.4.33 Shared service events" — iteration 3
+[2026-04-21T20:54:40Z] MAX_ITERATIONS PD-280 "3.4.33 Shared service events" — flagged for manual review (missing V20 migration)
+[2026-04-21T20:54:45Z] START PD-279 "3.4.34 Dynamic updates to shared service events" — iteration 1
+[2026-04-21T20:58:47Z] GAPS_FOUND PD-279 — iteration 1
+[2026-04-21T21:00:46Z] FIX_APPLIED PD-279 — 2 gaps fixed
+[2026-04-21T21:00:46Z] START PD-279 "3.4.34 Dynamic updates" — iteration 2
+[2026-04-21T21:04:35Z] PASS PD-279 "3.4.34 Dynamic updates" — passed on iteration 2
+[2026-04-21T21:04:38Z] START PD-278 "3.4.35 Error listing of events" — iteration 1
+[2026-04-21T21:08:14Z] GAPS_FOUND PD-278 — iteration 1
+[2026-04-21T21:17:27Z] FIX_APPLIED PD-278 — 5 gaps fixed
+[2026-04-21T21:17:27Z] START PD-278 "3.4.35 Error listing of events" — iteration 2
+[2026-04-21T21:23:15Z] GAPS_FOUND PD-278 — iteration 2, validation failures not visible in detail page
+[2026-04-21T21:28:17Z] FIX_APPLIED PD-278 — iteration 2
+[2026-04-21T21:28:17Z] START PD-278 "3.4.35 Error listing of events" — iteration 3
+[2026-04-21T21:29:50Z] PASS PD-278 "3.4.35 Error listing of events" — passed on iteration 3
+[2026-04-21T21:29:55Z] START PD-277 "3.4.36 Manual editing of events" — iteration 1
+[2026-04-21T21:33:27Z] GAPS_FOUND PD-277 — iteration 1
+[2026-04-21T21:38:21Z] FIX_APPLIED PD-277 — 2 gaps fixed
+[2026-04-21T21:38:21Z] START PD-277 "3.4.36 Manual editing of events" — iteration 2
+[2026-04-21T21:42:44Z] GAPS_FOUND PD-277 — iteration 2, FOR_CORRECTION status missing
+[2026-04-21T21:46:19Z] FIX_APPLIED PD-277 — iteration 2
+[2026-04-21T21:46:19Z] START PD-277 "3.4.36 Manual editing of events" — iteration 3
+[2026-04-21T21:49:46Z] PASS PD-277 "3.4.36 Manual editing of events" — passed on iteration 3
+[2026-04-21T21:49:50Z] START PD-276 "3.4.37 Transfer of unbilled events" — iteration 1
+[2026-04-21T21:54:27Z] PASS PD-276 "3.4.37 Transfer of unbilled events" — passes
+[2026-04-21T21:54:27Z] START PD-275 "3.4.38 Transfer and copy of billed events" — iteration 1
+[2026-04-21T21:57:29Z] PASS PD-275 "3.4.38 Transfer and copy of billed events" — passes
+[2026-04-21T21:57:29Z] START PD-274 "3.4.39 Invoice simulation" — iteration 1
+[2026-04-21T22:01:04Z] PASS PD-274 "3.4.39 Invoice simulation" — passes
+[2026-04-21T22:01:04Z] START PD-273 "3.4.40 Cancellation option for billing data" — iteration 1
+[2026-04-21T22:06:13Z] GAPS_FOUND PD-273 — iteration 1
+[2026-04-21T22:12:52Z] FIX_APPLIED PD-273 — 3 gaps fixed
+[2026-04-21T22:12:52Z] START PD-273 "3.4.40 Cancellation option" — iteration 2
+[2026-04-21T22:16:31Z] PASS PD-273 "3.4.40 Cancellation option" — passed on iteration 2
+[2026-04-21T22:16:35Z] START PD-272 "3.4.41 Simulation run of billing data" — iteration 1
+[2026-04-21T22:20:50Z] GAPS_FOUND PD-272 — iteration 1
+[2026-04-21T22:24:04Z] FIX_APPLIED PD-272 — 4 gaps fixed
+[2026-04-21T22:24:04Z] START PD-272 "3.4.41 Simulation run" — iteration 2
+[2026-04-21T22:26:59Z] PASS PD-272 "3.4.41 Simulation run" — passed on iteration 2
+[2026-04-21T22:27:04Z] START PD-271 "3.4.42 Automatic checks on billing data" — iteration 1
+[2026-04-21T22:31:52Z] GAPS_FOUND PD-271 — iteration 1
+[2026-04-21T22:35:59Z] FIX_APPLIED PD-271 — 4 gaps fixed
+[2026-04-21T22:35:59Z] START PD-271 "3.4.42 Automatic checks" — iteration 2
+[2026-04-21T22:40:39Z] GAPS_FOUND PD-271 — iteration 2, validation engine not wired into generation
+[2026-04-21T22:42:39Z] FIX_APPLIED PD-271 — iteration 2
+[2026-04-21T22:42:39Z] START PD-271 "3.4.42 Automatic checks" — iteration 3
+[2026-04-21T22:44:21Z] PASS PD-271 "3.4.42 Automatic checks" — passed on iteration 3
+[2026-04-21T22:44:26Z] START PD-270 "3.4.48 System behavior during billing run" — iteration 1
+[2026-04-21T22:49:37Z] GAPS_FOUND PD-270 — iteration 1
+[2026-04-21T22:51:19Z] FIX_APPLIED PD-270 — 3 gaps fixed
+[2026-04-21T22:51:19Z] START PD-270 "3.4.48 System behavior during billing run" — iteration 2
+[2026-04-21T22:54:38Z] PASS PD-270 "3.4.48 System behavior during billing run" — passed on iteration 2
+[2026-04-21T22:54:42Z] START PD-269 "3.4.49 Credit invoices" — iteration 1
+[2026-04-21T22:58:48Z] GAPS_FOUND PD-269 — iteration 1
+[2026-04-21T23:00:59Z] FIX_APPLIED PD-269 — 2 gaps fixed
+[2026-04-21T23:00:59Z] START PD-269 "3.4.49 Credit invoices" — iteration 2
+[2026-04-21T23:06:35Z] GAPS_FOUND PD-269 — iteration 2, internalComment not in response
+[2026-04-21T23:07:34Z] FIX_APPLIED PD-269 — iteration 2
+[2026-04-21T23:07:34Z] START PD-269 "3.4.49 Credit invoices" — iteration 3
+[2026-04-21T23:11:02Z] PASS PD-269 "3.4.49 Credit invoices" — passed on iteration 3
+[2026-04-21T23:11:07Z] START PD-177 "3.6.34 Billing event data for reporting" — iteration 1
+[2026-04-21T23:13:53Z] GAPS_FOUND PD-177 — iteration 1
+[2026-04-21T23:19:51Z] FIX_APPLIED PD-177 — 4 gaps fixed
+[2026-04-21T23:19:51Z] START PD-177 "3.6.34 Billing event data for reporting" — iteration 2
+[2026-04-21T23:23:26Z] PASS PD-177 "3.6.34 Billing event data for reporting" — passed on iteration 2
+[2026-04-21T23:23:30Z] START PD-171 "3.7.3 Right of authorities to view invoices" — iteration 1
+[2026-04-21T23:25:44Z] PASS PD-171 "3.7.3 Right of authorities to view invoices" — passes
+[2026-04-21T23:25:44Z] START PD-163 "3.7.15 Billing list" — iteration 1
+[2026-04-21T23:27:39Z] PASS PD-163 "3.7.15 Billing list" — passes
+[2026-04-21T23:27:39Z] START PD-107 "3.11.39 E-invoice integration" — iteration 1
+[2026-04-21T23:32:50Z] GAPS_FOUND PD-107 — iteration 1
+[2026-04-21T23:40:15Z] FIX_APPLIED PD-107 — 5 gaps fixed
+[2026-04-21T23:40:15Z] START PD-107 "3.11.39 E-invoice integration" — iteration 2
+[2026-04-21T23:43:53Z] GAPS_FOUND PD-107 — iteration 2, orderType and billing channel changes missing
+[2026-04-21T23:48:08Z] FIX_APPLIED PD-107 — iteration 2
+[2026-04-21T23:48:08Z] START PD-107 "3.11.39 E-invoice integration" — iteration 3
+[2026-04-21T23:53:58Z] MAX_ITERATIONS PD-107 "3.11.39 E-invoice integration" — flagged for manual review
+[2026-04-21T23:54:11Z] COMPLETE Total=52 Passing=49 NeedsReview=3 StillFailing=0

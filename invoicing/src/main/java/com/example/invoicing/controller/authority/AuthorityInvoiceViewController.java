@@ -1,6 +1,7 @@
 package com.example.invoicing.controller.authority;
 import com.example.invoicing.entity.invoice.dto.AuthorityLineItemDto;
 import com.example.invoicing.entity.invoice.dto.AuthorityInvoiceResponse;
+import com.example.invoicing.integration.ExternalAttachmentDto;
 
 import com.example.invoicing.service.InvoiceTransmissionService;
 import com.example.invoicing.entity.invoice.Invoice;
@@ -12,21 +13,25 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Read-only invoice view for municipal authorities.
- * Requires AUTHORITY_VIEWER role (enforced once full auth is wired).
+ * Requires AUTHORITY_VIEWER role, enforced via @PreAuthorize on each endpoint.
  * Exposes only SENT/COMPLETED invoices with no internal fields.
  */
 @RestController
 @RequestMapping("/api/v1/authority/invoices")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('AUTHORITY_VIEWER')")
 public class AuthorityInvoiceViewController {
 
     private final InvoiceRepository invoiceRepository;
@@ -58,11 +63,9 @@ public class AuthorityInvoiceViewController {
     /** STEP-56 — Invoice image retrieval for authority */
     @GetMapping(value = "/{id}/image", produces = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<byte[]> getImage(@PathVariable Long id) {
-        // Verify authority access (SENT/COMPLETED only)
         Invoice invoice = invoiceRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Invoice not found: " + id));
         if (invoice.getExternalReference() == null) {
-            // Fall back to finvoiceXml as stub PDF if not yet transmitted
             byte[] content = invoice.getFinvoiceXml() != null
                 ? invoice.getFinvoiceXml().getBytes()
                 : ("Invoice " + invoice.getInvoiceNumber()).getBytes();
@@ -70,10 +73,21 @@ public class AuthorityInvoiceViewController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(content);
         }
-        byte[] imageBytes = transmissionService.fetchImage(id);
-        return ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_PDF)
-            .body(imageBytes);
+        try {
+            byte[] imageBytes = transmissionService.fetchImage(id);
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(imageBytes);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body(e.getMessage().getBytes());
+        }
+    }
+
+    @GetMapping("/{id}/external-attachments")
+    public List<ExternalAttachmentDto> getExternalAttachments(@PathVariable Long id) {
+        return transmissionService.fetchExternalAttachments(id);
     }
 
     private AuthorityInvoiceResponse toAuthorityResponse(Invoice invoice) {

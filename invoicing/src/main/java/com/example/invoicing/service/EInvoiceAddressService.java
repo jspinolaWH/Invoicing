@@ -37,6 +37,11 @@ public class EInvoiceAddressService {
     }
 
     @Transactional
+    public void clearAddress(Long customerId) {
+        addressRepo.findByCustomer_Id(customerId).ifPresent(addressRepo::delete);
+    }
+
+    @Transactional
     public void updateFromOperator(Long customerId, String address, String operatorCode) {
         addressRepo.findByCustomer_IdAndManuallyLockedFalse(customerId).ifPresentOrElse(
             existing -> { existing.setAddress(address); existing.setOperatorCode(operatorCode); addressRepo.save(existing); },

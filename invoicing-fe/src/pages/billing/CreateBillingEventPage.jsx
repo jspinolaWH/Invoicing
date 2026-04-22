@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { createManualBillingEvent, createDraftBillingEvent } from '../../api/billingEvents'
 import { getContractsForCustomer, getProductsForContract } from '../../api/contracts'
 import { getBillingEventTemplates, createBillingEventTemplate } from '../../api/billingEventTemplates'
+import { getPropertyGroups } from '../../api/propertyGroups'
 import { useResolvedVatRate } from '../../hooks/useResolvedVatRate'
 import CustomerSearchInput from '../../components/billing/CustomerSearchInput'
 import RelatedTasks from '../../components/RelatedTasks'
@@ -18,7 +19,7 @@ const EMPTY_FORM = {
   eventDate: '', productId: '', wasteFeePrice: '', transportFeePrice: '',
   ecoFeePrice: '', quantity: '', weight: '', customerNumber: '',
   vehicleId: '', driverId: '', locationId: '', municipalityId: '', comments: '',
-  contractor: '', direction: '', sharedServiceGroupPercentage: '',
+  contractor: '', direction: '', sharedServiceGroupId: '', sharedServiceGroupPercentage: '',
   wasteType: '', receivingSite: '',
 }
 
@@ -39,6 +40,9 @@ export default function CreateBillingEventPage() {
   const [error, setError]             = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
 
+  // ── property groups ───────────────────────────────────────────────────────
+  const [propertyGroups, setPropertyGroups] = useState([])
+
   // ── templates ────────────────────────────────────────────────────────────
   const [templates, setTemplates]         = useState([])
   const [savingTemplate, setSavingTemplate] = useState(false)
@@ -48,9 +52,10 @@ export default function CreateBillingEventPage() {
   const vatRates = useResolvedVatRate(form.productId, form.eventDate)
   const selectedProduct = products.find(p => String(p.id) === String(form.productId))
 
-  // ── load templates on mount ───────────────────────────────────────────────
+  // ── load templates and property groups on mount ───────────────────────────
   useEffect(() => {
     getBillingEventTemplates().then(r => setTemplates(r.data)).catch(() => {})
+    getPropertyGroups().then(r => setPropertyGroups(r.data)).catch(() => {})
   }, [])
 
   // ── apply template from navigation state (from templates page "Use") ──────
@@ -152,6 +157,8 @@ export default function CreateBillingEventPage() {
       comments:                    tpl.comments                    ?? '',
       contractor:                  tpl.contractor                  ?? '',
       direction:                   tpl.direction                   ?? '',
+      sharedServiceGroupId:         tpl.sharedServiceGroupId != null
+                                      ? String(tpl.sharedServiceGroupId) : '',
       sharedServiceGroupPercentage: tpl.sharedServiceGroupPercentage != null
                                       ? String(tpl.sharedServiceGroupPercentage) : '',
       wasteType:                   tpl.wasteType                   ?? '',
@@ -200,6 +207,7 @@ export default function CreateBillingEventPage() {
     weight:                       Number(form.weight),
     contractor:                   form.contractor || null,
     direction:                    form.direction  || null,
+    sharedServiceGroupId:         form.sharedServiceGroupId || null,
     sharedServiceGroupPercentage: form.sharedServiceGroupPercentage !== ''
       ? Number(form.sharedServiceGroupPercentage) : null,
   })
@@ -250,6 +258,7 @@ export default function CreateBillingEventPage() {
         comments:                    form.comments || null,
         contractor:                  form.contractor || null,
         direction:                   form.direction || null,
+        sharedServiceGroupId:        form.sharedServiceGroupId || null,
         sharedServiceGroupPercentage: form.sharedServiceGroupPercentage
           ? Number(form.sharedServiceGroupPercentage) : null,
         wasteType:                   form.wasteType || null,
@@ -520,6 +529,19 @@ export default function CreateBillingEventPage() {
             </div>
           </div>
           <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
+            <div className="field">
+              <label>Property Group (Shared Service) <span className="optional">(optional)</span></label>
+              <select
+                value={form.sharedServiceGroupId}
+                onChange={set('sharedServiceGroupId')}
+                style={{ height: 48, padding: '0 var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-input)', background: 'var(--color-bg-input)', fontSize: 'var(--font-size-base)' }}
+              >
+                <option value="">— None —</option>
+                {propertyGroups.map(g => (
+                  <option key={g.id} value={String(g.id)}>{g.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="field">
               <label>Shared Collection Group % <span className="optional">(optional)</span></label>
               <input type="number" min="0" max="100" step="0.01" value={form.sharedServiceGroupPercentage} onChange={set('sharedServiceGroupPercentage')} />

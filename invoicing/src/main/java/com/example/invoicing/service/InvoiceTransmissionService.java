@@ -29,6 +29,7 @@ public class InvoiceTransmissionService {
     private final ExternalInvoicingClient externalClient;
     private final BillingEventRepository billingEventRepository;
     private final BillingEventStatusService billingEventStatusService;
+    private final FinvoiceBuilderService finvoiceBuilderService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ExternalTransmissionResult transmit(Long invoiceId) {
@@ -38,6 +39,12 @@ public class InvoiceTransmissionService {
         if (invoice.getStatus() != InvoiceStatus.READY) {
             throw new IllegalStateException(
                 "Invoice must be in READY status to transmit, current status: " + invoice.getStatus());
+        }
+
+        if (invoice.getFinvoiceXml() == null) {
+            String xml = finvoiceBuilderService.build(invoice);
+            invoice.setFinvoiceXml(xml);
+            invoiceRepository.save(invoice);
         }
 
         try {
@@ -76,6 +83,33 @@ public class InvoiceTransmissionService {
             .deliveryStatus(deliveryStatus)
             .transmittedAt(invoice.getTransmittedAt())
             .build();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ExternalTransmissionResult retransmit(Long invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+            .orElseThrow(() -> new EntityNotFoundException("Invoice not found: " + invoiceId));
+
+        if (invoice.getStatus() != InvoiceStatus.SENT) {
+            throw new IllegalStateException(
+                "Only SENT invoices can be retransmitted, current status: " + invoice.getStatus());
+        }
+
+        String xml = finvoiceBuilderService.build(invoice);
+        invoice.setFinvoiceXml(xml);
+        invoiceRepository.save(invoice);
+
+        try {
+            ExternalTransmissionResult result = externalClient.transmit(invoice);
+            invoice.setExternalReference(result.getExternalReference());
+            invoice.setTransmittedAt(result.getTransmittedAt());
+            invoiceRepository.save(invoice);
+            log.info("Invoice {} retransmitted with updated billing address, externalRef={}", invoice.getInvoiceNumber(), result.getExternalReference());
+            return result;
+        } catch (Exception e) {
+            log.error("Retransmission failed for invoice {}: {}", invoice.getInvoiceNumber(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Transactional

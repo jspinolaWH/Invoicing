@@ -1,0 +1,1 @@
+ALTER TABLE customers ADD COLUMN invoice_per_project BOOLEAN NOT NULL DEFAULT FALSE;
