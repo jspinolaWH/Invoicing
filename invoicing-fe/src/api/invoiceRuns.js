@@ -8,3 +8,6 @@ export const scheduleSend = (id, sendAt) => axios.post(`/api/v1/invoice-runs/${i
 export const triggerSend = (id) => axios.post(`/api/v1/invoice-runs/${id}/send`)
 export const simulate = (filterData) => axios.post('/api/v1/invoice-runs/simulate', filterData)
 export const setBatchAttachment = (id, data) => axios.post(`/api/v1/invoice-runs/${id}/batch-attachment`, data)
+export const verifyAttachmentIdentifier = (identifier) =>
+  axios.get('/api/v1/invoice-runs/verify-attachment', { params: { identifier } })
+export const getSimulationAuditLog = (id) => axios.get(`/api/v1/invoice-runs/${id}/simulation-audit`)

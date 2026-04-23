@@ -58,4 +58,6 @@ public class BillingEventResponse {
     // Validation status (PD-278)
     private BillingEventValidationStatus validationStatus;
     private java.time.Instant lastValidatedAt;
+    // Resolved billing type based on active restrictions (PD-292 AC10)
+    private String resolvedBillingType;
 }

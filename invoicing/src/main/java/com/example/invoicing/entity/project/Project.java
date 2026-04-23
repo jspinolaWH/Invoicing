@@ -18,6 +18,9 @@ public class Project extends BaseAuditEntity {
     @Column(name = "description", length = 1000)
     private String description;
 
+    @Column(name = "linked_property_id", length = 50)
+    private String linkedPropertyId;
+
     @Column(nullable = false)
     private boolean active = true;
 }

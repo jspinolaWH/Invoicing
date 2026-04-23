@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { transferBillingEvent } from '../../api/billingEvents'
+import { transferBillingEvent, updateBillingEventComponents } from '../../api/billingEvents'
 import { searchCustomers, getCustomerProperties } from '../../api/customers'
 import SearchableAutocomplete from '../SearchableAutocomplete'
 
@@ -15,6 +15,12 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
   const [propertyDisplay, setPropertyDisplay]         = useState('')
   const [targetPropertyId, setTargetPropertyId]       = useState('')
   const [targetPropertyDbId, setTargetPropertyDbId]   = useState(null)
+
+  const [feeComponents, setFeeComponents] = useState({
+    includeWasteFee: true,
+    includeTransportFee: true,
+    includeEcoFee: true,
+  })
 
   const [reason, setReason]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -55,6 +61,10 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
         targetPropertyId: targetPropertyId || undefined,
         reason,
       })
+      const allIncluded = feeComponents.includeWasteFee && feeComponents.includeTransportFee && feeComponents.includeEcoFee
+      if (!allIncluded) {
+        await updateBillingEventComponents(eventId, feeComponents)
+      }
       onSuccess()
     } catch (err) {
       setError(err.response?.data?.message ?? 'Transfer failed.')
@@ -153,7 +163,7 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                 )}
               </div>
 
-              <div className="field">
+              <div className="field" style={{ marginBottom: 12 }}>
                 <label>Reason <span style={{ color: 'var(--color-icon-danger)' }}>*</span></label>
                 <textarea
                   value={reason}
@@ -162,6 +172,29 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                   style={{ width: '100%', padding: 'var(--space-3)', border: '1px solid var(--color-border-input)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-base)', background: 'var(--color-bg-input)', color: 'var(--color-text-primary)', resize: 'vertical', boxSizing: 'border-box' }}
                   placeholder="Required"
                 />
+              </div>
+
+              <div className="field">
+                <label>Fee Components to Transfer</label>
+                <p style={{ margin: '4px 0 8px', fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                  Deselect any fee that should not follow the transfer. Excluded fees will remain at zero on the transferred event.
+                </p>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'includeWasteFee', label: 'Waste Fee' },
+                    { key: 'includeTransportFee', label: 'Transport Fee' },
+                    { key: 'includeEcoFee', label: 'Eco Fee' },
+                  ].map(({ key, label }) => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: 'var(--space-2) var(--space-3)', border: `1px solid ${feeComponents[key] ? 'var(--color-border)' : '#fecaca'}`, borderRadius: 'var(--radius-md)', background: feeComponents[key] ? 'white' : '#fff5f5' }}>
+                      <input
+                        type="checkbox"
+                        checked={feeComponents[key]}
+                        onChange={() => setFeeComponents(f => ({ ...f, [key]: !f[key] }))}
+                      />
+                      <span style={{ fontWeight: 500, fontSize: 13 }}>{label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="modal-footer">
@@ -203,6 +236,20 @@ export default function TransferEventModal({ eventId, currentCustomerNumber, onS
                 <div>
                   <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Reason</div>
                   <span>{reason}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Fee Components</div>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginTop: 4 }}>
+                    {[
+                      { key: 'includeWasteFee', label: 'Waste Fee' },
+                      { key: 'includeTransportFee', label: 'Transport Fee' },
+                      { key: 'includeEcoFee', label: 'Eco Fee' },
+                    ].map(({ key, label }) => (
+                      <span key={key} style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500, border: `1px solid ${feeComponents[key] ? '#bbf7d0' : '#fecaca'}`, background: feeComponents[key] ? '#f0fdf4' : '#fff5f5', color: feeComponents[key] ? '#15803d' : '#b91c1c' }}>
+                        {label}: {feeComponents[key] ? 'Included' : 'Excluded'}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
               <p className="muted" style={{ marginTop: 12, fontSize: 13 }}>

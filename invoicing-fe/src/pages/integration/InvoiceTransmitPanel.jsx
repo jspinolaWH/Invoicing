@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { transmitInvoice, retransmitInvoice, getTransmissionStatus, getInvoiceImage, getExternalAttachments, recallInvoice } from '../../api/integration';
+import { getMyRoles } from '../../api/me';
 
 export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externalReference, allowExternalRecall, onStatusChange }) {
   const [transmitResult, setTransmitResult] = useState(null);
@@ -11,6 +12,15 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
   const [recallForm, setRecallForm] = useState({ reason: '', internalComment: '' });
   const [recallResult, setRecallResult] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
+  const [canViewImage, setCanViewImage] = useState(false);
+
+  useEffect(() => {
+    getMyRoles().then(roles => {
+      setCanViewImage(Array.isArray(roles) && roles.includes('INVOICING'));
+    }).catch(() => {
+      setCanViewImage(false);
+    });
+  }, []);
 
   async function handleTransmit() {
     setLoading('transmit');
@@ -123,9 +133,11 @@ export default function InvoiceTransmitPanel({ invoiceId, invoiceStatus, externa
             <button onClick={handleFetchStatus} disabled={loading === 'status'} style={btn('#7c3aed')}>
               {loading === 'status' ? 'Checking\u2026' : 'Check Delivery Status'}
             </button>
-            <button onClick={handleFetchImage} disabled={loading === 'image'} style={btn('#0891b2')}>
-              {loading === 'image' ? 'Loading\u2026' : 'View Invoice Image (PDF)'}
-            </button>
+            {canViewImage && (
+              <button onClick={handleFetchImage} disabled={loading === 'image'} style={btn('#0891b2')}>
+                {loading === 'image' ? 'Loading\u2026' : 'View Invoice Image (PDF)'}
+              </button>
+            )}
             <button onClick={handleFetchAttachments} disabled={loading === 'attachments'} style={btn('#059669')}>
               {loading === 'attachments' ? 'Loading\u2026' : 'Fetch External Attachments'}
             </button>

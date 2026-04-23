@@ -132,6 +132,7 @@ public interface BillingEventRepository extends JpaRepository<BillingEvent, Long
           AND (:requiresReview        IS NULL OR e.officeReviewRequired = :requiresReview)
           AND (:serviceResponsibility IS NULL OR e.serviceResponsibility = :serviceResponsibility)
           AND (:validationStatus      IS NULL OR e.validationStatus = :validationStatus)
+          AND (:origin                IS NULL OR e.origin = :origin)
         ORDER BY e.eventDate DESC
         """)
     Page<BillingEvent> findFiltered(
@@ -145,6 +146,7 @@ public interface BillingEventRepository extends JpaRepository<BillingEvent, Long
         @Param("requiresReview")        Boolean requiresReview,
         @Param("serviceResponsibility") String serviceResponsibility,
         @Param("validationStatus")      BillingEventValidationStatus validationStatus,
+        @Param("origin")                String origin,
         Pageable pageable
     );
 

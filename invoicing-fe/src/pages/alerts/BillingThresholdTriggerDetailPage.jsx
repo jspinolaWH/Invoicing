@@ -155,7 +155,12 @@ export default function BillingThresholdTriggerDetailPage() {
           </>
         )}
         <button
-          onClick={() => navigate(`/retroactive/responsibility-change`)}
+          onClick={() => navigate(`/retroactive/responsibility-change`, {
+            state: {
+              fromCustomerNumber: trigger.customerNumber,
+              triggerId: trigger.id,
+            },
+          })}
           style={{ padding: '8px 18px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer', color: '#374151' }}
         >
           Update Service Responsibility
@@ -208,11 +213,28 @@ export default function BillingThresholdTriggerDetailPage() {
               </tr>
             )}
             {trigger.auditedBy && (
-              <tr>
+              <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <td style={{ padding: '6px 10px', color: '#6b7280' }}>Reviewed by</td>
                 <td style={{ padding: '6px 10px' }}>{trigger.auditedBy}</td>
               </tr>
             )}
+            <tr>
+              <td style={{ padding: '6px 10px', color: '#6b7280' }}>Responsibility changes</td>
+              <td style={{ padding: '6px 10px' }}>
+                <button
+                  onClick={() => navigate('/retroactive/responsibility-change', {
+                    state: {
+                      fromCustomerNumber: trigger.customerNumber,
+                      triggerId: trigger.id,
+                      openReport: true,
+                    },
+                  })}
+                  style={{ padding: '2px 10px', fontSize: 12, background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 4, cursor: 'pointer', color: '#1d4ed8' }}
+                >
+                  View responsibility change log for customer {trigger.customerNumber} →
+                </button>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

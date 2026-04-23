@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoicing System — ERD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f172a; font-family: 'Courier New', monospace; overflow: hidden; }
+    #controls {
+      position: fixed; top: 12px; left: 12px; z-index: 100;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .btn {
+      background: #1e293b; color: #94a3b8; border: 1px solid #334155;
+      border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 12px;
+      font-family: 'Courier New', monospace;
+    }
+    .btn:hover { background: #334155; color: #e2e8f0; }
+    #hint { color: #475569; font-size: 11px; }
+    #legend {
+      position: fixed; top: 12px; right: 12px; z-index: 100;
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      padding: 14px; color: #94a3b8; font-size: 11px; min-width: 210px;
+    }
+    #legend h3 { color: #e2e8f0; margin-bottom: 10px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .legend-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+    #field-key {
+      position: fixed; bottom: 12px; left: 12px; z-index: 100;
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      padding: 10px 14px; font-size: 11px; color: #94a3b8; display: flex; gap: 16px;
+    }
+    .fk-badge { display: inline-flex; align-items: center; gap: 6px; }
+    .fk-badge span { font-weight: bold; font-size: 10px; }
+    .pk-color { color: #fbbf24; }
+    .fk-color { color: #60a5fa; }
+    .norm-color { color: #64748b; }
+    #canvas-wrapper { width: 100vw; height: 100vh; overflow: hidden; cursor: grab; }
+    #canvas-wrapper.dragging { cursor: grabbing; }
+    svg#erd { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+
+<div id="controls">
+  <span id="hint">Scroll to zoom · Drag to pan · Click entity to highlight relations</span>
+  <button class="btn" onclick="resetView()">Reset View</button>
+</div>
+
+<div id="legend">
+  <h3>Domains</h3>
+</div>
+
+<div id="field-key">
+  <div class="fk-badge"><span class="pk-color">PK</span><span>Primary Key</span></div>
+  <div class="fk-badge"><span class="fk-color">FK</span><span>Foreign Key</span></div>
+  <div class="fk-badge"><span class="norm-color">··</span><span>Column</span></div>
+</div>
+
+<div id="canvas-wrapper">
+  <svg id="erd" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <path d="M0,0 L0,7 L7,3.5 z" fill="#475569"/>
+      </marker>
+      <marker id="arr-hi" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <path d="M0,0 L0,7 L7,3.5 z" fill="#f59e0b"/>
+      </marker>
+      <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
+      </filter>
+    </defs>
+    <g id="viewport">
+      <g id="relations-layer"></g>
+      <g id="entities-layer"></g>
+    </g>
+  </svg>
+</div>
+
+<script>
+const DOMAINS = {
+  customer:     { color: '#3B82F6', label: 'Customer' },
+  contract:     { color: '#14B8A6', label: 'Contract & Project' },
+  property:     { color: '#22C55E', label: 'Property & Shared Service' },
+  accounting:   { color: '#818CF8', label: 'Accounting' },
+  invoice_run:  { color: '#A78BFA', label: 'Invoice Run & Numbering' },
+  invoice:      { color: '#EC4899', label: 'Invoice' },
+  billing_event:{ color: '#F97316', label: 'Billing Event' },
+  product:      { color: '#10B981', label: 'Product & Price' },
+  cost_center:  { color: '#84CC16', label: 'Cost Center' },
+  billing_cfg:  { color: '#EAB308', label: 'Billing Config' },
+  validation:   { color: '#F43F5E', label: 'Classification & Validation' },
+  config:       { color: '#94A3B8', label: 'System Config' },
+};
+
+// x,y = top-left of card. Fields: {name, type, pk?, fk?}
+const ENTITIES = [
+  // ── CUSTOMER ──────────────────────────────────────────
+  { id:'Customer', domain:'customer', x:50, y:50, fields:[
+    {name:'id', type:'Long', pk:true},
+    {name:'name', type:'String'},
+    {name:'customerType', type:'CustomerType'},
+    {name:'parentCustomerNumber', type:'String'},
+    {name:'[billingProfile]', type:'Embedded'},
+  ]},
+  { id:'CustomerAuditLog', domain:'customer', x:50, y:290,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerId', type:'Long'},
+      {name:'field', type:'String'},
+      {name:'oldValue / newValue', type:'String'},
+      {name:'changedBy / changedAt', type:'Audit'},
+    ]
+  },
+  { id:'EInvoiceAddress', domain:'customer', x:320, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customer_id', type:'FK→Customer', fk:true},
+      {name:'address', type:'String'},
+      {name:'operatorCode', type:'String'},
+      {name:'manuallyLocked', type:'boolean'},
+      {name:'registrationDate', type:'Instant'},
+      {name:'terminationDate', type:'Instant'},
+    ]
+  },
+
+  // ── CONTRACT & PROJECT ────────────────────────────────
+  { id:'Contract', domain:'contract', x:620, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'name', type:'String'},
+      {name:'active', type:'boolean'},
+      {name:'[products]', type:'MTM→Product'},
+      {name:'invoiceTemplateId', type:'Long'},
+      {name:'startDate / endDate', type:'LocalDate'},
+    ]
+  },
+  { id:'Project', domain:'contract', x:900, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'name', type:'String'},
+      {name:'description', type:'String'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+
+  // ── PROPERTY & SHARED SERVICE ─────────────────────────
+  { id:'Property', domain:'property', x:1160, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'propertyId', type:'String (unique)'},
+      {name:'streetAddress / city', type:'String'},
+      {name:'customerNumber', type:'String'},
+      {name:'buildingClassification', type:'Enum'},
+      {name:'buildingStatus', type:'Enum'},
+      {name:'invoiceTemplateId', type:'Long'},
+      {name:'[owners]', type:'OTM→PropertyOwner'},
+    ]
+  },
+  { id:'PropertyOwner', domain:'property', x:1160, y:370,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'property_id', type:'FK→Property', fk:true},
+      {name:'ownerId', type:'String'},
+      {name:'ownerName', type:'String'},
+      {name:'ownershipPercentage', type:'BigDecimal'},
+    ]
+  },
+  { id:'PropertyGroup', domain:'property', x:1450, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'name', type:'String'},
+      {name:'active', type:'boolean'},
+      {name:'[participants]', type:'OTM→SharedServiceParticipant'},
+    ]
+  },
+  { id:'SharedServiceParticipant', domain:'property', x:1450, y:250,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'propertyGroup_id', type:'FK→PropertyGroup', fk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'sharePercentage', type:'BigDecimal'},
+      {name:'validFrom / validTo', type:'LocalDate'},
+    ]
+  },
+
+  // ── ACCOUNTING ────────────────────────────────────────
+  { id:'AccountingAccount', domain:'accounting', x:1750, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'code', type:'String (unique)'},
+      {name:'name', type:'String'},
+      {name:'validFrom / validTo', type:'LocalDate'},
+    ]
+  },
+  { id:'AccountingAllocationRule', domain:'accounting', x:1750, y:240,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'product_id', type:'FK→Product', fk:true},
+      {name:'accountingAccount_id', type:'FK→AccountingAccount', fk:true},
+      {name:'region / municipality', type:'String'},
+      {name:'priceComponent', type:'PriceComponent'},
+      {name:'specificityScore', type:'Integer'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+
+  // ── INVOICE RUN & NUMBERING ───────────────────────────
+  { id:'InvoiceRun', domain:'invoice_run', x:2060, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'status', type:'InvoiceRunStatus'},
+      {name:'simulationMode', type:'boolean'},
+      {name:'filterPeriodFrom/To', type:'LocalDate'},
+      {name:'filterMunicipality', type:'String'},
+      {name:'filterCustomerType', type:'String'},
+      {name:'totalInvoices', type:'Integer'},
+      {name:'totalAmount', type:'BigDecimal'},
+      {name:'scheduledSendAt / sentAt', type:'Instant'},
+      {name:'numberSeriesId', type:'Long'},
+      {name:'cancelledBy / cancelledAt', type:'Audit'},
+    ]
+  },
+  { id:'InvoiceNumberSeries', domain:'invoice_run', x:2060, y:460,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'name', type:'String (unique)'},
+      {name:'prefix', type:'String'},
+      {name:'formatPattern', type:'String'},
+      {name:'category', type:'String'},
+      {name:'currentCounter', type:'Long'},
+    ]
+  },
+  { id:'InvoiceTemplate', domain:'invoice_run', x:2060, y:680,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'name / code', type:'String (unique)'},
+      {name:'numberSeries_id', type:'FK→InvoiceNumberSeries', fk:true},
+    ]
+  },
+  { id:'ActiveRunLock', domain:'invoice_run', x:2360, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'runId', type:'Long'},
+      {name:'lockedAt', type:'Instant'},
+    ]
+  },
+
+  // ── INVOICE ───────────────────────────────────────────
+  { id:'Invoice', domain:'invoice', x:700, y:700,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'invoiceNumber', type:'String (unique)'},
+      {name:'customer_id', type:'FK→Customer', fk:true},
+      {name:'invoiceRun_id', type:'FK→InvoiceRun', fk:true},
+      {name:'numberSeries_id', type:'FK→InvoiceNumberSeries', fk:true},
+      {name:'originalInvoice_id', type:'FK→Invoice (self)', fk:true},
+      {name:'status', type:'InvoiceStatus'},
+      {name:'invoiceType', type:'InvoiceType'},
+      {name:'invoiceDate / dueDate', type:'LocalDate'},
+      {name:'netAmount / grossAmount', type:'BigDecimal'},
+      {name:'vatAmount', type:'BigDecimal'},
+      {name:'scheduledSendAt', type:'Instant'},
+      {name:'[lineItems]', type:'OTM→InvoiceLineItem'},
+      {name:'[attachments]', type:'OTM→InvoiceAttachment'},
+    ]
+  },
+  { id:'InvoiceLineItem', domain:'invoice', x:620, y:1160,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'invoice_id', type:'FK→Invoice', fk:true},
+      {name:'product_id', type:'FK→Product', fk:true},
+      {name:'accountingAccount_id', type:'FK→AccountingAccount', fk:true},
+      {name:'costCenter_id', type:'FK→CostCenter', fk:true},
+      {name:'sourceEvent_id', type:'FK→BillingEvent', fk:true},
+      {name:'description', type:'String'},
+      {name:'quantity / unitPrice', type:'BigDecimal'},
+      {name:'netAmount / grossAmount', type:'BigDecimal'},
+      {name:'legalClassification', type:'LegalClassification'},
+      {name:'bundled', type:'boolean'},
+    ]
+  },
+  { id:'InvoiceAttachment', domain:'invoice', x:980, y:1160,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'invoice_id', type:'FK→Invoice', fk:true},
+      {name:'fileName', type:'String'},
+      {name:'fileSize', type:'long'},
+      {name:'contentType', type:'String'},
+      {name:'contentBase64', type:'Lob'},
+    ]
+  },
+  { id:'PaymentReminder', domain:'invoice', x:1060, y:760,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'invoice_id', type:'FK→Invoice', fk:true},
+      {name:'customerId', type:'Long'},
+      {name:'reminderNumber', type:'int'},
+      {name:'status', type:'PaymentReminderStatus'},
+      {name:'deliveryMethod', type:'String'},
+      {name:'sentAt', type:'Instant'},
+    ]
+  },
+
+  // ── BILLING EVENT ─────────────────────────────────────
+  { id:'BillingEvent', domain:'billing_event', x:50, y:680,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'eventDate', type:'LocalDate'},
+      {name:'product_id', type:'FK→Product', fk:true},
+      {name:'costCenter_id', type:'FK→CostCenter', fk:true},
+      {name:'accountingAccount_id', type:'FK→AccountingAccount', fk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'status', type:'BillingEventStatus'},
+      {name:'direction', type:'BillingEventDirection'},
+      {name:'excluded / nonBillable', type:'boolean'},
+      {name:'wasteFee/TransportFee/EcoFee', type:'BigDecimal'},
+      {name:'quantity / weight', type:'BigDecimal'},
+      {name:'validationStatus', type:'BillingEventValidationStatus'},
+      {name:'legalClassification', type:'LegalClassification'},
+      {name:'locationId / municipalityId', type:'String'},
+      {name:'projectId', type:'String'},
+      {name:'sharedServiceGroupId', type:'String'},
+      {name:'correctedFromEventId', type:'Long'},
+      {name:'priceOverridden', type:'boolean'},
+      {name:'contractor', type:'String'},
+      {name:'+ more fields…', type:''},
+    ]
+  },
+  { id:'BillingEventAttachment', domain:'billing_event', x:50, y:1360,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'billingEvent_id', type:'FK→BillingEvent', fk:true},
+      {name:'fileName', type:'String'},
+      {name:'contentType', type:'String'},
+      {name:'contentBase64', type:'Lob'},
+    ]
+  },
+  { id:'BillingEventTemplate', domain:'billing_event', x:350, y:1480,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'name', type:'String'},
+      {name:'customerNumber', type:'String'},
+      {name:'contractId / productId', type:'Long'},
+      {name:'wasteFee/TransportFee/EcoFee', type:'BigDecimal'},
+      {name:'direction', type:'String'},
+    ]
+  },
+  { id:'BillingEventAuditLog', domain:'billing_event', x:50, y:1560,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'billingEventId', type:'Long'},
+      {name:'field', type:'String'},
+      {name:'oldValue / newValue', type:'String'},
+      {name:'changedBy / changedAt', type:'Audit'},
+      {name:'confirmedBy / reason', type:'String'},
+    ]
+  },
+  { id:'BillingEventCreditLog', domain:'billing_event', x:350, y:1340,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'originalEventId', type:'Long'},
+      {name:'creditEventId', type:'Long'},
+      {name:'newEventId', type:'Long'},
+      {name:'performedBy / performedAt', type:'Audit'},
+      {name:'reason', type:'String'},
+    ]
+  },
+  { id:'BillingEventTransferLog', domain:'billing_event', x:350, y:1200,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'billingEventId', type:'Long'},
+      {name:'sourceCustomerNumber', type:'String'},
+      {name:'targetCustomerNumber', type:'String'},
+      {name:'transferredBy / transferredAt', type:'Audit'},
+    ]
+  },
+  { id:'PriceAdjustmentAuditLog', domain:'billing_event', x:50, y:1780,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'adjustmentType', type:'AdjustmentType'},
+      {name:'adjustmentValue', type:'BigDecimal'},
+      {name:'appliedAt', type:'Instant'},
+      {name:'affectedEventIds', type:'String'},
+      {name:'totalDelta', type:'BigDecimal'},
+    ]
+  },
+  { id:'ServiceResponsibilityChangeLog', domain:'billing_event', x:350, y:1680,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'changeRunId', type:'String'},
+      {name:'fromCustomerNumber', type:'String'},
+      {name:'toCustomerNumber', type:'String'},
+      {name:'changeEffectiveDate', type:'LocalDate'},
+      {name:'affectedCount', type:'int'},
+      {name:'appliedBy / appliedAt', type:'Audit'},
+    ]
+  },
+
+  // ── PRODUCT & PRICE ───────────────────────────────────
+  { id:'Product', domain:'product', x:1380, y:680,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'code', type:'String (unique)'},
+      {name:'productGroupCode', type:'String'},
+      {name:'defaultAccountingAccount_id', type:'FK→AccountingAccount', fk:true},
+      {name:'defaultCostCenter_id', type:'FK→CostCenter', fk:true},
+      {name:'priceList_id', type:'FK→PriceList', fk:true},
+      {name:'defaultWasteFee', type:'BigDecimal'},
+      {name:'defaultTransportFee', type:'BigDecimal'},
+      {name:'defaultEcoFee', type:'BigDecimal'},
+      {name:'vatRate', type:'BigDecimal'},
+      {name:'reverseChargeVat', type:'boolean'},
+      {name:'active', type:'boolean'},
+      {name:'[translations]', type:'OTM→ProductTranslation'},
+    ]
+  },
+  { id:'ProductTranslation', domain:'product', x:1380, y:1100,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'product_id', type:'FK→Product', fk:true},
+      {name:'locale', type:'String'},
+      {name:'name', type:'String'},
+    ]
+  },
+  { id:'PriceList', domain:'product', x:1680, y:680,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'code', type:'String (unique)'},
+      {name:'name', type:'String'},
+      {name:'tariffVariant', type:'String'},
+      {name:'validFrom / validTo', type:'LocalDate'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+
+  // ── COST CENTER ───────────────────────────────────────
+  { id:'CostCenter', domain:'cost_center', x:1680, y:1020,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'compositeCode', type:'String (unique)'},
+      {name:'productSegment', type:'String'},
+      {name:'receptionSegment', type:'String'},
+      {name:'responsibilitySegment', type:'String'},
+    ]
+  },
+  { id:'CostCenterCompositionConfig', domain:'cost_center', x:1680, y:1230,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'separator', type:'String'},
+      {name:'segmentOrder', type:'String'},
+      {name:'publicLawCode', type:'String'},
+      {name:'privateLawCode', type:'String'},
+    ]
+  },
+
+  // ── BILLING CONFIG ────────────────────────────────────
+  { id:'BillingCycle', domain:'billing_cfg', x:1980, y:870,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'frequency', type:'BillingFrequency'},
+      {name:'nextBillingDate', type:'LocalDate'},
+      {name:'contractReference', type:'String'},
+      {name:'propertyReference', type:'String'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'BillingRestriction', domain:'billing_cfg', x:1980, y:1130,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'municipality', type:'String'},
+      {name:'customerType', type:'String'},
+      {name:'serviceType', type:'String'},
+      {name:'minAmount', type:'BigDecimal'},
+      {name:'billingType', type:'BillingType'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'BillingThresholdConfig', domain:'billing_cfg', x:1980, y:1380,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'serviceResponsibility', type:'String'},
+      {name:'annualEuroLimit', type:'BigDecimal'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'BillingThresholdTrigger', domain:'billing_cfg', x:1980, y:1570,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'serviceResponsibility', type:'String'},
+      {name:'annualAmount', type:'BigDecimal'},
+      {name:'triggerYear', type:'int'},
+      {name:'status', type:'TriggerStatus'},
+      {name:'auditedBy / auditedAt', type:'Audit'},
+    ]
+  },
+  { id:'BillingThresholdTicket', domain:'billing_cfg', x:2280, y:1570,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'triggerId', type:'Long'},
+      {name:'customerNumber', type:'String'},
+      {name:'status', type:'TicketStatus'},
+      {name:'assignedTo', type:'String'},
+      {name:'resolvedAt / resolvedBy', type:'Audit'},
+    ]
+  },
+
+  // ── CLASSIFICATION & VALIDATION ───────────────────────
+  { id:'ClassificationRule', domain:'validation', x:2280, y:870,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'companyId', type:'Long'},
+      {name:'priority', type:'int'},
+      {name:'customerTypeCondition', type:'CustomerType'},
+      {name:'productCodeCondition', type:'String'},
+      {name:'resultClassification', type:'LegalClassification'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'ValidationRule', domain:'validation', x:2280, y:1130,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'companyId', type:'Long'},
+      {name:'ruleType', type:'ValidationRuleType'},
+      {name:'ruleCode', type:'String'},
+      {name:'blocking', type:'boolean'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'BillingEventValidationLog', domain:'validation', x:2280, y:1380,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'billingEventId', type:'Long'},
+      {name:'ruleType / ruleCode', type:'String'},
+      {name:'severity', type:'ValidationSeverity'},
+      {name:'field / description', type:'String'},
+      {name:'validatedAt', type:'Instant'},
+    ]
+  },
+
+  // ── SYSTEM CONFIG ─────────────────────────────────────
+  { id:'BundlingRule', domain:'config', x:2600, y:50,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'productGroup', type:'String'},
+      {name:'bundlingType', type:'BundlingType'},
+    ]
+  },
+  { id:'BundlingRuleAuditLog', domain:'config', x:2600, y:240,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'productGroup', type:'String'},
+      {name:'action', type:'String'},
+      {name:'changedBy / changedAt', type:'Audit'},
+    ]
+  },
+  { id:'EventTypeConfig', domain:'config', x:2600, y:450,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'eventTypeCode', type:'String (unique)'},
+      {name:'requiresOfficeReview', type:'boolean'},
+      {name:'unusualQuantityThreshold', type:'BigDecimal'},
+      {name:'unusualWeightThreshold', type:'BigDecimal'},
+    ]
+  },
+  { id:'MinimumFeeConfig', domain:'config', x:2600, y:670,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerType', type:'String'},
+      {name:'netAmountThreshold', type:'BigDecimal'},
+      {name:'periodType', type:'PeriodType'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'SeasonalFeeConfig', domain:'config', x:2600, y:890,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String'},
+      {name:'product_id', type:'FK→Product', fk:true},
+      {name:'billingFrequency', type:'BillingFrequency'},
+      {name:'amount', type:'BigDecimal'},
+      {name:'nextDueDate', type:'LocalDate'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'SurchargeConfig', domain:'config', x:2600, y:1130,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'deliveryMethod', type:'DeliveryMethod'},
+      {name:'customerType', type:'CustomerType'},
+      {name:'amount', type:'BigDecimal'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'VatRate', domain:'config', x:2600, y:1350,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'code', type:'String (unique)'},
+      {name:'rate', type:'BigDecimal'},
+      {name:'validFrom / validTo', type:'LocalDate'},
+    ]
+  },
+  { id:'WeighbridgeIntegrationConfig', domain:'config', x:2600, y:1560,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'customerNumber', type:'String (unique)'},
+      {name:'externalSystemId', type:'String'},
+      {name:'defaultProductCode', type:'String'},
+      {name:'active', type:'boolean'},
+    ]
+  },
+  { id:'ReportingFieldConfig', domain:'config', x:2600, y:1780,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'companyId', type:'Long'},
+      {name:'fieldName', type:'String'},
+      {name:'enabled', type:'boolean'},
+      {name:'displayOrder', type:'int'},
+    ]
+  },
+  { id:'ReportingDataAuditLog', domain:'config', x:2600, y:1990,
+    fields:[
+      {name:'id', type:'Long', pk:true},
+      {name:'invoiceId', type:'Long'},
+      {name:'invoiceNumber', type:'String'},
+      {name:'lineItemId', type:'Long'},
+      {name:'field / assignedValue', type:'String'},
+      {name:'loggedAt / loggedBy', type:'Audit'},
+    ]
+  },
+];
+
+// from, to, label
+const RELATIONSHIPS = [
+  // Customer
+  {from:'EInvoiceAddress',            to:'Customer',              label:'1:1'},
+  // Invoice
+  {from:'Invoice',                    to:'Customer',              label:'N:1'},
+  {from:'Invoice',                    to:'InvoiceRun',            label:'N:1'},
+  {from:'Invoice',                    to:'InvoiceNumberSeries',   label:'N:1'},
+  {from:'Invoice',                    to:'Invoice',               label:'credit of'},
+  {from:'InvoiceLineItem',            to:'Invoice',               label:'N:1'},
+  {from:'InvoiceLineItem',            to:'Product',               label:'N:1'},
+  {from:'InvoiceLineItem',            to:'AccountingAccount',     label:'N:1'},
+  {from:'InvoiceLineItem',            to:'CostCenter',            label:'N:1'},
+  {from:'InvoiceLineItem',            to:'BillingEvent',          label:'source'},
+  {from:'InvoiceAttachment',          to:'Invoice',               label:'N:1'},
+  {from:'PaymentReminder',            to:'Invoice',               label:'N:1'},
+  // Invoice run
+  {from:'InvoiceTemplate',            to:'InvoiceNumberSeries',   label:'N:1'},
+  // Billing Event
+  {from:'BillingEvent',               to:'Product',               label:'N:1'},
+  {from:'BillingEvent',               to:'CostCenter',            label:'N:1'},
+  {from:'BillingEvent',               to:'AccountingAccount',     label:'N:1'},
+  {from:'BillingEventAttachment',     to:'BillingEvent',          label:'N:1'},
+  // Product
+  {from:'Product',                    to:'AccountingAccount',     label:'default'},
+  {from:'Product',                    to:'CostCenter',            label:'default'},
+  {from:'Product',                    to:'PriceList',             label:'N:1'},
+  {from:'ProductTranslation',         to:'Product',               label:'N:1'},
+  // Accounting
+  {from:'AccountingAllocationRule',   to:'Product',               label:'N:1'},
+  {from:'AccountingAllocationRule',   to:'AccountingAccount',     label:'N:1'},
+  // Property
+  {from:'PropertyOwner',              to:'Property',              label:'N:1'},
+  {from:'SharedServiceParticipant',   to:'PropertyGroup',         label:'N:1'},
+  // Contract
+  {from:'Contract',                   to:'Product',               label:'N:M'},
+  // Config
+  {from:'SeasonalFeeConfig',          to:'Product',               label:'N:1'},
+  // Billing threshold
+  {from:'BillingThresholdTicket',     to:'BillingThresholdTrigger', label:'N:1'},
+];
+
+// ──────────────────────────────────────────────────────────────
+// Layout constants
+const CW = 245;
+const FH = 20;
+const HH = 32;
+const PAD = 8;
+
+function entityHeight(e) { return HH + PAD + e.fields.length * FH + PAD; }
+
+function bounds(e) {
+  const h = entityHeight(e);
+  return { x:e.x, y:e.y, w:CW, h, cx:e.x+CW/2, cy:e.y+h/2, r:e.x+CW, b:e.y+h };
+}
+
+function edgePoint(e, tx, ty) {
+  const b = bounds(e);
+  const dx = tx - b.cx, dy = ty - b.cy;
+  if (dx === 0 && dy === 0) return { x: b.cx, y: b.y };
+  const hw = b.w / 2, hh = b.h / 2;
+  if (Math.abs(dx) * hh >= Math.abs(dy) * hw) {
+    const t = hw / Math.abs(dx);
+    return { x: b.cx + dx * t, y: b.cy + dy * t };
+  } else {
+    const t = hh / Math.abs(dy);
+    return { x: b.cx + dx * t, y: b.cy + dy * t };
+  }
+}
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function svgText(txt, attrs) {
+  const el = svgEl('text', attrs);
+  el.textContent = txt;
+  return el;
+}
+
+function trunc(s, n) { return s.length > n ? s.slice(0, n-1) + '…' : s; }
+
+// ──────────────────────────────────────────────────────────────
+function render() {
+  const eLayer = document.getElementById('entities-layer');
+  const rLayer = document.getElementById('relations-layer');
+  const entityMap = Object.fromEntries(ENTITIES.map(e => [e.id, e]));
+
+  // Relations
+  RELATIONSHIPS.forEach(rel => {
+    const fe = entityMap[rel.from], te = entityMap[rel.to];
+    if (!fe || !te) return;
+    const fb = bounds(fe), tb = bounds(te);
+    const isSelf = rel.from === rel.to;
+    let d;
+    if (isSelf) {
+      // Self-referential: draw a loop above the entity
+      const lx = fb.cx, ty2 = fb.y - 50;
+      d = `M${fb.cx-30},${fb.y} C${fb.cx-70},${fb.y-80} ${fb.cx+70},${fb.y-80} ${fb.cx+30},${fb.y}`;
+    } else {
+      const fp = edgePoint(fe, tb.cx, tb.cy);
+      const tp = edgePoint(te, fb.cx, fb.cy);
+      const dx = tp.x - fp.x, dy = tp.y - fp.y;
+      const cx1 = fp.x + dx*0.35, cy1 = fp.y + dy*0.05;
+      const cx2 = tp.x - dx*0.35, cy2 = tp.y - dy*0.05;
+      d = `M${fp.x},${fp.y} C${cx1},${cy1} ${cx2},${cy2} ${tp.x},${tp.y}`;
+    }
+
+    const g = svgEl('g', { class:'relation', 'data-from':rel.from, 'data-to':rel.to });
+    const path = svgEl('path', {
+      d, stroke:'#334155', 'stroke-width':'1.5', fill:'none',
+      'marker-end':'url(#arr)'
+    });
+    g.appendChild(path);
+
+    if (rel.label) {
+      const fb2 = bounds(fe), tb2 = bounds(te);
+      const mx = isSelf ? fb2.cx : (fb2.cx + tb2.cx) / 2;
+      const my = isSelf ? fb2.y - 55 : (fb2.cy + tb2.cy) / 2;
+      const bg = svgEl('rect', { x:mx-16, y:my-9, width:32, height:12, rx:3, fill:'#0f172a' });
+      const txt = svgText(rel.label, {
+        x:mx, y:my, 'text-anchor':'middle', 'font-size':'9',
+        fill:'#64748b', 'font-family':'Courier New, monospace'
+      });
+      g.appendChild(bg);
+      g.appendChild(txt);
+    }
+    rLayer.appendChild(g);
+  });
+
+  // Entities
+  ENTITIES.forEach(entity => {
+    const col = DOMAINS[entity.domain].color;
+    const h = entityHeight(entity);
+    const g = svgEl('g', { class:'entity-card', id:`ent-${entity.id}`,
+      transform:`translate(${entity.x},${entity.y})`, style:'cursor:pointer' });
+
+    // Shadow / card bg
+    g.appendChild(svgEl('rect', { width:CW, height:h, rx:7, fill:'#1a2235', stroke:col,
+      'stroke-width':'1.5', filter:'url(#shadow)' }));
+
+    // Header
+    g.appendChild(svgEl('rect', { width:CW, height:HH, rx:7, fill:col, opacity:'0.92' }));
+    g.appendChild(svgEl('rect', { width:CW, height:10, y:HH-10, fill:col, opacity:'0.92' }));
+
+    // Entity name
+    g.appendChild(svgText(entity.id, {
+      x:CW/2, y:HH/2+5, 'text-anchor':'middle', 'font-size':'12', 'font-weight':'bold',
+      fill:'#ffffff', 'font-family':'Courier New, monospace'
+    }));
+
+    // Separator
+    g.appendChild(svgEl('line', { x1:0, y1:HH, x2:CW, y2:HH, stroke:col,
+      'stroke-width':'0.5', opacity:'0.4' }));
+
+    // Fields
+    entity.fields.forEach((f, i) => {
+      const fy = HH + PAD + i * FH + FH - 5;
+      let fc = '#64748b', badge = '··';
+      if (f.pk)  { fc = '#fbbf24'; badge = 'PK'; }
+      if (f.fk)  { fc = '#60a5fa'; badge = 'FK'; }
+
+      g.appendChild(svgText(badge, {
+        x:8, y:fy, 'font-size':'9', 'font-weight':'bold', fill:fc,
+        'font-family':'Courier New, monospace'
+      }));
+      g.appendChild(svgText(trunc(f.name, 24), {
+        x:30, y:fy, 'font-size':'11', fill:fc,
+        'font-family':'Courier New, monospace'
+      }));
+      g.appendChild(svgText(trunc(f.type, 17), {
+        x:CW-6, y:fy, 'text-anchor':'end', 'font-size':'10', fill:'#3d5068',
+        'font-family':'Courier New, monospace'
+      }));
+    });
+
+    eLayer.appendChild(g);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Pan / Zoom
+let scale = 0.42, tx = 60, ty = 60;
+let drag = false, dsx, dsy, dtx, dty;
+
+function applyTx() {
+  document.getElementById('viewport').setAttribute('transform',
+    `translate(${tx},${ty}) scale(${scale})`);
+}
+
+function resetView() {
+  scale = 0.42; tx = 60; ty = 60; applyTx();
+}
+
+const wrap = document.getElementById('canvas-wrapper');
+
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const f = e.deltaY > 0 ? 0.88 : 1.14;
+  const r = wrap.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  tx = mx - f * (mx - tx);
+  ty = my - f * (my - ty);
+  scale = Math.max(0.08, Math.min(4, scale * f));
+  applyTx();
+}, { passive: false });
+
+wrap.addEventListener('mousedown', e => {
+  drag=true; dsx=e.clientX; dsy=e.clientY; dtx=tx; dty=ty;
+  wrap.classList.add('dragging');
+});
+wrap.addEventListener('mousemove', e => {
+  if (!drag) return;
+  tx = dtx + (e.clientX-dsx); ty = dty + (e.clientY-dsy); applyTx();
+});
+['mouseup','mouseleave'].forEach(ev => wrap.addEventListener(ev, () => {
+  drag=false; wrap.classList.remove('dragging');
+}));
+
+// ──────────────────────────────────────────────────────────────
+// Click to highlight
+let selected = null;
+
+document.getElementById('entities-layer').addEventListener('click', e => {
+  const card = e.target.closest('.entity-card');
+  const id = card ? card.id.replace('ent-','') : null;
+  if (id === selected) { clearHL(); return; }
+  if (id) highlight(id); else clearHL();
+});
+
+function highlight(id) {
+  selected = id;
+  document.querySelectorAll('.relation path').forEach(p => {
+    p.setAttribute('stroke', '#1e3355');
+    p.setAttribute('marker-end', 'url(#arr)');
+  });
+  document.querySelectorAll(`.relation[data-from="${id}"] path,
+    .relation[data-to="${id}"] path`).forEach(p => {
+    p.setAttribute('stroke', '#f59e0b');
+    p.setAttribute('stroke-width', '2');
+    p.setAttribute('marker-end', 'url(#arr-hi)');
+  });
+}
+
+function clearHL() {
+  selected = null;
+  document.querySelectorAll('.relation path').forEach(p => {
+    p.setAttribute('stroke', '#334155');
+    p.setAttribute('stroke-width', '1.5');
+    p.setAttribute('marker-end', 'url(#arr)');
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Legend
+function buildLegend() {
+  const leg = document.getElementById('legend');
+  for (const [, d] of Object.entries(DOMAINS)) {
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+    div.innerHTML = `<div class="legend-dot" style="background:${d.color}"></div><span>${d.label}</span>`;
+    leg.appendChild(div);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+render();
+buildLegend();
+resetView();
+</script>
+</body>
+</html>

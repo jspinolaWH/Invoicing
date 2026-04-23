@@ -3,9 +3,11 @@ package com.example.invoicing.service;
 import com.example.invoicing.entity.customer.Customer;
 import com.example.invoicing.entity.customer.CustomerAuditLog;
 import com.example.invoicing.entity.customer.DeliveryMethod;
+import com.example.invoicing.entity.customer.DirectDebitMandate;
 import com.example.invoicing.entity.customer.dto.*;
 import com.example.invoicing.repository.CustomerAuditLogRepository;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
+import com.example.invoicing.repository.DirectDebitMandateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ public class EInvoiceOrderIngestionService {
     private final EInvoiceAddressService einvoiceAddressService;
     private final CustomerBillingProfileRepository customerRepo;
     private final CustomerAuditLogRepository auditLogRepo;
+    private final DirectDebitMandateRepository mandateRepo;
 
     @Transactional
     public EInvoiceOrderIngestionResult ingestEInvoiceOrder(EInvoiceOrderRequest request) {
@@ -94,11 +97,18 @@ public class EInvoiceOrderIngestionService {
         boolean isTerminate = request.getOrderType() == EInvoiceOrderType.TERMINATE;
 
         if (isTerminate) {
-            String oldAddress = einvoiceAddressService.getAddress(customer.getId()).getAddress();
-            einvoiceAddressService.clearAddress(customer.getId());
-            if (oldAddress != null) {
-                auditAddress(customer.getId(), oldAddress, null);
-            }
+            mandateRepo.findByCustomer_Id(customer.getId()).ifPresent(m -> {
+                m.setTerminatedAt(Instant.now());
+                mandateRepo.save(m);
+                auditLogRepo.save(CustomerAuditLog.builder()
+                    .customerId(customer.getId())
+                    .field("directDebitMandate")
+                    .oldValue(m.getMandateReference())
+                    .newValue(null)
+                    .changedBy("integration")
+                    .changedAt(Instant.now())
+                    .build());
+            });
             changeDeliveryMethod(customer, DeliveryMethod.PAPER);
             log.info("DirectDebitOrder TERMINATE for customerId={} (matchedBy={})", customer.getId(), matchedBy);
             return EInvoiceOrderIngestionResult.builder()
@@ -106,9 +116,28 @@ public class EInvoiceOrderIngestionService {
                 .customerId(customer.getId())
                 .customerNumber(customer.getBillingProfile() != null ? customer.getBillingProfile().getCustomerIdNumber() : null)
                 .matchedBy(matchedBy)
-                .message("Direct debit terminated: billing channel set to PAPER")
+                .message("Direct debit terminated: mandate closed and billing channel set to PAPER")
                 .build();
         }
+
+        DirectDebitMandate mandate = mandateRepo.findByCustomer_Id(customer.getId())
+            .orElse(new DirectDebitMandate());
+        mandate.setCustomer(customer);
+        mandate.setMandateReference(request.getMandate());
+        mandate.setBankAccount(request.getBankAccount());
+        mandate.setActivatedAt(Instant.now());
+        mandate.setTerminatedAt(null);
+        mandateRepo.save(mandate);
+
+        changeDeliveryMethod(customer, DeliveryMethod.DIRECT_PAYMENT);
+        auditLogRepo.save(CustomerAuditLog.builder()
+            .customerId(customer.getId())
+            .field("directDebitMandate")
+            .oldValue(null)
+            .newValue(request.getMandate())
+            .changedBy("integration")
+            .changedAt(Instant.now())
+            .build());
 
         log.info("DirectDebitOrder START for customerId={} mandate={} (matchedBy={})",
             customer.getId(), request.getMandate(), matchedBy);
@@ -117,7 +146,7 @@ public class EInvoiceOrderIngestionService {
             .customerId(customer.getId())
             .customerNumber(customer.getBillingProfile() != null ? customer.getBillingProfile().getCustomerIdNumber() : null)
             .matchedBy(matchedBy)
-            .message("Direct debit order received")
+            .message("Direct debit activated: mandate persisted and billing channel set to DIRECT_PAYMENT")
             .build();
     }
 

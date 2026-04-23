@@ -1,21 +1,31 @@
 package com.example.invoicing.service;
+import com.example.invoicing.entity.invoice.dto.BillingCycleGroupEntry;
 import com.example.invoicing.entity.invoice.dto.CategoryBreakdownEntry;
 import com.example.invoicing.entity.invoice.dto.CostCentreAllocationEntry;
 import com.example.invoicing.entity.invoice.dto.InvoiceGenerationResult;
 import com.example.invoicing.entity.invoice.dto.InvoicePreviewEntry;
+import com.example.invoicing.entity.invoice.dto.SimulationAuditEntry;
 import com.example.invoicing.entity.invoice.dto.ValidationFailureEntry;
 import com.example.invoicing.entity.invoice.dto.SimulationReport;
+import com.example.invoicing.entity.invoice.InvoiceLineItem;
+import com.example.invoicing.entity.contract.Contract;
 
+import com.example.invoicing.entity.billingcycle.BillingCycle;
 import com.example.invoicing.entity.billingevent.BillingEvent;
 import com.example.invoicing.entity.classification.LegalClassification;
 import com.example.invoicing.entity.costcenter.CostCenter;
 import com.example.invoicing.entity.customer.Customer;
 import com.example.invoicing.entity.invoicerun.InvoiceRun;
 import com.example.invoicing.entity.invoicerun.InvoiceRunStatus;
+import com.example.invoicing.entity.minimumfee.MinimumFeeConfig;
+import com.example.invoicing.entity.minimumfee.PeriodType;
 import com.example.invoicing.entity.validation.ValidationReport;
+import com.example.invoicing.repository.BillingCycleRepository;
 import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.ContractRepository;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
 import com.example.invoicing.repository.InvoiceRunRepository;
+import com.example.invoicing.repository.MinimumFeeConfigRepository;
 import com.example.invoicing.entity.invoicerun.dto.InvoiceRunRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,9 +45,16 @@ public class InvoiceSimulationService {
     private final CustomerBillingProfileRepository customerRepository;
     private final InvoiceGenerationService invoiceGenerationService;
     private final InvoiceRunRepository invoiceRunRepository;
+    private final BillingCycleRepository billingCycleRepository;
+    private final BillingCycleService billingCycleService;
+    private final MinimumFeeConfigRepository minimumFeeConfigRepository;
+    private final MinimumFeeService minimumFeeService;
+    private final ContractRepository contractRepository;
 
     @Transactional
     public SimulationReport simulate(InvoiceRunRequest request) {
+        List<SimulationAuditEntry> auditLog = new ArrayList<>();
+
         List<BillingEvent> allEvents = billingEventRepository.findByRunFilter(
             request.getFilterMunicipality(),
             request.getFilterPeriodFrom(),
@@ -45,10 +63,22 @@ public class InvoiceSimulationService {
             resolveClassification(request.getFilterServiceResponsibility()),
             request.getFilterLocation()
         );
+        auditLog.add(SimulationAuditEntry.builder()
+            .timestamp(Instant.now())
+            .step("EVENT_RETRIEVAL")
+            .outcome("OK")
+            .detail("Retrieved " + allEvents.size() + " billing event(s) matching run filters")
+            .build());
 
         // Group by customerNumber (String)
         Map<String, List<BillingEvent>> byCustomerNumber = allEvents.stream()
             .collect(Collectors.groupingBy(BillingEvent::getCustomerNumber));
+        auditLog.add(SimulationAuditEntry.builder()
+            .timestamp(Instant.now())
+            .step("CUSTOMER_GROUPING")
+            .outcome("OK")
+            .detail("Grouped events across " + byCustomerNumber.size() + " customer(s)")
+            .build());
 
         int totalCustomers = byCustomerNumber.size();
         int totalInvoices = 0;
@@ -56,6 +86,9 @@ public class InvoiceSimulationService {
         BigDecimal totalNet = BigDecimal.ZERO;
         BigDecimal totalGross = BigDecimal.ZERO;
         BigDecimal totalVat = BigDecimal.ZERO;
+        int minimumFeeAdjustmentCount = 0;
+        BigDecimal minimumFeeAdjustmentTotal = BigDecimal.ZERO;
+        int minimumFeeExemptCount = 0;
         List<ValidationFailureEntry> allFailures = new ArrayList<>();
         List<InvoicePreviewEntry> previews = new ArrayList<>();
 
@@ -97,6 +130,15 @@ public class InvoiceSimulationService {
             InvoiceGenerationResult result =
                 invoiceGenerationService.generate(events, customerId, true);
 
+            String custName = customerOpt.get().getName();
+            auditLog.add(SimulationAuditEntry.builder()
+                .timestamp(Instant.now())
+                .step("PRICING_AND_VALIDATION")
+                .outcome(result.isSuccess() ? "OK" : "BLOCKING_FAILURE")
+                .detail("Customer " + custName + " (" + customerNumber + "): " + events.size() + " event(s) processed" +
+                    (result.isSuccess() ? "" : " — blocked by validation"))
+                .build());
+
             if (result.isSuccess()) {
                 totalInvoices++;
                 totalNet = totalNet.add(
@@ -106,8 +148,46 @@ public class InvoiceSimulationService {
                 totalVat = totalVat.add(
                     result.getInvoice().getVatAmount() != null ? result.getInvoice().getVatAmount() : BigDecimal.ZERO);
 
+                // Track minimum fee adjustments applied to this invoice
+                for (InvoiceLineItem li : result.getInvoice().getLineItems()) {
+                    if (li.getDescription() != null && li.getDescription().startsWith("Minimum fee adjustment")) {
+                        minimumFeeAdjustmentCount++;
+                        minimumFeeAdjustmentTotal = minimumFeeAdjustmentTotal.add(
+                            li.getNetAmount() != null ? li.getNetAmount() : BigDecimal.ZERO);
+                    }
+                }
+
+                // Track minimum fee exemptions: config exists but was not applied due to contract dates
+                Customer cust = customerOpt.get();
+                if (cust.getCustomerType() != null) {
+                    List<BillingEvent> custEvents = entry.getValue();
+                    LocalDate periodStart = custEvents.stream()
+                        .map(BillingEvent::getEventDate).filter(java.util.Objects::nonNull)
+                        .min(LocalDate::compareTo).orElse(null);
+                    LocalDate periodEnd = custEvents.stream()
+                        .map(BillingEvent::getEventDate).filter(java.util.Objects::nonNull)
+                        .max(LocalDate::compareTo).orElse(null);
+                    if (periodStart != null && periodEnd != null) {
+                        long months = java.time.temporal.ChronoUnit.MONTHS.between(periodStart, periodEnd.plusDays(1));
+                        PeriodType periodType = months >= 9 ? PeriodType.ANNUAL : PeriodType.QUARTERLY;
+                        String custTypeStr = cust.getCustomerType().name();
+                        String lookupNumber = cust.getBillingProfile() != null
+                            ? cust.getBillingProfile().getCustomerIdNumber() : customerNumber;
+                        Contract activeContract =
+                            contractRepository.findByCustomerNumberAndActiveTrue(lookupNumber)
+                                .stream().findFirst().orElse(null);
+                        LocalDate contractStart = activeContract != null ? activeContract.getStartDate() : null;
+                        LocalDate contractEnd = activeContract != null ? activeContract.getEndDate() : null;
+                        Optional<MinimumFeeConfig> configOpt =
+                            minimumFeeConfigRepository.findByCustomerTypeAndPeriodTypeAndActiveTrue(custTypeStr, periodType);
+                        if (configOpt.isPresent() && !minimumFeeService.isMinimumApplicable(
+                                configOpt.get(), periodStart, periodEnd, contractStart, contractEnd)) {
+                            minimumFeeExemptCount++;
+                        }
+                    }
+                }
+
                 if (previews.size() < 5) {
-                    String custName = customerOpt.get().getName();
                     previews.add(InvoicePreviewEntry.builder()
                         .customerId(customerId)
                         .customerName(custName)
@@ -165,6 +245,24 @@ public class InvoiceSimulationService {
             })
             .collect(Collectors.toList());
 
+        List<BillingCycleGroupEntry> billingCycleGrouping = computeCycleGrouping(allEvents, request);
+
+        auditLog.add(SimulationAuditEntry.builder()
+            .timestamp(Instant.now())
+            .step("ACCOUNTING_ALLOCATION")
+            .outcome("OK")
+            .detail("Cost centre and accounting assignments reviewed for " + totalInvoices + " invoice(s)")
+            .build());
+        auditLog.add(SimulationAuditEntry.builder()
+            .timestamp(Instant.now())
+            .step("SIMULATION_COMPLETE")
+            .outcome(failedCustomers == 0 ? "OK" : "COMPLETED_WITH_ERRORS")
+            .detail("Simulation finished: " + totalInvoices + " invoice(s) generated, " +
+                failedCustomers + " customer(s) blocked, " +
+                allFailures.stream().filter(f -> "BLOCKING".equals(f.getSeverity())).count() + " blocking error(s), " +
+                allFailures.stream().filter(f -> "WARNING".equals(f.getSeverity())).count() + " warning(s)")
+            .build());
+
         SimulationReport report = SimulationReport.builder()
             .simulationMode(true)
             .totalCustomers(totalCustomers)
@@ -177,15 +275,78 @@ public class InvoiceSimulationService {
             .sampleLineItems(previews)
             .categoryBreakdown(categoryBreakdown)
             .costCentreAllocations(costCentreAllocations)
+            .billingCycleGrouping(billingCycleGrouping)
+            .minimumFeeAdjustmentCount(minimumFeeAdjustmentCount)
+            .minimumFeeAdjustmentTotal(minimumFeeAdjustmentTotal)
+            .minimumFeeExemptCount(minimumFeeExemptCount)
+            .simulationAuditLog(auditLog)
             .build();
 
-        persistSimulationRun(request, report, allFailures);
+        persistSimulationRun(request, report, allFailures, minimumFeeAdjustmentCount, minimumFeeAdjustmentTotal, minimumFeeExemptCount);
 
         return report;
     }
 
+    private List<BillingCycleGroupEntry> computeCycleGrouping(List<BillingEvent> allEvents, InvoiceRunRequest request) {
+        List<BillingCycle> dueCycles = billingCycleRepository.findCyclesDueInRunWindow(LocalDate.now());
+        if (dueCycles.isEmpty()) return List.of();
+
+        // Group cycles by frequency + serviceType key
+        record CycleKey(String frequency, String serviceType) {}
+        Map<CycleKey, BillingCycle> firstCycleByKey = new LinkedHashMap<>();
+        Map<CycleKey, Set<String>> customersByKey = new LinkedHashMap<>();
+
+        for (BillingCycle cycle : dueCycles) {
+            CycleKey key = new CycleKey(cycle.getFrequency().name(), cycle.getServiceType());
+            firstCycleByKey.putIfAbsent(key, cycle);
+            customersByKey.computeIfAbsent(key, k -> new HashSet<>()).add(cycle.getCustomerNumber());
+        }
+
+        List<BillingCycleGroupEntry> result = new ArrayList<>();
+        for (Map.Entry<CycleKey, BillingCycle> entry : firstCycleByKey.entrySet()) {
+            CycleKey key = entry.getKey();
+            BillingCycle representativeCycle = entry.getValue();
+            LocalDate periodStart = request.getFilterPeriodFrom() != null
+                ? request.getFilterPeriodFrom()
+                : billingCycleService.computePeriodStart(representativeCycle);
+            LocalDate periodEnd = request.getFilterPeriodTo() != null
+                ? request.getFilterPeriodTo()
+                : representativeCycle.getNextBillingDate().minusDays(1);
+            Set<String> cycleCustomers = customersByKey.get(key);
+
+            int evtCount = 0;
+            BigDecimal net = BigDecimal.ZERO;
+            Set<String> customersWithEvents = new HashSet<>();
+            for (BillingEvent event : allEvents) {
+                if (!cycleCustomers.contains(event.getCustomerNumber())) continue;
+                if (key.serviceType() != null) {
+                    String productCode = event.getProduct() != null ? event.getProduct().getCode() : null;
+                    if (!key.serviceType().equals(productCode)) continue;
+                }
+                if (event.getEventDate().isBefore(periodStart) || event.getEventDate().isAfter(periodEnd)) continue;
+                evtCount++;
+                net = net.add(eventNetAmount(event));
+                customersWithEvents.add(event.getCustomerNumber());
+            }
+
+            if (evtCount > 0) {
+                result.add(BillingCycleGroupEntry.builder()
+                    .frequency(key.frequency())
+                    .serviceType(key.serviceType())
+                    .periodStart(periodStart)
+                    .periodEnd(periodEnd)
+                    .customerCount(customersWithEvents.size())
+                    .eventCount(evtCount)
+                    .netAmount(net)
+                    .build());
+            }
+        }
+        return result;
+    }
+
     private void persistSimulationRun(InvoiceRunRequest request, SimulationReport report,
-                                      List<ValidationFailureEntry> allFailures) {
+                                      List<ValidationFailureEntry> allFailures,
+                                      int minFeeAdjCount, BigDecimal minFeeAdjTotal, int minFeeExemptCount) {
         InvoiceRun run = new InvoiceRun();
         run.setSimulationMode(true);
         run.setStatus(InvoiceRunStatus.COMPLETED);
@@ -204,6 +365,9 @@ public class InvoiceSimulationService {
             .filter(f -> "BLOCKING".equals(f.getSeverity())).count());
         run.setReportWarningCount((int) allFailures.stream()
             .filter(f -> "WARNING".equals(f.getSeverity())).count());
+        run.setMinimumFeeAdjustmentCount(minFeeAdjCount);
+        run.setMinimumFeeAdjustmentTotal(minFeeAdjTotal);
+        run.setMinimumFeeExemptCount(minFeeExemptCount);
         invoiceRunRepository.save(run);
     }
 

@@ -52,7 +52,7 @@ export default function BillingAddressSyncPage() {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
       <h2 style={{ marginBottom: 6 }}>Billing Address Sync</h2>
-      <p style={{ color: '#6b7280', marginBottom: 20 }}>Push a billing address update from WasteHero to this customer's record.</p>
+      <p style={{ color: '#6b7280', marginBottom: 20 }}>Push a billing address update from WasteHero to this customer&apos;s record.</p>
 
       <form onSubmit={handleSubmit} style={{ background: '#f9f9f9', padding: 20, borderRadius: 8, marginBottom: 24 }}>
         {field('Customer Number', 'customerNumber', true)}
@@ -68,7 +68,7 @@ export default function BillingAddressSyncPage() {
           <div>{field('E-Invoicing Address', 'eInvoicingAddress')}</div>
         </div>
         <button type="submit" disabled={loading} style={{ marginTop: 8, padding: '8px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-          {loading ? 'Syncing\u2026' : 'Sync Address'}
+          {loading ? 'Syncing…' : 'Sync Address'}
         </button>
       </form>
 
@@ -80,9 +80,39 @@ export default function BillingAddressSyncPage() {
             <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 700, color: '#fff', background: statusColors[result.status] || '#6b7280' }}>
               {result.status}
             </span>
-            <span style={{ fontWeight: 600 }}>Customer #{result.customerId || '\u2014'} ({result.customerNumber})</span>
+            <span style={{ fontWeight: 600 }}>Customer #{result.customerId || '—'} ({result.customerNumber})</span>
           </div>
           <p style={{ margin: 0, color: '#374151' }}>{result.message}</p>
+          {result.status === 'UPDATED' && (
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 13, color: '#374151' }}>
+                <strong>{result.openInvoicesUpdated ?? 0}</strong> open invoice{result.openInvoicesUpdated !== 1 ? 's' : ''} updated with new billing address
+              </div>
+              <div style={{ fontSize: 13, color: '#374151' }}>
+                <strong>{result.pendingRemindersUpdated ?? 0}</strong> pending payment reminder{result.pendingRemindersUpdated !== 1 ? 's' : ''} redirected to new address
+              </div>
+              {(result.sentInvoicesIncluded ?? 0) > 0 && (
+                <div style={{ marginTop: 8, padding: 10, background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 6, fontSize: 13 }}>
+                  <strong style={{ color: '#92400e' }}>
+                    {result.sentInvoicesIncluded} already-transmitted invoice{result.sentInvoicesIncluded !== 1 ? 's' : ''} included
+                  </strong>
+                  <p style={{ margin: '4px 0 0', color: '#78350f' }}>
+                    These invoices have already been sent to the invoice broker. The billing address has been updated locally.
+                    To push the corrected address to the broker, use the &quot;Retransmit (Updated Address)&quot; action on each invoice&apos;s detail page.
+                  </p>
+                  {result.sentInvoiceNumbers && result.sentInvoiceNumbers.length > 0 && (
+                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {result.sentInvoiceNumbers.map(num => (
+                        <span key={num} style={{ padding: '2px 8px', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 4, fontSize: 12, fontFamily: 'monospace' }}>
+                          {num}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

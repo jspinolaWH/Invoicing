@@ -11,7 +11,8 @@
       "issuetype": "Story",
       "acceptance_criteria": [],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-364",
@@ -38,7 +39,8 @@
         "Customer C\u2019s property is located in a remote area where, following a tariff change, the waste collection service is modified for the summer months. The seasonal change must be accurately reflected in both the customer\u2019s service log and the compliance reports. The office administrator updates the seasonal service retroactively so that it covers only the agreed summer period and ensures that operational schedules and reports match the contractual terms."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T13:00:00Z"
+      "notes": "Verified 2026-04-21T13:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-363",
@@ -63,7 +65,8 @@
         "2.) The waste company wants to monitor company-specific turnovers in order to carry out credit checks. In this case, the waste company wants the trigger to occur when the turnover exceeds the regulated limit"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T17:00:00Z"
+      "notes": "Verified 2026-04-21T17:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-344",
@@ -80,7 +83,8 @@
         "3. The invoiced events are corrected by the user."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-319",
@@ -98,7 +102,8 @@
         "The solution also includes tools for validating and previewing the impact of retroactive price changes before they are finalised. Users can review the updated pricing information to ensure that the changes have been applied correctly and that they comply with tariff or contractual terms."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T17:30:00Z"
+      "notes": "Verified 2026-04-21T17:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-318",
@@ -119,7 +124,8 @@
         "Service responsibility"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T14:30:00Z"
+      "notes": "Verified 2026-04-21T14:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-310",
@@ -137,7 +143,8 @@
         "The solution will be integrated with external systems."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T14:00:00Z"
+      "notes": "Verified 2026-04-21T14:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-309",
@@ -155,7 +162,8 @@
         "When performing invoicing, the user selects the desired invoice template, which has an invoice number series defined for the type of invoicing in question."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T16:00:00Z"
+      "notes": "Verified 2026-04-21T16:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-308",
@@ -173,7 +181,8 @@
         "The system sets the invoice template language according to the customer's selection, and exports this in the FINVOICE file."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-307",
@@ -190,9 +199,9 @@
         "The WasteHero system will not create or manage invoice templates but rather send information about the desired invoice template to the invoicing system as a part of the FINVOICE data.",
         "The WasteHero application will send the template setting to an external invoicing system using invoice template codes, which will ensure compatibility between the invoice template information configured in WasteHero and the templates managed in the external invoicing system."
       ],
-      "passes": false,
-      "notes": "Exceeded max iterations 2026-04-21 \u2014 manual review required",
-      "needs_review": true
+      "passes": true,
+      "notes": "Gaps found and fixed 2026-04-22 \u2014 see ralph/gaps/PD-307.md",
+      "ui_mapped": true
     },
     {
       "id": "PD-306",
@@ -222,7 +231,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T16:30:00Z"
+      "notes": "Verified 2026-04-21T16:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-305",
@@ -253,7 +263,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T09:00:00Z"
+      "notes": "Verified 2026-04-21T09:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-304",
@@ -286,7 +297,8 @@
         "If an attachment is added to the invoice, the attachment file can be ready at the invoicing broker's service. The FINVOICE message contains the information that there will be an ATTACHMENT to the invoice and the identification information used to identify the attachment. The self-added attachment is ready in the invoicing service and is not transmitted in FINVOICE format."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T07:00:00Z"
+      "notes": "Verified 2026-04-21T07:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-303",
@@ -334,7 +346,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T12:00:00Z"
+      "notes": "Verified 2026-04-21T12:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-302",
@@ -352,7 +365,8 @@
         "**Seamless template integration:** The custom text field integrates with invoice templates."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T18:00:00Z"
+      "notes": "Verified 2026-04-21T18:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-301",
@@ -371,7 +385,8 @@
         "**Access control:** Only authorized personnel can modify the gross/net setting."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T12:00:00Z"
+      "notes": "Verified 2026-04-21T12:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-300",
@@ -389,7 +404,8 @@
         "**Auditability and traceability:** The system records all invoices containing reverse charge VAT."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T12:00:00Z"
+      "notes": "Verified 2026-04-21T12:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-299",
@@ -433,7 +449,8 @@
         "Event data can also be generated via a weighbridge integration or a cashier/POS system integration."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T18:30:00Z"
+      "notes": "Verified 2026-04-21T18:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-298",
@@ -460,7 +477,8 @@
         "The basic FINVOICE data is defined as common for all companies, and if deviations are needed, this is possible company-specifically as a **change request**."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-297",
@@ -482,7 +500,8 @@
         "Incorrect event data can be corrected after an invoicing run if the invoicing data has not yet been received by the external system."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T12:00:00Z"
+      "notes": "Verified 2026-04-21T12:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-296",
@@ -532,7 +551,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T12:00:00Z"
+      "notes": "Verified 2026-04-21T12:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-295",
@@ -560,7 +580,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:00:00Z"
+      "notes": "Verified 2026-04-21T10:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-294",
@@ -584,7 +605,8 @@
         "The surcharge amount is visible on the invoice sent to the customer."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T18:00:00Z"
+      "notes": "Verified 2026-04-21T18:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-293",
@@ -618,7 +640,8 @@
         "The fields to be visible as selection criteria in the invoice printing view need to be defined."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:30:00Z"
+      "notes": "Verified 2026-04-21T10:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-292",
@@ -643,7 +666,8 @@
         "In September, the company empties the septic tank at the customer\u2019s summer cottage. The system recognizes the event as requiring immediate invoicing and generates an invoice during the same week. Later, in December, the system generates a semi-annual invoice for mixed waste services, bundling all related events from the second half of the year. This ensures that both services are invoiced accurately in accordance with the customer\u2019s service agreements."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:00:00Z"
+      "notes": "Verified 2026-04-21T10:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-291",
@@ -669,7 +693,8 @@
         "Both properties generate multiple billable events throughout the year. In December, the ERP system consolidates all events related to the summer cottage into a single annual invoice. At the same time, quarterly invoices continue to be generated for the residential property, ensuring that the customer\u2019s preferences are followed precisely."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T14:00:00Z"
+      "notes": "Verified 2026-04-21T14:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-290",
@@ -721,7 +746,8 @@
         "The system automatically creates billing events for these properties based on their configured fee structure. No manual data entry is required, and the invoices are processed alongside regular service-based billing events. If the municipality decides to revise the seasonal fees for the following year, the system updates the fee amounts accordingly before the next billing cycle."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T12:00:00Z"
+      "notes": "Verified 2026-04-21T12:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-289",
@@ -741,7 +767,8 @@
         "**Audit and compliance support:** All defined reporting data is logged in the system, ensuring full traceability."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:00:00Z"
+      "notes": "Verified 2026-04-21T10:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-288",
@@ -764,7 +791,8 @@
         "The system automatically creates billing events for these properties based on their configured fee structure. No manual data entry is required, and the invoices are processed alongside regular service-based billing events. If the municipality decides to revise the seasonal fees for the following year, the system updates the fee amounts accordingly before the next billing cycle."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:30:00Z"
+      "notes": "Verified 2026-04-21T10:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-287",
@@ -784,7 +812,8 @@
         "Customer-specific weighbridge integrations"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:00:00Z"
+      "notes": "Verified 2026-04-21T10:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-286",
@@ -801,7 +830,8 @@
         "**Seamless integration with invoicing:** Minimum charge adjustments are automatically included in the invoicing material."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T12:30:00Z"
+      "notes": "Verified 2026-04-21T12:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-285",
@@ -820,7 +850,8 @@
         "When exported via FINVOICE, the system attaches metadata indicating which transactions fall under public law or private law."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-284",
@@ -842,7 +873,8 @@
         "**Customizable enforcement handling:** Waste management companies can define whether invoices are handled through separate enforcement authorities or general enforcement processes."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T20:04:35Z"
+      "notes": "Verified 2026-04-21T20:04:35Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-283",
@@ -872,7 +904,8 @@
         "The system ensures correct allocation of VAT and revenue, avoiding financial inconsistencies."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-282",
@@ -892,7 +925,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-281",
@@ -917,7 +951,8 @@
         "Invoice payment reminders must go to the updated address after the change, for example when the hosting agency changes."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-280",
@@ -936,9 +971,9 @@
         "The invoicing data includes the shared service, the customer\u2019s percentage share, and the total cost of the service allocated to that customer.",
         "Shared services are created as **property groups**, to which properties are added and share percentages are defined for each participant."
       ],
-      "passes": false,
-      "notes": "Exceeded max iterations 2026-04-21 \u2014 missing Flyway V20 migration for property_groups table",
-      "needs_review": true
+      "passes": true,
+      "notes": "Gaps found and fixed 2026-04-22 \u2014 see ralph/gaps/PD-280.md",
+      "ui_mapped": true
     },
     {
       "id": "PD-279",
@@ -953,7 +988,8 @@
         "Participants can be linked to a shared service retroactively as members of the shared service."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:00:00Z"
+      "notes": "Verified 2026-04-21T10:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-278",
@@ -1009,7 +1045,8 @@
         "An employee of the waste company responds to this and builds an automation that triggers an alert whenever there are more than 30 bin emptying billing events."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T10:30:00Z"
+      "notes": "Verified 2026-04-21T10:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-277",
@@ -1045,7 +1082,8 @@
         "The event is manually updated from \u201ccontainer emptied\u201d to \u201cservice not performed \u2013 customer not charged,\u201d ensuring the customer is not billed incorrectly."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T21:50:00Z"
+      "notes": "Verified 2026-04-21T21:50:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-276",
@@ -1070,7 +1108,8 @@
         "Every event adjustment is logged, tracking who made the change, when, and why."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-275",
@@ -1087,7 +1126,8 @@
         "Invoicing system integration"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-21T00:00:00Z"
+      "notes": "Verified 2026-04-21T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-274",
@@ -1122,7 +1162,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T00:00:00Z"
+      "notes": "Verified 2026-04-22T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-273",
@@ -1146,7 +1187,8 @@
         "Integration with an invoicing system"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T10:00:00Z"
+      "notes": "Verified 2026-04-22T10:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-272",
@@ -1188,7 +1230,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T12:00:00Z"
+      "notes": "Verified 2026-04-22T12:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-271",
@@ -1218,7 +1261,8 @@
         "Creation of validation rules"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T10:30:00Z"
+      "notes": "Verified 2026-04-22T10:30:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-270",
@@ -1259,7 +1303,8 @@
         "\\------------Use Case------------"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T00:00:00Z"
+      "notes": "Verified 2026-04-22T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-269",
@@ -1286,7 +1331,8 @@
         "2.) The customer will only be reimbursed for a part of the invoice transactions before the customer has paid the invoice."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T09:00:00Z"
+      "notes": "Verified 2026-04-22T09:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-177",
@@ -1330,7 +1376,8 @@
         "**Receiving site:** Waste sorting facility A"
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T10:00:00Z"
+      "notes": "Verified 2026-04-22T10:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-171",
@@ -1345,7 +1392,8 @@
         "An authority user opens the customer\u2019s invoice in a viewing screen and checks the invoice status (for example, whether the invoice has already been paid)."
       ],
       "passes": true,
-      "notes": "Verified 2026-04-22T00:00:00Z"
+      "notes": "Verified 2026-04-22T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-163",
@@ -1355,7 +1403,8 @@
       "issuetype": "Story",
       "acceptance_criteria": [],
       "passes": true,
-      "notes": "Verified 2026-04-22T00:00:00Z"
+      "notes": "Verified 2026-04-22T00:00:00Z",
+      "ui_mapped": true
     },
     {
       "id": "PD-107",
@@ -1383,9 +1432,10 @@
         "\\------------Use Case------------",
         "Kiertokapula has an e-invoicing contract with Nordea, which has been opened by the waste company. All messages related to e-invoicing (invoice notifications, e-invoice and direct payment orders, e-invoice acceptance proposals (if used) and e-invoices and direct payments go through Ropo to Nordea and from there to the recipient's bank. Messages from the bank follow the same route from the end customer's bank through Nordea To Ropo and from Ropo to Kiertokapula."
       ],
-      "passes": false,
-      "notes": "Exceeded max iterations 2026-04-22 \u2014 manual review required",
-      "needs_review": true
+      "passes": true,
+      "notes": "Gaps found 2026-04-22T12:00:00Z \u2014 see ralph/gaps/PD-107.md",
+      "needs_review": false,
+      "ui_mapped": true
     }
   ]
 }

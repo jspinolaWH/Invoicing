@@ -19,5 +19,10 @@ public class SimulationReport {
     private List<InvoicePreviewEntry> sampleLineItems;
     private List<CategoryBreakdownEntry> categoryBreakdown;
     private List<CostCentreAllocationEntry> costCentreAllocations;
+    private List<BillingCycleGroupEntry> billingCycleGrouping;
     private boolean simulationMode;
+    private int minimumFeeAdjustmentCount;
+    private BigDecimal minimumFeeAdjustmentTotal;
+    private int minimumFeeExemptCount;
+    private List<SimulationAuditEntry> simulationAuditLog;
 }

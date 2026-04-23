@@ -163,6 +163,24 @@ const CARDS = [
       </svg>
     ),
   },
+  {
+    title: 'Invoicing Defaults',
+    path: '/config/invoicing-defaults',
+    description: 'Company-wide default invoicing mode (gross/net) applied when a customer profile has no override.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <line x1="12" y1="2" x2="12" y2="6"/>
+        <line x1="12" y1="18" x2="12" y2="22"/>
+        <line x1="4.22" y1="4.22" x2="7.05" y2="7.05"/>
+        <line x1="16.95" y1="16.95" x2="19.78" y2="19.78"/>
+        <line x1="2" y1="12" x2="6" y2="12"/>
+        <line x1="18" y1="12" x2="22" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="7.05" y2="16.95"/>
+        <line x1="16.95" y1="7.05" x2="19.78" y2="4.22"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function MasterDataHubPage() {

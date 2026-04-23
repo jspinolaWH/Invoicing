@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { listRuns } from '../api/invoiceRuns'
 import './Layout.css'
 
 /* ── Navigation structure ──────────────────────────────────
@@ -39,6 +41,9 @@ const SECTIONS = [
       { label: 'Property Groups',      to: '/shared-services/property-groups',  end: true },
       { label: 'Classification Rules', to: '/config/classification-rules',      end: true },
       { label: 'Validation Rules',     to: '/config/validation-rules',          end: true },
+      { label: 'Invoicing Defaults',   to: '/config/invoicing-defaults',        end: true },
+      { label: 'Run Filter Criteria',  to: '/config/run-filter-criteria',       end: true },
+      { label: 'Reporting Fields',     to: '/config/reporting-fields',          end: true },
     ],
   },
   {
@@ -66,6 +71,9 @@ const SECTIONS = [
       { label: 'Resp. Change',      to: '/retroactive/responsibility-change',end: true },
       { label: 'Address Sync',      to: '/integration/billing-sync',        end: true },
       { label: 'E-Invoice Op.',     to: '/integration/operator',            end: true },
+      { label: 'Weighbridge Config',to: '/integration/weighbridge-config',  end: true },
+      { label: 'Cash Register',     to: '/integration/cash-register',       end: true },
+      { label: 'ERP Status',        to: '/integration/erp-status',          end: true },
       { label: 'Authority View',    to: '/authority/invoices',              end: true },
       { label: 'PD Overview',       to: '/pd-overview',                     end: true },
     ],
@@ -83,12 +91,68 @@ function getActiveSection(pathname) {
 export default function Layout() {
   const { pathname } = useLocation()
   const active = getActiveSection(pathname)
+  const [activeRunBannerDismissed, setActiveRunBannerDismissed] = useState(
+    () => sessionStorage.getItem('activeRunBannerDismissed') === 'true'
+  )
+  const [hasActiveRun, setHasActiveRun] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const checkActiveRun = () => {
+      listRuns({ status: 'RUNNING', page: 0, size: 1 })
+        .then(res => {
+          if (!cancelled) {
+            setHasActiveRun((res.data?.totalElements ?? 0) > 0)
+          }
+        })
+        .catch(() => {})
+    }
+
+    checkActiveRun()
+    const interval = setInterval(checkActiveRun, 30000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [])
+
+  const handleDismissBanner = () => {
+    sessionStorage.setItem('activeRunBannerDismissed', 'true')
+    setActiveRunBannerDismissed(true)
+  }
+
+  const showBanner = hasActiveRun && !activeRunBannerDismissed
 
   return (
     <div className="inv-layout">
 
+      {showBanner && (
+        <div style={{
+          position: 'fixed',
+          top: 'var(--wh-shell-topbar-height, 0px)',
+          left: 'var(--wh-shell-sidebar-width, 0px)',
+          right: 0,
+          zIndex: 250,
+          background: '#f59e0b',
+          color: '#1c1917',
+          padding: '6px 16px',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}>
+          <span style={{ fontWeight: 600 }}>Billing Run In Progress</span>
+          <span>An invoice run is currently active. Billing address and billing group changes are restricted for locked customers.</span>
+          <button
+            onClick={handleDismissBanner}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, color: '#1c1917' }}
+            aria-label="Dismiss"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* ── Inner topbar ── */}
-      <header className="inv-topbar">
+      <header className="inv-topbar" style={showBanner ? { top: 'calc(var(--wh-shell-topbar-height, 0px) + 32px)' } : undefined}>
         {/* Module brand */}
         <Link to="/master-data" className="inv-brand">
           <svg className="inv-brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -118,7 +182,7 @@ export default function Layout() {
       </header>
 
       {/* ── Section sub-nav ── */}
-      <nav className="inv-subnav">
+      <nav className="inv-subnav" style={showBanner ? { top: 'calc(var(--wh-shell-topbar-height, 0px) + var(--inv-topbar-height) + 32px)' } : undefined}>
         {active ? (
           <>
             <p className="inv-subnav__section-label">{active.label}</p>
@@ -141,7 +205,7 @@ export default function Layout() {
       </nav>
 
       {/* ── Page content ── */}
-      <main className="inv-content">
+      <main className="inv-content" style={showBanner ? { marginTop: 'calc(var(--inv-topbar-height) + 32px)' } : undefined}>
         <Outlet />
       </main>
     </div>

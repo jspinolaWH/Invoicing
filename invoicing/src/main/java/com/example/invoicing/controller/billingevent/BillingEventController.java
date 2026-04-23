@@ -13,6 +13,7 @@ import com.example.invoicing.entity.billingevent.credit.dto.CreditTransferResult
 import com.example.invoicing.entity.billingevent.transfer.dto.*;
 import com.example.invoicing.entity.validation.BillingEventValidationLog;
 import com.example.invoicing.entity.validation.ValidationReport;
+import com.example.invoicing.repository.InvoiceLineItemRepository;
 import com.example.invoicing.service.BillingEventCreditTransferService;
 import com.example.invoicing.service.BillingEventService;
 import com.example.invoicing.service.BillingEventStatusService;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/billing-events")
@@ -43,6 +46,7 @@ public class BillingEventController {
     private final BillingEventCreditTransferService creditTransferService;
     private final DriverEventService driverEventService;
     private final AuditLogQueryService auditLogQueryService;
+    private final InvoiceLineItemRepository invoiceLineItemRepository;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -62,7 +66,7 @@ public class BillingEventController {
     @PostMapping("/draft")
     @ResponseStatus(HttpStatus.CREATED)
     public BillingEventResponse createDraft(
-        @Valid @RequestBody BillingEventManualCreateRequest request,
+        @Valid @RequestBody BillingEventDraftRequest request,
         @AuthenticationPrincipal String currentUser
     ) {
         return billingEventService.saveDraft(request);
@@ -91,11 +95,12 @@ public class BillingEventController {
         @RequestParam(required = false) Boolean requiresReview,
         @RequestParam(required = false) String serviceResponsibility,
         @RequestParam(required = false) BillingEventValidationStatus validationStatus,
+        @RequestParam(required = false) String origin,
         Pageable pageable
     ) {
         return billingEventService.findFiltered(
             customerNumber, status, municipalityId, dateFrom, dateTo,
-            productId, excluded, requiresReview, serviceResponsibility, validationStatus, pageable);
+            productId, excluded, requiresReview, serviceResponsibility, validationStatus, origin, pageable);
     }
 
     @GetMapping("/{id}")
@@ -340,5 +345,15 @@ public class BillingEventController {
     ) {
         String user = currentUser != null ? currentUser : "system";
         return billingEventService.overrideValidation(id, request.getReason(), user);
+    }
+
+    // -----------------------------------------------------------------------
+    // PARENT INVOICE LOOKUP (PD-299 AC5)
+    // -----------------------------------------------------------------------
+    @GetMapping("/{id}/invoice")
+    public ResponseEntity<Map<String, Long>> getParentInvoice(@PathVariable Long id) {
+        return invoiceLineItemRepository.findInvoiceIdBySourceEventId(id)
+            .map(invoiceId -> ResponseEntity.ok(Map.of("invoiceId", invoiceId)))
+            .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

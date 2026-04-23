@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { getSeries } from '../../../api/invoiceNumberSeries'
 import { getTemplates } from '../../../api/invoiceTemplates'
+import { useRunFilterCriteria } from '../../../hooks/useRunFilterCriteria'
 
 export default function RunFilterForm({ values, onChange }) {
   const set = (k, v) => onChange({ ...values, [k]: v })
   const [seriesList, setSeriesList] = useState([])
   const [templateList, setTemplateList] = useState([])
   const [categoryFilter, setCategoryFilter] = useState('')
+  const { enabledKeys } = useRunFilterCriteria()
+  const show = (key) => enabledKeys.has(key)
 
   useEffect(() => {
     getSeries().then(res => setSeriesList(res.data)).catch(() => {})
@@ -31,68 +34,94 @@ export default function RunFilterForm({ values, onChange }) {
 
   return (
     <div>
-      <div className="form-row">
-        <div className="form-group">
-          <label>Municipality</label>
-          <input value={values.filterMunicipality || ''} onChange={e => set('filterMunicipality', e.target.value)} placeholder="e.g. Tampere" />
+      {(show('filterMunicipality') || show('filterMinAmount')) && (
+        <div className="form-row">
+          {show('filterMunicipality') && (
+            <div className="form-group">
+              <label>Municipality</label>
+              <input value={values.filterMunicipality || ''} onChange={e => set('filterMunicipality', e.target.value)} placeholder="e.g. Tampere" />
+            </div>
+          )}
+          {show('filterMinAmount') && (
+            <div className="form-group">
+              <label>Min Amount (€)</label>
+              <input type="number" value={values.filterMinAmount || ''} onChange={e => set('filterMinAmount', e.target.value)} placeholder="0.00" />
+            </div>
+          )}
         </div>
-        <div className="form-group">
-          <label>Min Amount (€)</label>
-          <input type="number" value={values.filterMinAmount || ''} onChange={e => set('filterMinAmount', e.target.value)} placeholder="0.00" />
+      )}
+      {(show('filterPeriodFrom') || show('filterPeriodTo')) && (
+        <div className="form-row">
+          {show('filterPeriodFrom') && (
+            <div className="form-group">
+              <label>Period From</label>
+              <input type="date" value={values.filterPeriodFrom || ''} onChange={e => set('filterPeriodFrom', e.target.value)} />
+            </div>
+          )}
+          {show('filterPeriodTo') && (
+            <div className="form-group">
+              <label>Period To</label>
+              <input type="date" value={values.filterPeriodTo || ''} onChange={e => set('filterPeriodTo', e.target.value)} />
+            </div>
+          )}
         </div>
-      </div>
-      <div className="form-row">
-        <div className="form-group">
-          <label>Period From</label>
-          <input type="date" value={values.filterPeriodFrom || ''} onChange={e => set('filterPeriodFrom', e.target.value)} />
+      )}
+      {(show('filterServiceResponsibility') || show('filterLocation')) && (
+        <div className="form-row">
+          {show('filterServiceResponsibility') && (
+            <div className="form-group">
+              <label>Service Responsibility</label>
+              <select value={values.filterServiceResponsibility || ''} onChange={e => set('filterServiceResponsibility', e.target.value)}>
+                <option value="">All</option>
+                <option value="PUBLIC_LAW">Public Law</option>
+                <option value="PRIVATE_LAW">Private Law</option>
+              </select>
+            </div>
+          )}
+          {show('filterLocation') && (
+            <div className="form-group">
+              <label>Location</label>
+              <input value={values.filterLocation || ''} onChange={e => set('filterLocation', e.target.value)} />
+            </div>
+          )}
         </div>
-        <div className="form-group">
-          <label>Period To</label>
-          <input type="date" value={values.filterPeriodTo || ''} onChange={e => set('filterPeriodTo', e.target.value)} />
+      )}
+      {(show('filterCustomerType') || show('filterServiceType')) && (
+        <div className="form-row">
+          {show('filterCustomerType') && (
+            <div className="form-group">
+              <label>Customer Type</label>
+              <select value={values.filterCustomerType || ''} onChange={e => set('filterCustomerType', e.target.value)}>
+                <option value="">All</option>
+                <option value="PRIVATE">Private</option>
+                <option value="BUSINESS">Business</option>
+                <option value="MUNICIPALITY">Municipality</option>
+                <option value="AUTHORITY">Authority</option>
+              </select>
+            </div>
+          )}
+          {show('filterServiceType') && (
+            <div className="form-group">
+              <label>Service / Product Code</label>
+              <input value={values.filterServiceType || ''} onChange={e => set('filterServiceType', e.target.value)} placeholder="e.g. SLUDGE_COLLECTION" />
+            </div>
+          )}
         </div>
-      </div>
-      <div className="form-row">
-        <div className="form-group">
-          <label>Service Responsibility</label>
-          <select value={values.filterServiceResponsibility || ''} onChange={e => set('filterServiceResponsibility', e.target.value)}>
-            <option value="">All</option>
-            <option value="PUBLIC_LAW">Public Law</option>
-            <option value="PRIVATE_LAW">Private Law</option>
-          </select>
+      )}
+      {show('filterBillingFrequency') && (
+        <div className="form-row">
+          <div className="form-group">
+            <label>Billing Frequency</label>
+            <select value={values.filterBillingFrequency || ''} onChange={e => set('filterBillingFrequency', e.target.value)}>
+              <option value="">All</option>
+              <option value="MONTHLY">Monthly</option>
+              <option value="QUARTERLY">Quarterly</option>
+              <option value="SEMI_ANNUAL">Semi-Annual</option>
+              <option value="ANNUAL">Annual</option>
+            </select>
+          </div>
         </div>
-        <div className="form-group">
-          <label>Location</label>
-          <input value={values.filterLocation || ''} onChange={e => set('filterLocation', e.target.value)} />
-        </div>
-      </div>
-      <div className="form-row">
-        <div className="form-group">
-          <label>Customer Type</label>
-          <select value={values.filterCustomerType || ''} onChange={e => set('filterCustomerType', e.target.value)}>
-            <option value="">All</option>
-            <option value="PRIVATE">Private</option>
-            <option value="BUSINESS">Business</option>
-            <option value="MUNICIPALITY">Municipality</option>
-            <option value="AUTHORITY">Authority</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Service / Product Code</label>
-          <input value={values.filterServiceType || ''} onChange={e => set('filterServiceType', e.target.value)} placeholder="e.g. SLUDGE_COLLECTION" />
-        </div>
-      </div>
-      <div className="form-row">
-        <div className="form-group">
-          <label>Billing Frequency</label>
-          <select value={values.filterBillingFrequency || ''} onChange={e => set('filterBillingFrequency', e.target.value)}>
-            <option value="">All</option>
-            <option value="MONTHLY">Monthly</option>
-            <option value="QUARTERLY">Quarterly</option>
-            <option value="SEMI_ANNUAL">Semi-Annual</option>
-            <option value="ANNUAL">Annual</option>
-          </select>
-        </div>
-      </div>
+      )}
       <div className="form-row">
         <div className="form-group">
           <label>Invoice Template</label>

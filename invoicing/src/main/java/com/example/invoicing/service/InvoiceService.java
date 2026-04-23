@@ -8,10 +8,13 @@ import com.example.invoicing.entity.invoice.InvoiceLineItem;
 import com.example.invoicing.entity.invoice.InvoiceStatus;
 import com.example.invoicing.entity.invoice.InvoiceType;
 import com.example.invoicing.entity.invoice.Invoice;
+import com.example.invoicing.entity.reportingaudit.ReportingDataAuditLog;
 import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.CompanyInvoicingDefaultsRepository;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
 import com.example.invoicing.repository.InvoiceRepository;
 import com.example.invoicing.repository.InvoiceTemplateRepository;
+import com.example.invoicing.repository.ReportingDataAuditLogRepository;
 
 import com.example.invoicing.entity.invoice.dto.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -19,11 +22,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -39,6 +45,8 @@ public class InvoiceService {
     private final BillingEventRepository billingEventRepository;
     private final CustomerBillingProfileRepository customerRepository;
     private final InvoiceTemplateRepository invoiceTemplateRepository;
+    private final ReportingDataAuditLogRepository reportingAuditLogRepository;
+    private final CompanyInvoicingDefaultsRepository companyInvoicingDefaultsRepository;
 
     public InvoiceResponse findById(Long id) {
         Invoice invoice = repository.findById(id)
@@ -60,15 +68,39 @@ public class InvoiceService {
         Invoice invoice = repository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Invoice not found: " + id));
         invoice.setCustomText(customText);
-        return toResponse(repository.save(invoice));
+        Invoice saved = repository.save(invoice);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String loggedBy = (auth != null && auth.getName() != null) ? auth.getName() : "system";
+        reportingAuditLogRepository.save(ReportingDataAuditLog.builder()
+            .invoiceId(saved.getId())
+            .invoiceNumber(saved.getInvoiceNumber())
+            .lineItemId(null)
+            .field("customText")
+            .assignedValue(customText != null ? customText : "")
+            .loggedAt(Instant.now())
+            .loggedBy(loggedBy)
+            .build());
+        return toResponse(saved);
     }
 
     @Transactional
     public void bulkUpdateCustomText(List<Long> ids, String customText) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String loggedBy = (auth != null && auth.getName() != null) ? auth.getName() : "system";
+        Instant now = Instant.now();
         for (Long id : ids) {
             repository.findById(id).ifPresent(inv -> {
                 inv.setCustomText(customText);
-                repository.save(inv);
+                Invoice saved = repository.save(inv);
+                reportingAuditLogRepository.save(ReportingDataAuditLog.builder()
+                    .invoiceId(saved.getId())
+                    .invoiceNumber(saved.getInvoiceNumber())
+                    .lineItemId(null)
+                    .field("customText")
+                    .assignedValue(customText != null ? customText : "")
+                    .loggedAt(now)
+                    .loggedBy(loggedBy)
+                    .build());
             });
         }
     }
@@ -124,10 +156,13 @@ public class InvoiceService {
     }
 
     private Long buildAndSaveDraft(Customer customer, List<BillingEvent> events, String projectReference) {
+        InvoicingMode companyDefault = companyInvoicingDefaultsRepository.findById(1L)
+            .map(d -> d.getDefaultInvoicingMode())
+            .orElse(InvoicingMode.NET);
         InvoicingMode invoicingMode = customer.getBillingProfile() != null
             && customer.getBillingProfile().getInvoicingMode() != null
             ? customer.getBillingProfile().getInvoicingMode()
-            : InvoicingMode.NET;
+            : companyDefault;
 
         InvoiceLanguage language = resolveLanguage(
             customer.getBillingProfile() != null ? customer.getBillingProfile().getLanguageCode() : null);

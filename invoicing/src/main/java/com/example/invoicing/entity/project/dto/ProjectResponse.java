@@ -11,6 +11,7 @@ public class ProjectResponse {
     private String customerNumber;
     private String name;
     private String description;
+    private String linkedPropertyId;
     private boolean active;
     private Instant createdAt;
 
@@ -20,6 +21,7 @@ public class ProjectResponse {
             .customerNumber(p.getCustomerNumber())
             .name(p.getName())
             .description(p.getDescription())
+            .linkedPropertyId(p.getLinkedPropertyId())
             .active(p.isActive())
             .createdAt(p.getCreatedAt())
             .build();

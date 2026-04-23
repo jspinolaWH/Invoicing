@@ -84,6 +84,34 @@ export default function SimulationResultsPage() {
         ))}
       </div>
 
+      {/* Minimum Fee Summary */}
+      {(report.minimumFeeAdjustmentCount > 0 || report.minimumFeeExemptCount > 0) && (
+        <div className="card" style={{ marginBottom: 'var(--space-4)', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+          <h3 style={{ marginBottom: 'var(--space-3)', color: '#166534' }}>Minimum Fee Summary</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 2 }}>Invoices with top-up</div>
+              <div style={{ fontSize: 22, fontWeight: 600 }}>{report.minimumFeeAdjustmentCount ?? 0}</div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Net total below threshold — adjustment added</div>
+            </div>
+            {report.minimumFeeAdjustmentCount > 0 && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 2 }}>Total top-up amount</div>
+                <div style={{ fontSize: 22, fontWeight: 600 }}>{fmt(report.minimumFeeAdjustmentTotal)}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Sum of all minimum fee adjustment line items</div>
+              </div>
+            )}
+            {report.minimumFeeExemptCount > 0 && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: 2 }}>Customers exempted</div>
+                <div style={{ fontSize: 22, fontWeight: 600 }}>{report.minimumFeeExemptCount}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Contract started/ended mid-period — minimum fee waived</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Validation Error Category Summary */}
       {Object.keys(failuresByCategory).length > 0 && (
         <>
@@ -198,6 +226,42 @@ export default function SimulationResultsPage() {
         </>
       )}
 
+      {/* Billing Cycle Grouping */}
+      {(report.billingCycleGrouping || []).length > 0 && (
+        <>
+          <h3 style={{ marginBottom: 'var(--space-2)' }}>Events by Billing Cycle Period</h3>
+          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)', marginTop: 0 }}>
+            Shows how events are grouped per billing cycle before invoicing. Each row corresponds to one cycle frequency and service type.
+          </p>
+          <table className="table" style={{ marginBottom: 'var(--space-4)' }}>
+            <thead>
+              <tr>
+                <th>Frequency</th>
+                <th>Service Type</th>
+                <th>Period</th>
+                <th style={{ textAlign: 'right' }}>Customers</th>
+                <th style={{ textAlign: 'right' }}>Events</th>
+                <th style={{ textAlign: 'right' }}>Net Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.billingCycleGrouping.map((row, i) => (
+                <tr key={i}>
+                  <td>
+                    <span className="badge badge-blue">{row.frequency}</span>
+                  </td>
+                  <td>{row.serviceType || <span style={{ color: 'var(--color-text-secondary)' }}>All</span>}</td>
+                  <td style={{ fontSize: 13 }}>{row.periodStart} – {row.periodEnd}</td>
+                  <td style={{ textAlign: 'right' }}>{row.customerCount}</td>
+                  <td style={{ textAlign: 'right' }}>{row.eventCount}</td>
+                  <td style={{ textAlign: 'right' }}>{fmt(row.netAmount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
       {/* Sample Invoices */}
       {(report.sampleLineItems || []).length > 0 && (
         <>
@@ -213,6 +277,40 @@ export default function SimulationResultsPage() {
             </details>
           ))}
         </>
+      )}
+
+      {/* Simulation Audit Log */}
+      {(report.simulationAuditLog || []).length > 0 && (
+        <details style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 15 }}>Simulation Audit Log</summary>
+          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 'var(--space-2) 0' }}>
+            Timestamped record of each check performed during this simulation run.
+          </p>
+          <table className="table" style={{ marginTop: 'var(--space-2)' }}>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Step</th>
+                <th>Outcome</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.simulationAuditLog.map((entry, i) => (
+                <tr key={i}>
+                  <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{new Date(entry.timestamp).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+                  <td><code style={{ fontSize: 12 }}>{entry.step}</code></td>
+                  <td>
+                    <span className={`badge ${entry.outcome === 'OK' ? 'badge-green' : entry.outcome === 'BLOCKING_FAILURE' ? 'badge-red' : 'badge-amber'}`}>
+                      {entry.outcome}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: 13 }}>{entry.detail}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
       )}
 
       {/* Commit */}

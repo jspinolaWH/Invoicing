@@ -49,6 +49,7 @@ public class BillingEventService {
     private final CostCenterCompositionService costCenterCompositionService;
     private final VatCalculationService vatCalculationService;
     private final WeighbridgeIntegrationConfigService weighbridgeConfigService;
+    private final BillingRestrictionService billingRestrictionService;
 
     // -----------------------------------------------------------------------
     // CREATE — external source (integration / weighbridge)
@@ -102,10 +103,46 @@ public class BillingEventService {
         return toResponse(billingEventRepository.save(event));
     }
 
-    public BillingEventResponse saveDraft(BillingEventManualCreateRequest req) {
-        BillingEvent event = buildManualEvent(req);
+    public BillingEventResponse saveDraft(BillingEventDraftRequest req) {
+        BillingEvent event = buildDraftEvent(req);
         event.setStatus(BillingEventStatus.DRAFT);
         return toResponse(billingEventRepository.save(event));
+    }
+
+    private BillingEvent buildDraftEvent(BillingEventDraftRequest req) {
+        BillingEvent event = new BillingEvent();
+        event.setEventDate(req.getEventDate());
+        event.setCustomerNumber(req.getCustomerNumber());
+        event.setWasteFeePrice(req.getWasteFeePrice());
+        event.setTransportFeePrice(req.getTransportFeePrice());
+        event.setEcoFeePrice(req.getEcoFeePrice());
+        event.setQuantity(req.getQuantity());
+        event.setWeight(req.getWeight());
+        event.setVehicleId(req.getVehicleId());
+        event.setDriverId(req.getDriverId());
+        event.setLocationId(req.getLocationId());
+        event.setMunicipalityId(req.getMunicipalityId());
+        event.setComments(req.getComments());
+        event.setInternalComments(req.getInternalComments());
+        event.setRegistrationNumber(req.getRegistrationNumber());
+        event.setContractor(req.getContractor());
+        event.setDirection(req.getDirection());
+        event.setSharedServiceGroupPercentage(req.getSharedServiceGroupPercentage());
+        event.setWasteType(req.getWasteType());
+        event.setReceivingSite(req.getReceivingSite());
+        event.setOrigin("MANUAL");
+
+        if (req.getProductId() != null) {
+            Product product = loadProduct(req.getProductId());
+            event.setProduct(product);
+            event.setProductGroup(product.getProductGroupCode());
+            resolveAccountingDefaults(event, product, req.getLocationId());
+            resolveVatRates(event, req.getEventDate());
+            event.setLegalClassification(
+                classificationService.classify(req.getCustomerNumber(), product, req.getMunicipalityId()));
+        }
+
+        return event;
     }
 
     private BillingEvent buildManualEvent(BillingEventManualCreateRequest req) {
@@ -349,10 +386,11 @@ public class BillingEventService {
             String municipalityId, LocalDate dateFrom, LocalDate dateTo,
             Long productId, Boolean excluded, Boolean requiresReview,
             String serviceResponsibility, BillingEventValidationStatus validationStatus,
+            String origin,
             Pageable pageable) {
         return billingEventRepository.findFiltered(
             customerNumber, status, municipalityId, dateFrom, dateTo,
-            productId, excluded, requiresReview, serviceResponsibility, validationStatus, pageable
+            productId, excluded, requiresReview, serviceResponsibility, validationStatus, origin, pageable
         ).map(this::toResponse);
     }
 
@@ -584,7 +622,18 @@ public class BillingEventService {
             .contractorPaymentStatus(e.getContractorPaymentStatus())
             .validationStatus(e.getValidationStatus())
             .lastValidatedAt(e.getLastValidatedAt())
+            .resolvedBillingType(resolveEventBillingType(e))
             .build();
+    }
+
+    private String resolveEventBillingType(BillingEvent e) {
+        try {
+            String productCode = e.getProduct() != null ? e.getProduct().getCode() : null;
+            if (productCode != null && billingRestrictionService.isImmediateService(productCode)) {
+                return "IMMEDIATE";
+            }
+        } catch (Exception ignored) {}
+        return "CYCLE_BASED";
     }
 
     private BillingEventDetailResponse toDetailResponse(BillingEvent e) {
@@ -678,7 +727,8 @@ public class BillingEventService {
             .lastValidatedAt(e.getLastValidatedAt())
             .validationOverrideReason(e.getValidationOverrideReason())
             .validationOverriddenBy(e.getValidationOverriddenBy())
-            .validationOverriddenAt(e.getValidationOverriddenAt());
+            .validationOverriddenAt(e.getValidationOverriddenAt())
+            .resolvedBillingType(resolveEventBillingType(e));
 
         if (vatResult != null) {
             builder

@@ -7,8 +7,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface InvoiceLineItemRepository extends JpaRepository<InvoiceLineItem, Long> {
+
+    @Query("SELECT li.invoice.id FROM InvoiceLineItem li WHERE li.sourceEvent.id = :eventId")
+    Optional<Long> findInvoiceIdBySourceEventId(@Param("eventId") Long eventId);
 
     @Query("SELECT li.accountingAccount.code, li.accountingAccount.name, SUM(li.netAmount), COUNT(li) " +
            "FROM InvoiceLineItem li " +

@@ -6,9 +6,12 @@ import com.example.invoicing.entity.customer.BillingAddress;
 import com.example.invoicing.entity.customer.Customer;
 import com.example.invoicing.entity.customer.event.BillingAddressChangedEvent;
 import com.example.invoicing.entity.invoice.Invoice;
+import com.example.invoicing.entity.invoice.InvoiceStatus;
+import com.example.invoicing.entity.paymentreminder.PaymentReminderStatus;
 import com.example.invoicing.repository.ActiveRunLockRepository;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
 import com.example.invoicing.repository.InvoiceRepository;
+import com.example.invoicing.repository.PaymentReminderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,7 @@ public class BillingAddressSyncService {
     private final ActiveRunLockRepository runLockRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final InvoiceRepository invoiceRepository;
+    private final PaymentReminderRepository paymentReminderRepository;
 
     @Transactional
     public BillingAddressSyncResult syncFromWasteHero(BillingAddressSyncRequest request) {
@@ -54,6 +59,15 @@ public class BillingAddressSyncService {
                 .build();
         }
 
+        List<Invoice> openInvoices = invoiceRepository.findOpenByCustomerId(customer.getId());
+        List<String> sentNumbers = openInvoices.stream()
+            .filter(i -> i.getStatus() == InvoiceStatus.SENT)
+            .map(Invoice::getInvoiceNumber)
+            .collect(Collectors.toList());
+        int pendingReminderCount = paymentReminderRepository
+            .findByCustomerIdAndStatusOrderByCreatedAtDesc(customer.getId(), PaymentReminderStatus.PENDING)
+            .size();
+
         BillingAddress updated = new BillingAddress(
             request.getStreetAddress(),
             request.getPostalCode(),
@@ -77,6 +91,10 @@ public class BillingAddressSyncService {
             .customerNumber(request.getCustomerNumber())
             .status("UPDATED")
             .message("Billing address updated successfully")
+            .openInvoicesUpdated(openInvoices.size())
+            .pendingRemindersUpdated(pendingReminderCount)
+            .sentInvoicesIncluded(sentNumbers.size())
+            .sentInvoiceNumbers(sentNumbers)
             .build();
     }
 

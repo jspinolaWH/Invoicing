@@ -42,6 +42,6 @@ public class BillingEventAuditLog {
     @Column(name = "confirmed_by", length = 100)
     private String confirmedBy;
 
-    @Column(nullable = false, length = 2000)
+    @Column(length = 2000)
     private String reason;
 }

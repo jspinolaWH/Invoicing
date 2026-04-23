@@ -11,6 +11,9 @@ import ValidationReportModal from '../../components/ValidationReportModal'
 import ExclusionModal from '../../components/billing/ExclusionModal'
 import TransferEventModal from '../../components/billing/TransferEventModal'
 import BulkTransferModal from '../../components/billing/BulkTransferModal'
+import CustomerSearchInput from '../../components/billing/CustomerSearchInput'
+import SearchableAutocomplete from '../../components/SearchableAutocomplete'
+import { searchMunicipalities } from '../../api/locations'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -26,6 +29,15 @@ const RELATED_TASKS = [
 ]
 
 const STATUSES = ['DRAFT', 'PENDING_TRANSFER', 'IN_PROGRESS', 'FOR_CORRECTION', 'SENT', 'COMPLETED', 'ERROR']
+const ORIGINS = [
+  { value: '', label: 'All origins' },
+  { value: 'INTEGRATION', label: 'Integration' },
+  { value: 'MANUAL', label: 'Manual' },
+  { value: 'DRIVER', label: 'Driver (Waste Reception)' },
+  { value: 'SEASONAL', label: 'Seasonal' },
+  { value: 'CREDIT', label: 'Credit' },
+  { value: 'TRANSFER', label: 'Transfer' },
+]
 const EXCLUDED_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'false', label: 'Active only' },
@@ -58,7 +70,7 @@ export default function BillingEventsPage() {
   const [filters, setFilters] = useState({
     customerNumber: '', status: '', municipalityId: '',
     dateFrom: '', dateTo: '', excluded: '',
-    productId: '', serviceResponsibility: '', validationStatus: '',
+    productId: '', serviceResponsibility: '', validationStatus: '', origin: '',
   })
   const [statusCounts, setStatusCounts] = useState(null)
 
@@ -77,6 +89,7 @@ export default function BillingEventsPage() {
       if (filters.productId) params.productId = filters.productId
       if (filters.serviceResponsibility) params.serviceResponsibility = filters.serviceResponsibility
       if (filters.validationStatus) params.validationStatus = filters.validationStatus
+      if (filters.origin) params.origin = filters.origin
       const res = await getBillingEvents(params)
       setEvents(res.data.content ?? [])
       setTotalPages(res.data.totalPages ?? 1)
@@ -194,9 +207,11 @@ export default function BillingEventsPage() {
           <option value="">All statuses</option>
           {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
         </select>
-        <input
-          placeholder="Customer #" value={filters.customerNumber} style={{ width: 120 }}
-          onChange={e => setFilters(f => ({ ...f, customerNumber: e.target.value }))}
+        <CustomerSearchInput
+          customerNumber={filters.customerNumber}
+          onSelect={(num) => setFilters(f => ({ ...f, customerNumber: num }))}
+          required={false}
+          placeholder="Customer #"
         />
         <select value={filters.excluded}
           onChange={e => setFilters(f => ({ ...f, excluded: e.target.value }))}>
@@ -215,8 +230,12 @@ export default function BillingEventsPage() {
           onChange={e => setFilters(f => ({ ...f, validationStatus: e.target.value }))}>
           {VALIDATION_STATUSES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        <select value={filters.origin}
+          onChange={e => setFilters(f => ({ ...f, origin: e.target.value }))}>
+          {ORIGINS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
         <button type="submit" className="btn-secondary">Apply</button>
-        <button type="button" className="btn-secondary" onClick={() => { setFilters({ customerNumber: '', status: '', municipalityId: '', dateFrom: '', dateTo: '', excluded: '', productId: '', serviceResponsibility: '', validationStatus: '' }); load(0) }}>
+        <button type="button" className="btn-secondary" onClick={() => { setFilters({ customerNumber: '', status: '', municipalityId: '', dateFrom: '', dateTo: '', excluded: '', productId: '', serviceResponsibility: '', validationStatus: '', origin: '' }); load(0) }}>
           Clear
         </button>
       </form>
@@ -270,6 +289,7 @@ export default function BillingEventsPage() {
                 <th>Qty</th>
                 <th>Classification</th>
                 <th>Status</th>
+                <th>Billing Type</th>
                 <th>Validation</th>
                 <th>Origin</th>
                 <th>Actions</th>
@@ -277,7 +297,7 @@ export default function BillingEventsPage() {
             </thead>
             <tbody>
               {events.length === 0 && (
-                <tr><td colSpan={12} className="empty">No billing events found.</td></tr>
+                <tr><td colSpan={13} className="empty">No billing events found.</td></tr>
               )}
               {events.map(evt => (
                 <tr key={evt.id} className={evt.excluded ? 'row-excluded' : ''}>
@@ -307,6 +327,11 @@ export default function BillingEventsPage() {
                     {evt.priceOverridden && (
                       <span className="origin-badge" style={{ color: '#92400e', borderColor: '#d97706', marginLeft: 4 }}>Override</span>
                     )}
+                  </td>
+                  <td>
+                    {evt.resolvedBillingType === 'IMMEDIATE'
+                      ? <span className="origin-badge" style={{ color: '#92400e', borderColor: '#d97706', background: '#fffbeb' }}>Immediate</span>
+                      : <span className="origin-badge" style={{ color: '#0369a1', borderColor: '#bae6fd', background: '#eff6ff' }}>Cycle</span>}
                   </td>
                   <td><ValidationStatusBadge status={evt.validationStatus} /></td>
                   <td><span className="origin-badge">{evt.origin ?? '—'}</span></td>
@@ -536,12 +561,24 @@ function ExportModal({ onClose }) {
             </div>
             <div className="field">
               <label>Customer # <span className="optional">(optional)</span></label>
-              <input value={form.customerNumber} onChange={set('customerNumber')} placeholder="6–9 digits" />
+              <CustomerSearchInput
+                customerNumber={form.customerNumber}
+                onSelect={(num) => setForm(f => ({ ...f, customerNumber: num }))}
+                required={false}
+                placeholder="6–9 digits"
+              />
             </div>
           </div>
           <div className="field" style={{ marginBottom: 8 }}>
             <label>Municipality ID <span className="optional">(optional)</span></label>
-            <input value={form.municipalityId} onChange={set('municipalityId')} />
+            <SearchableAutocomplete
+              value={form.municipalityId}
+              onChange={(v) => setForm(f => ({ ...f, municipalityId: v }))}
+              onSelect={(m) => setForm(f => ({ ...f, municipalityId: m.municipalityId }))}
+              onSearch={async (q) => { const r = await searchMunicipalities(q); return r.data }}
+              renderOption={(m) => <span><strong>{m.municipalityId}</strong> — {m.municipalityName}</span>}
+              placeholder="Type municipality…"
+            />
           </div>
           <p className="muted" style={{ fontSize: 13 }}>Downloads a JSON file containing all PD-177 reporting fields for the selected period.</p>
         </div>

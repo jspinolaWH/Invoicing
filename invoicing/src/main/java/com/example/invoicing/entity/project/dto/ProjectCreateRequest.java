@@ -13,4 +13,7 @@ public class ProjectCreateRequest {
 
     @Size(max = 1000)
     private String description;
+
+    @Size(max = 50)
+    private String linkedPropertyId;
 }

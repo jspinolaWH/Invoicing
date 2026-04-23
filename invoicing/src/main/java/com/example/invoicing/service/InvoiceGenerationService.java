@@ -37,6 +37,7 @@ import com.example.invoicing.service.SharedServiceInvoicingService;
 import com.example.invoicing.service.MinimumFeeService;
 import com.example.invoicing.entity.minimumfee.MinimumFeeConfig;
 import com.example.invoicing.entity.minimumfee.PeriodType;
+import com.example.invoicing.repository.CompanyInvoicingDefaultsRepository;
 import com.example.invoicing.repository.MinimumFeeConfigRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -76,6 +77,7 @@ public class InvoiceGenerationService {
     private final ReportingDataAuditLogRepository reportingAuditLogRepository;
     private final MinimumFeeService minimumFeeService;
     private final MinimumFeeConfigRepository minimumFeeConfigRepository;
+    private final CompanyInvoicingDefaultsRepository companyInvoicingDefaultsRepository;
 
     /**
      * Generate an invoice for one customer's event group.
@@ -347,10 +349,13 @@ public class InvoiceGenerationService {
 
         BigDecimal vatAmount = grossAmount.subtract(netAmount).setScale(4, RoundingMode.HALF_UP);
 
+        InvoicingMode companyDefault = companyInvoicingDefaultsRepository.findById(1L)
+            .map(d -> d.getDefaultInvoicingMode())
+            .orElse(InvoicingMode.NET);
         InvoicingMode invoicingMode = customer.getBillingProfile() != null
             && customer.getBillingProfile().getInvoicingMode() != null
             ? customer.getBillingProfile().getInvoicingMode()
-            : InvoicingMode.NET;
+            : companyDefault;
 
         String langCode = customer.getBillingProfile() != null
             ? customer.getBillingProfile().getLanguageCode() : null;

@@ -9,6 +9,7 @@ export default function RunInvoicesList({ invoices }) {
         <tr>
           <th>Invoice #</th>
           <th>Customer</th>
+          <th>Billing Cycle</th>
           <th>Net</th>
           <th>Gross</th>
           <th>Status</th>
@@ -19,6 +20,11 @@ export default function RunInvoicesList({ invoices }) {
           <tr key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
             <td>{inv.invoiceNumber || `#${inv.id}`}</td>
             <td>{inv.customerName || inv.customer?.name || '—'}</td>
+            <td>
+              {inv.billingType === 'CYCLE_BASED' && <span className="badge badge-blue">Cycle-based</span>}
+              {inv.billingType === 'IMMEDIATE' && <span className="badge badge-amber">Immediate</span>}
+              {!inv.billingType && <span style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>—</span>}
+            </td>
             <td>{inv.netAmount != null ? Number(inv.netAmount).toLocaleString('fi-FI', { style: 'currency', currency: 'EUR' }) : '—'}</td>
             <td>{inv.grossAmount != null ? Number(inv.grossAmount).toLocaleString('fi-FI', { style: 'currency', currency: 'EUR' }) : '—'}</td>
             <td><span className="badge badge-grey">{inv.status}</span></td>

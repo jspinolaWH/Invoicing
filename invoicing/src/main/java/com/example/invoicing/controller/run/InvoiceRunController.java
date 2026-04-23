@@ -66,4 +66,11 @@ public class InvoiceRunController {
                                                   @RequestBody BatchAttachmentRequest request) {
         return invoiceRunService.setBatchAttachment(id, request);
     }
+
+    @GetMapping("/verify-attachment")
+    public ResponseEntity<java.util.Map<String, Object>> verifyAttachmentIdentifier(
+            @RequestParam String identifier) {
+        boolean valid = invoiceRunService.verifyAttachmentIdentifier(identifier);
+        return ResponseEntity.ok(java.util.Map.of("identifier", identifier, "valid", valid));
+    }
 }

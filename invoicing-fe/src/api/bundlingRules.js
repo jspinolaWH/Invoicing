@@ -5,3 +5,6 @@ export const getBundlingRules = (customerNumber) =>
 
 export const replaceBundlingRules = (customerNumber, rules) =>
   axios.put(`/api/v1/customers/${customerNumber}/bundling-rules`, rules)
+
+export const getBundlingRuleAuditLog = (customerNumber) =>
+  axios.get(`/api/v1/customers/${customerNumber}/bundling-rules/audit-log`)

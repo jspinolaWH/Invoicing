@@ -175,3 +175,7 @@ export const overrideValidation = (id, reason) =>
 
 export const getBillingEventValidationFailures = (id) =>
   axios.get(`/api/v1/billing-events/${id}/validation-failures`)
+
+// Parent invoice lookup (PD-299 AC5)
+export const getBillingEventParentInvoice = (id) =>
+  axios.get(`/api/v1/billing-events/${id}/invoice`)

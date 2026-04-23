@@ -36,6 +36,11 @@ public class InvoiceRunResponse {
     private String batchAttachmentFilename;
     private String batchAttachmentMimeType;
     private String batchAttachmentSecurityClass;
+    private Long templateId;
+    private Long numberSeriesId;
+    private Integer minimumFeeAdjustmentCount;
+    private BigDecimal minimumFeeAdjustmentTotal;
+    private Integer minimumFeeExemptCount;
 
     public static InvoiceRunResponse from(InvoiceRun run) {
         return InvoiceRunResponse.builder()
@@ -66,6 +71,11 @@ public class InvoiceRunResponse {
             .batchAttachmentFilename(run.getBatchAttachmentFilename())
             .batchAttachmentMimeType(run.getBatchAttachmentMimeType())
             .batchAttachmentSecurityClass(run.getBatchAttachmentSecurityClass())
+            .templateId(run.getTemplateId())
+            .numberSeriesId(run.getNumberSeriesId())
+            .minimumFeeAdjustmentCount(run.getMinimumFeeAdjustmentCount())
+            .minimumFeeAdjustmentTotal(run.getMinimumFeeAdjustmentTotal())
+            .minimumFeeExemptCount(run.getMinimumFeeExemptCount())
             .build();
     }
 }

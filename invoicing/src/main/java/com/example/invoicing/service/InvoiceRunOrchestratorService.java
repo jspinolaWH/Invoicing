@@ -11,15 +11,19 @@ import com.example.invoicing.entity.invoice.Invoice;
 import com.example.invoicing.entity.invoice.InvoiceAttachment;
 import com.example.invoicing.entity.invoicerun.InvoiceRun;
 import com.example.invoicing.entity.invoicerun.InvoiceRunStatus;
+import com.example.invoicing.entity.minimumfee.MinimumFeeConfig;
+import com.example.invoicing.entity.minimumfee.PeriodType;
 import com.example.invoicing.entity.validation.ValidationReport;
 import com.example.invoicing.entity.invoice.dto.InvoiceGenerationResult;
 import com.example.invoicing.service.InvoiceGenerationService;
 import com.example.invoicing.entity.invoice.dto.ValidationFailureEntry;
 import com.example.invoicing.repository.BillingCycleRepository;
 import com.example.invoicing.repository.BillingEventRepository;
+import com.example.invoicing.repository.ContractRepository;
 import com.example.invoicing.repository.CustomerBillingProfileRepository;
 import com.example.invoicing.repository.InvoiceAttachmentRepository;
 import com.example.invoicing.repository.InvoiceRepository;
+import com.example.invoicing.repository.MinimumFeeConfigRepository;
 import com.example.invoicing.repository.ProductRepository;
 import com.example.invoicing.entity.classification.LegalClassification;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +56,9 @@ public class InvoiceRunOrchestratorService {
     private final BillingCycleRepository billingCycleRepository;
     private final BillingCycleService billingCycleService;
     private final BillingRestrictionService billingRestrictionService;
+    private final MinimumFeeConfigRepository minimumFeeConfigRepository;
+    private final MinimumFeeService minimumFeeService;
+    private final ContractRepository contractRepository;
 
     @Async("invoiceRunExecutor")
     @Transactional
@@ -93,6 +100,9 @@ public class InvoiceRunOrchestratorService {
 
             int totalInvoices = 0;
             BigDecimal totalAmount = BigDecimal.ZERO;
+            int minimumFeeAdjustmentCount = 0;
+            BigDecimal minimumFeeAdjustmentTotal = BigDecimal.ZERO;
+            int minimumFeeExemptCount = 0;
             List<ValidationFailureEntry> allFailures = new ArrayList<>();
 
             for (Map.Entry<String, List<BillingEvent>> entry : byCustomerNumber.entrySet()) {
@@ -131,6 +141,10 @@ public class InvoiceRunOrchestratorService {
                         totalInvoices++;
                         if (gross != null) totalAmount = totalAmount.add(gross);
                         propagateBatchAttachment(run, res.getInvoice());
+                        MinFeeStats mfs = computeMinFeeStats(res.getInvoice(), customer, immediateEvents);
+                        minimumFeeAdjustmentCount += mfs.adjCount;
+                        minimumFeeAdjustmentTotal = minimumFeeAdjustmentTotal.add(mfs.adjTotal);
+                        minimumFeeExemptCount += mfs.exemptCount;
                     }
                 }
 
@@ -152,6 +166,10 @@ public class InvoiceRunOrchestratorService {
                                 totalInvoices++;
                                 if (gross != null) totalAmount = totalAmount.add(gross);
                                 propagateBatchAttachment(run, res.getInvoice());
+                                MinFeeStats mfs = computeMinFeeStats(res.getInvoice(), customer, eligible);
+                                minimumFeeAdjustmentCount += mfs.adjCount;
+                                minimumFeeAdjustmentTotal = minimumFeeAdjustmentTotal.add(mfs.adjTotal);
+                                minimumFeeExemptCount += mfs.exemptCount;
                             }
                         }
                     }
@@ -166,6 +184,9 @@ public class InvoiceRunOrchestratorService {
                 .filter(f -> "BLOCKING".equals(f.getSeverity())).count());
             run.setReportWarningCount((int) allFailures.stream()
                 .filter(f -> "WARNING".equals(f.getSeverity())).count());
+            run.setMinimumFeeAdjustmentCount(minimumFeeAdjustmentCount);
+            run.setMinimumFeeAdjustmentTotal(minimumFeeAdjustmentTotal);
+            run.setMinimumFeeExemptCount(minimumFeeExemptCount);
             run.setStatus(allFailures.stream().anyMatch(f -> "BLOCKING".equals(f.getSeverity()))
                 ? InvoiceRunStatus.COMPLETED_WITH_ERRORS
                 : InvoiceRunStatus.COMPLETED);
@@ -227,6 +248,52 @@ public class InvoiceRunOrchestratorService {
             runRepository.save(run);
             log.info("Triggered scheduled send for run {}", run.getId());
         }
+    }
+
+    private record MinFeeStats(int adjCount, BigDecimal adjTotal, int exemptCount) {}
+
+    private MinFeeStats computeMinFeeStats(Invoice invoice, Customer customer, List<BillingEvent> events) {
+        int adjCount = 0;
+        BigDecimal adjTotal = BigDecimal.ZERO;
+        int exemptCount = 0;
+
+        for (var li : invoice.getLineItems()) {
+            if (li.getDescription() != null && li.getDescription().startsWith("Minimum fee adjustment")) {
+                adjCount++;
+                if (li.getNetAmount() != null) {
+                    adjTotal = adjTotal.add(li.getNetAmount());
+                }
+            }
+        }
+
+        if (adjCount == 0 && customer.getCustomerType() != null) {
+            LocalDate periodStart = events.stream()
+                .map(BillingEvent::getEventDate).filter(java.util.Objects::nonNull)
+                .min(LocalDate::compareTo).orElse(null);
+            LocalDate periodEnd = events.stream()
+                .map(BillingEvent::getEventDate).filter(java.util.Objects::nonNull)
+                .max(LocalDate::compareTo).orElse(null);
+            if (periodStart != null && periodEnd != null) {
+                long months = java.time.temporal.ChronoUnit.MONTHS.between(periodStart, periodEnd.plusDays(1));
+                PeriodType periodType = months >= 9 ? PeriodType.ANNUAL : PeriodType.QUARTERLY;
+                String custTypeStr = customer.getCustomerType().name();
+                String lookupNumber = customer.getBillingProfile() != null
+                    ? customer.getBillingProfile().getCustomerIdNumber() : String.valueOf(customer.getId());
+                com.example.invoicing.entity.contract.Contract contract =
+                    contractRepository.findByCustomerNumberAndActiveTrue(lookupNumber)
+                        .stream().findFirst().orElse(null);
+                LocalDate contractStart = contract != null ? contract.getStartDate() : null;
+                LocalDate contractEnd = contract != null ? contract.getEndDate() : null;
+                Optional<MinimumFeeConfig> configOpt =
+                    minimumFeeConfigRepository.findByCustomerTypeAndPeriodTypeAndActiveTrue(custTypeStr, periodType);
+                if (configOpt.isPresent() && !minimumFeeService.isMinimumApplicable(
+                        configOpt.get(), periodStart, periodEnd, contractStart, contractEnd)) {
+                    exemptCount = 1;
+                }
+            }
+        }
+
+        return new MinFeeStats(adjCount, adjTotal, exemptCount);
     }
 
     private void propagateBatchAttachment(InvoiceRun run, Invoice invoice) {

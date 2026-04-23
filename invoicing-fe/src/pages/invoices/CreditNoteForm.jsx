@@ -111,6 +111,13 @@ export default function CreditNoteForm() {
           placeholder="Required — reason for credit note…" />
       </div>
 
+      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <span style={{ color: '#1d4ed8', fontSize: 18, lineHeight: 1 }}>ⓘ</span>
+        <span style={{ color: '#1e40af', fontSize: 13 }}>
+          The credit note will be assigned the same number as this invoice ({invoice.invoiceNumber || `#${invoice.id}`}) per the credit note numbering policy.
+        </span>
+      </div>
+
       {error && <div className="error-msg" style={{ marginBottom: 'var(--space-3)' }}>{error}</div>}
 
       <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>

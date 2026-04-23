@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(r['id'], '|', r['summary'], '|', 'FAIL' if not r['passes'] else 'PASS'\\) for r in data['requirements']]\")",
+      "Bash(xargs cat *)",
+      "Bash(cp /mnt/c/Users/drasm/Desktop/Invoicing/.claude/commands/ui-check.md /home/jack/.claude/commands/ui-check.md)",
+      "Bash(cp /mnt/c/Users/drasm/Desktop/Invoicing/.claude/commands/ui-loop.md /home/jack/.claude/commands/ui-loop.md)"
+    ]
+  }
+}

@@ -6,7 +6,13 @@ import { getBillingEventTemplates, createBillingEventTemplate } from '../../api/
 import { getPropertyGroups } from '../../api/propertyGroups'
 import { useResolvedVatRate } from '../../hooks/useResolvedVatRate'
 import CustomerSearchInput from '../../components/billing/CustomerSearchInput'
+import SearchableAutocomplete from '../../components/SearchableAutocomplete'
 import RelatedTasks from '../../components/RelatedTasks'
+import { searchVehicles } from '../../api/vehicles'
+import { searchDrivers } from '../../api/drivers'
+import { searchLocations, searchMunicipalities } from '../../api/locations'
+import { searchWasteTypes } from '../../api/wasteTypes'
+import { searchReceivingSites } from '../../api/receivingSites'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -39,6 +45,7 @@ export default function CreateBillingEventPage() {
   const [saving, setSaving]           = useState(false)
   const [error, setError]             = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [draftIntent, setDraftIntent] = useState(false)
 
   // ── property groups ───────────────────────────────────────────────────────
   const [propertyGroups, setPropertyGroups] = useState([])
@@ -197,6 +204,39 @@ export default function CreateBillingEventPage() {
     return errs
   }
 
+  const validateForDraft = () => {
+    const errs = {}
+    if (!form.eventDate)      errs.eventDate      = 'Required'
+    if (!form.customerNumber) errs.customerNumber = 'Required'
+    else if (!/^\d{6,9}$/.test(form.customerNumber)) errs.customerNumber = 'Must be 6-9 digits'
+    return errs
+  }
+
+  const buildDraftPayload = () => ({
+    eventDate:                    form.eventDate || null,
+    customerNumber:               form.customerNumber || null,
+    productId:                    form.productId ? Number(form.productId) : null,
+    wasteFeePrice:                form.wasteFeePrice !== '' ? Number(form.wasteFeePrice) : null,
+    transportFeePrice:            form.transportFeePrice !== '' ? Number(form.transportFeePrice) : null,
+    ecoFeePrice:                  form.ecoFeePrice !== '' ? Number(form.ecoFeePrice) : null,
+    quantity:                     form.quantity !== '' ? Number(form.quantity) : null,
+    weight:                       form.weight !== '' ? Number(form.weight) : null,
+    vehicleId:                    form.vehicleId || null,
+    driverId:                     form.driverId || null,
+    locationId:                   form.locationId || null,
+    municipalityId:               form.municipalityId || null,
+    comments:                     form.comments || null,
+    internalComments:             form.internalComments || null,
+    registrationNumber:           form.registrationNumber || null,
+    contractor:                   form.contractor || null,
+    direction:                    form.direction || null,
+    sharedServiceGroupId:         form.sharedServiceGroupId || null,
+    sharedServiceGroupPercentage: form.sharedServiceGroupPercentage !== ''
+      ? Number(form.sharedServiceGroupPercentage) : null,
+    wasteType:                    form.wasteType || null,
+    receivingSite:                form.receivingSite || null,
+  })
+
   const buildPayload = () => ({
     ...form,
     productId:                    Number(form.productId),
@@ -226,11 +266,12 @@ export default function CreateBillingEventPage() {
   }
 
   const handleSaveDraft = async () => {
-    const errs = validate()
-    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    const errs = validateForDraft()
+    setFieldErrors(errs)
+    if (Object.keys(errs).length > 0) return
     setSaving(true); setError(null)
     try {
-      const res = await createDraftBillingEvent(buildPayload())
+      const res = await createDraftBillingEvent(buildDraftPayload())
       navigate(`/billing-events/${res.data.id}`)
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to save draft.')
@@ -362,7 +403,7 @@ export default function CreateBillingEventPage() {
               {fieldErrors.customerNumber && <span className="field-error">{fieldErrors.customerNumber}</span>}
             </div>
             <div className="field">
-              <label>Contract <span className="required">*</span></label>
+              <label>Contract</label>
               <select
                 value={contractId}
                 onChange={handleContractChange}
@@ -384,7 +425,7 @@ export default function CreateBillingEventPage() {
           </div>
           <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
             <div className="field">
-              <label>Product <span className="required">*</span></label>
+              <label>Product {!draftIntent && <span className="required">*</span>}</label>
               <select
                 value={form.productId}
                 onChange={handleProductChange}
@@ -428,7 +469,7 @@ export default function CreateBillingEventPage() {
               <div className="field" key={field}>
                 <label>
                   {field === 'wasteFeePrice' ? 'Waste Fee' : field === 'transportFeePrice' ? 'Transport Fee' : 'Eco Fee'}
-                  {' '}<span className="required">*</span>
+                  {' '}{!draftIntent && <span className="required">*</span>}
                 </label>
                 <input type="number" min="0" step="0.01" value={form[field]} onChange={set(field)}
                   className={fieldErrors[field] ? 'input-error' : ''} />
@@ -445,14 +486,14 @@ export default function CreateBillingEventPage() {
             <div className="field">
               <label>
                 Quantity{selectedProduct?.pricingUnit ? ` (${selectedProduct.pricingUnit})` : ''}
-                {' '}<span className="required">*</span>
+                {' '}{!draftIntent && <span className="required">*</span>}
               </label>
               <input type="number" min="0" step="0.01" value={form.quantity} onChange={set('quantity')}
                 className={fieldErrors.quantity ? 'input-error' : ''} />
               {fieldErrors.quantity && <span className="field-error">{fieldErrors.quantity}</span>}
             </div>
             <div className="field">
-              <label>Weight <span className="required">*</span></label>
+              <label>Weight {!draftIntent && <span className="required">*</span>}</label>
               <input type="number" min="0" step="0.001" value={form.weight} onChange={set('weight')}
                 className={fieldErrors.weight ? 'input-error' : ''} />
               {fieldErrors.weight && <span className="field-error">{fieldErrors.weight}</span>}
@@ -466,21 +507,49 @@ export default function CreateBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Municipality <span className="optional">(optional)</span></label>
-              <input value={form.municipalityId} onChange={set('municipalityId')} />
+              <SearchableAutocomplete
+                value={form.municipalityId}
+                onChange={(v) => pushForm(f => ({ ...f, municipalityId: v }))}
+                onSelect={(m) => pushForm(f => ({ ...f, municipalityId: m.municipalityId }))}
+                onSearch={async (q) => { const r = await searchMunicipalities(q); return r.data }}
+                renderOption={(m) => <span><strong>{m.municipalityId}</strong> — {m.municipalityName}</span>}
+                placeholder="Type municipality name or code…"
+              />
             </div>
             <div className="field">
               <label>Location ID <span className="optional">(optional)</span></label>
-              <input value={form.locationId} onChange={set('locationId')} />
+              <SearchableAutocomplete
+                value={form.locationId}
+                onChange={(v) => pushForm(f => ({ ...f, locationId: v }))}
+                onSelect={(loc) => pushForm(f => ({ ...f, locationId: loc.locationId, municipalityId: loc.municipalityId }))}
+                onSearch={async (q) => { const r = await searchLocations(q); return r.data }}
+                renderOption={(loc) => <span><strong>{loc.locationId}</strong> — {loc.name}, {loc.municipalityName}</span>}
+                placeholder="Type location ID or name…"
+              />
             </div>
           </div>
           <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
             <div className="field">
               <label>Vehicle ID <span className="optional">(optional)</span></label>
-              <input value={form.vehicleId} onChange={set('vehicleId')} />
+              <SearchableAutocomplete
+                value={form.vehicleId}
+                onChange={(v) => pushForm(f => ({ ...f, vehicleId: v }))}
+                onSelect={(v) => pushForm(f => ({ ...f, vehicleId: v.vehicleId }))}
+                onSearch={async (q) => { const r = await searchVehicles(q); return r.data }}
+                renderOption={(v) => <span><strong>{v.vehicleId}</strong> · {v.registrationPlate} <em style={{color:'var(--color-text-muted)'}}>({v.vehicleType})</em></span>}
+                placeholder="Type vehicle ID or plate…"
+              />
             </div>
             <div className="field">
               <label>Driver ID <span className="optional">(optional)</span></label>
-              <input value={form.driverId} onChange={set('driverId')} />
+              <SearchableAutocomplete
+                value={form.driverId}
+                onChange={(v) => pushForm(f => ({ ...f, driverId: v }))}
+                onSelect={(d) => pushForm(f => ({ ...f, driverId: d.driverId }))}
+                onSearch={async (q) => { const r = await searchDrivers(q); return r.data }}
+                renderOption={(d) => <span><strong>{d.driverId}</strong> · {d.name}</span>}
+                placeholder="Type driver ID or name…"
+              />
             </div>
           </div>
         </div>
@@ -501,11 +570,25 @@ export default function CreateBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Waste Type <span className="optional">(optional)</span></label>
-              <input value={form.wasteType} onChange={set('wasteType')} placeholder="e.g. MIXED_WASTE, PAPER, BIO_WASTE" />
+              <SearchableAutocomplete
+                value={form.wasteType}
+                onChange={(v) => pushForm(f => ({ ...f, wasteType: v }))}
+                onSelect={(wt) => pushForm(f => ({ ...f, wasteType: wt.code }))}
+                onSearch={async (q) => { const r = await searchWasteTypes(q); return r.data }}
+                renderOption={(wt) => <span><strong>{wt.code}</strong> — {wt.nameEn} <em style={{color:'var(--color-text-muted)'}}>({wt.category})</em></span>}
+                placeholder="Type waste type code or name…"
+              />
             </div>
             <div className="field">
               <label>Receiving Site <span className="optional">(optional)</span></label>
-              <input value={form.receivingSite} onChange={set('receivingSite')} placeholder="e.g. Ämmässuo Waste Treatment Centre" />
+              <SearchableAutocomplete
+                value={form.receivingSite}
+                onChange={(v) => pushForm(f => ({ ...f, receivingSite: v }))}
+                onSelect={(s) => pushForm(f => ({ ...f, receivingSite: s.name }))}
+                onSearch={async (q) => { const r = await searchReceivingSites(q); return r.data }}
+                renderOption={(s) => <span>{s.name}<em style={{color:'var(--color-text-muted)',marginLeft:8}}>{s.municipalityName}</em></span>}
+                placeholder="Type site name…"
+              />
             </div>
           </div>
         </div>
@@ -575,10 +658,26 @@ export default function CreateBillingEventPage() {
               Save as Template
             </button>
           )}
-          <button type="button" className="btn-secondary" disabled={saving} onClick={handleSaveDraft}>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={saving}
+            onClick={handleSaveDraft}
+            onMouseEnter={() => { setDraftIntent(true); setFieldErrors({}) }}
+            onMouseLeave={() => setDraftIntent(false)}
+            onFocus={() => { setDraftIntent(true); setFieldErrors({}) }}
+            onBlur={() => setDraftIntent(false)}
+            title="Only Date and Customer Number are required to save as draft"
+          >
             {saving ? 'Saving…' : 'Save as Draft'}
           </button>
-          <button type="submit" className="btn-primary" disabled={saving}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={saving}
+            onMouseEnter={() => setDraftIntent(false)}
+            onFocus={() => setDraftIntent(false)}
+          >
             {saving ? 'Creating…' : 'Create Event'}
           </button>
         </div>

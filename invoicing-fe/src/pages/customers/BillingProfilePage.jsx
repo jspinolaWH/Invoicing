@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { getMyRoles } from '../../api/me'
 import { getBillingProfile, updateBillingProfile, getBillingProfileAuditLog } from '../../api/billingProfile'
 import { getEInvoiceAddress, setEInvoiceAddress, deleteEInvoiceAddress } from '../../api/einvoiceAddress'
+import { getDirectDebitMandate } from '../../api/directDebitMandate'
 import { validateBillingProfile } from '../../api/billingProfileValidation'
 import { getTemplates } from '../../api/invoiceTemplates'
 import { getContractsForCustomer, updateContractTemplate, updateContractWorkSite, updateContractDates } from '../../api/contracts'
 import { getBillingEvents } from '../../api/billingEvents'
+import { checkCustomerLock } from '../../api/locks'
 import ValidationReportModal from '../../components/ValidationReportModal'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
@@ -28,6 +31,11 @@ const RELATED_TASKS = [
 
 const DELIVERY_METHODS = ['E_INVOICE', 'EMAIL', 'PAPER', 'DIRECT_PAYMENT']
 const INVOICING_MODES = ['GROSS', 'NET']
+const LANGUAGE_OPTIONS = [
+  { value: 'fi', label: 'Finnish (fi)' },
+  { value: 'sv', label: 'Swedish (sv)' },
+  { value: 'en', label: 'English (en)' },
+]
 
 const LEGAL_CLASSIFICATIONS = ['PUBLIC_LAW', 'PRIVATE_LAW']
 
@@ -50,6 +58,7 @@ const emptyBillingForm = {
   invoicePerProject: false,
   allowExternalRecall: false,
   parentCustomerNumber: '',
+  invoiceGroupingPreference: '',
 }
 
 const emptyEInvoiceForm = {
@@ -67,12 +76,15 @@ export default function BillingProfilePage() {
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [saveOpenInvoicesUpdated, setSaveOpenInvoicesUpdated] = useState(null)
 
   const [billingForm, setBillingForm] = useState(emptyBillingForm)
   const [eInvoiceForm, setEInvoiceForm] = useState(emptyEInvoiceForm)
+  const [eInvoiceMeta, setEInvoiceMeta] = useState(null)
   const [eInvoiceSaving, setEInvoiceSaving] = useState(false)
   const [eInvoiceSuccess, setEInvoiceSuccess] = useState(false)
   const [hadEInvoiceAddress, setHadEInvoiceAddress] = useState(false)
+  const [directDebitMandate, setDirectDebitMandate] = useState(null)
 
   const [validationReport, setValidationReport] = useState(null)
   const [validating, setValidating] = useState(false)
@@ -90,6 +102,8 @@ export default function BillingProfilePage() {
 
   const [auditLog, setAuditLog] = useState([])
   const [auditLogLoading, setAuditLogLoading] = useState(false)
+  const [canEditInvoicingMode, setCanEditInvoicingMode] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
 
   const loadBillingEvents = async (customerNumber) => {
     setBillingEventsLoading(true)
@@ -113,11 +127,15 @@ export default function BillingProfilePage() {
     setLoading(true)
     setError(null)
     try {
-      const [profileRes, eInvoiceRes, templatesRes] = await Promise.all([
+      const [profileRes, eInvoiceRes, templatesRes, mandateRes, roles] = await Promise.all([
         getBillingProfile(customerId),
         getEInvoiceAddress(customerId),
         getTemplates(),
+        getDirectDebitMandate(customerId),
+        getMyRoles().catch(() => []),
       ])
+      const roleList = Array.isArray(roles) ? roles : []
+      setCanEditInvoicingMode(roleList.includes('INVOICING'))
       setTemplates(templatesRes.data ?? [])
       const p = profileRes.data
       setProfile(p)
@@ -134,6 +152,7 @@ export default function BillingProfilePage() {
         defaultLedgerCode: bp.defaultLedgerCode ?? '',
         invoicePerProject: bp.invoicePerProject ?? false,
         allowExternalRecall: bp.allowExternalRecall ?? false,
+        invoiceGroupingPreference: bp.invoiceGroupingPreference ?? '',
         streetAddress: addr.streetAddress ?? '',
         postalCode: addr.postalCode ?? '',
         city: addr.city ?? '',
@@ -157,6 +176,9 @@ export default function BillingProfilePage() {
         lock: ei.manuallyLocked ?? false,
         lockReason: ei.lockReason ?? '',
       })
+      setEInvoiceMeta(ei.address ? { lastModifiedBy: ei.lastModifiedBy ?? null, lastModifiedAt: ei.lastModifiedAt ?? null } : null)
+      const md = mandateRes.data
+      setDirectDebitMandate(md?.mandateReference ? md : null)
     } catch {
       setError('Failed to load billing profile.')
     } finally {
@@ -182,6 +204,13 @@ export default function BillingProfilePage() {
     if (activeTab === 'Change History') loadAuditLog()
   }, [activeTab, customerId])
 
+  useEffect(() => {
+    if (!billingForm.customerIdNumber) return
+    checkCustomerLock(billingForm.customerIdNumber)
+      .then(res => setIsLocked(res.data.locked))
+      .catch(() => {})
+  }, [billingForm.customerIdNumber])
+
   const handleBillingChange = (field, value) => {
     setBillingForm((f) => ({ ...f, [field]: value }))
   }
@@ -189,6 +218,7 @@ export default function BillingProfilePage() {
   const handleSaveBilling = async () => {
     setSaving(true)
     setSaveSuccess(false)
+    setSaveOpenInvoicesUpdated(null)
     setError(null)
     try {
       const payload = {
@@ -202,6 +232,7 @@ export default function BillingProfilePage() {
         defaultLedgerCode: billingForm.defaultLedgerCode || null,
         invoicePerProject: billingForm.invoicePerProject,
         allowExternalRecall: billingForm.allowExternalRecall,
+        invoiceGroupingPreference: billingForm.invoiceGroupingPreference || null,
         parentCustomerNumber: billingForm.parentCustomerNumber || null,
         billingAddress: {
           streetAddress: billingForm.streetAddress,
@@ -213,7 +244,9 @@ export default function BillingProfilePage() {
           countryCodeAlt: billingForm.countryCodeAlt || null,
         },
       }
-      await updateBillingProfile(customerId, payload)
+      const res = await updateBillingProfile(customerId, payload)
+      const updated = res?.data ?? res
+      setSaveOpenInvoicesUpdated(updated?.openInvoicesUpdated ?? null)
       setSaveSuccess(true)
       load()
     } catch (err) {
@@ -295,6 +328,7 @@ export default function BillingProfilePage() {
   }
 
   const showEInvoice = billingForm.deliveryMethod === 'E_INVOICE'
+  const showDirectDebit = billingForm.deliveryMethod === 'DIRECT_PAYMENT'
 
   return (
     <div className="page">
@@ -326,7 +360,7 @@ export default function BillingProfilePage() {
             className="btn-secondary"
             style={{ fontSize: 13, display: 'inline-block' }}
           >
-            Bundling Rules
+            Manage Bundling Rules
           </Link>
         </div>
       )}
@@ -344,7 +378,10 @@ export default function BillingProfilePage() {
 
       {activeTab === 'Change History' && (
         <div>
-          <h2 style={{ fontSize: 16, marginBottom: 12, marginTop: 24 }}>Billing Profile Change History</h2>
+          <h2 style={{ fontSize: 16, marginBottom: 4, marginTop: 24 }}>Billing Profile Change History</h2>
+          <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 12 }}>
+            Shows all changes to billing profile fields including billing address updates. Address changes here confirm that open invoices and pending payment reminders were updated to the new address.
+          </p>
           {auditLogLoading ? (
             <div className="loading">Loading...</div>
           ) : auditLog.length === 0 ? (
@@ -354,22 +391,29 @@ export default function BillingProfilePage() {
               <thead>
                 <tr>
                   <th>Field</th>
-                  <th>Old Value</th>
+                  <th>Previous Value</th>
                   <th>New Value</th>
                   <th>Changed By</th>
                   <th>Changed At</th>
                 </tr>
               </thead>
               <tbody>
-                {auditLog.map(entry => (
-                  <tr key={entry.id}>
-                    <td>{entry.field}</td>
-                    <td>{entry.oldValue ?? '—'}</td>
-                    <td>{entry.newValue ?? '—'}</td>
-                    <td>{entry.changedBy}</td>
-                    <td>{entry.changedAt ? new Date(entry.changedAt).toLocaleString() : '—'}</td>
-                  </tr>
-                ))}
+                {auditLog.map(entry => {
+                  const isAddressField = entry.field && entry.field.startsWith('billingAddress.')
+                  return (
+                    <tr key={entry.id} style={isAddressField ? { background: '#f0f9ff' } : undefined}>
+                      <td>
+                        <span style={isAddressField ? { fontWeight: 600, color: '#0369a1' } : undefined}>
+                          {entry.field}
+                        </span>
+                      </td>
+                      <td style={{ color: '#6b7280' }}>{entry.oldValue ?? '—'}</td>
+                      <td style={{ fontWeight: isAddressField ? 600 : undefined }}>{entry.newValue ?? '—'}</td>
+                      <td>{entry.changedBy}</td>
+                      <td>{entry.changedAt ? new Date(entry.changedAt).toLocaleString() : '—'}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
@@ -379,7 +423,14 @@ export default function BillingProfilePage() {
       {activeTab === 'Profile' && (
         <>
       {error && <div className="error-msg">{error}</div>}
-      {saveSuccess && <div className="success-msg">Billing profile saved successfully.</div>}
+      {saveSuccess && (
+        <div className="success-msg">
+          Billing profile saved successfully.
+          {saveOpenInvoicesUpdated != null && saveOpenInvoicesUpdated >= 0 && (
+            <span> {saveOpenInvoicesUpdated} open invoice{saveOpenInvoicesUpdated !== 1 ? 's' : ''} updated with new billing address.</span>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="loading">Loading...</div>
@@ -415,10 +466,22 @@ export default function BillingProfilePage() {
             </div>
 
             <div className="field">
-              <label>Invoicing Mode <span className="required">*</span></label>
+              <label>
+                Invoicing Mode <span className="required">*</span>
+                {!canEditInvoicingMode && (
+                  <span
+                    title="Only users with the INVOICING role can modify this setting."
+                    style={{ cursor: 'help', color: '#6b7280', fontSize: 12, marginLeft: 6 }}
+                  >
+                    (read-only — requires INVOICING role)
+                  </span>
+                )}
+              </label>
               <select
                 value={billingForm.invoicingMode}
                 onChange={(e) => handleBillingChange('invoicingMode', e.target.value)}
+                disabled={!canEditInvoicingMode}
+                title={!canEditInvoicingMode ? 'Only users with the INVOICING role can modify this setting.' : undefined}
               >
                 {INVOICING_MODES.map((m) => (
                   <option key={m} value={m}>{m}</option>
@@ -428,11 +491,14 @@ export default function BillingProfilePage() {
 
             <div className="field">
               <label>Language Code <span className="required">*</span></label>
-              <input
+              <select
                 value={billingForm.languageCode}
                 onChange={(e) => handleBillingChange('languageCode', e.target.value)}
-                placeholder="e.g. fi"
-              />
+              >
+                {LANGUAGE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
 
             <div className="field">
@@ -491,6 +557,31 @@ export default function BillingProfilePage() {
               />
             </div>
 
+            <h3 style={{ marginTop: 20, marginBottom: 10, fontSize: 14 }}>Invoice Grouping</h3>
+
+            <div className="field">
+              <label>Invoice Grouping Preference <span className="optional">(optional)</span></label>
+              <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 8, marginTop: 2 }}>
+                Controls whether public-law and private-law charges are combined on one invoice or split into separate invoices.
+                Detailed per-product-group rules are managed via{' '}
+                {billingForm.customerIdNumber ? (
+                  <Link to={`/customers/${billingForm.customerIdNumber}/bundling-rules`} style={{ color: '#2563eb' }}>
+                    Bundling Rules
+                  </Link>
+                ) : (
+                  'Bundling Rules (save customer ID first)'
+                )}.
+              </p>
+              <select
+                value={billingForm.invoiceGroupingPreference ?? ''}
+                onChange={(e) => handleBillingChange('invoiceGroupingPreference', e.target.value)}
+              >
+                <option value="">— Use company default —</option>
+                <option value="COMBINE">COMBINE — public and private charges on one invoice</option>
+                <option value="SEPARATE">SEPARATE — split public-law and private-law into different invoices</option>
+              </select>
+            </div>
+
             <h3 style={{ marginTop: 20, marginBottom: 10, fontSize: 14 }}>Reporting Defaults</h3>
 
             <div className="field">
@@ -518,12 +609,20 @@ export default function BillingProfilePage() {
 
             <h3 style={{ marginTop: 20, marginBottom: 10, fontSize: 14 }}>Billing Address</h3>
 
+            {isLocked && (
+              <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 6, color: '#92400e', fontSize: 13 }}>
+                Invoice processing in progress. Address changes cannot be made during this time.
+              </div>
+            )}
+
             <div className="field">
               <label>Street Address <span className="required">*</span></label>
               <input
                 value={billingForm.streetAddress}
                 onChange={(e) => handleBillingChange('streetAddress', e.target.value)}
                 placeholder="Street address"
+                disabled={isLocked}
+                style={isLocked ? { background: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed' } : undefined}
               />
             </div>
 
@@ -534,6 +633,8 @@ export default function BillingProfilePage() {
                   value={billingForm.postalCode}
                   onChange={(e) => handleBillingChange('postalCode', e.target.value)}
                   placeholder="e.g. 00100"
+                  disabled={isLocked}
+                  style={isLocked ? { background: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed' } : undefined}
                 />
               </div>
               <div className="field">
@@ -542,6 +643,8 @@ export default function BillingProfilePage() {
                   value={billingForm.city}
                   onChange={(e) => handleBillingChange('city', e.target.value)}
                   placeholder="City"
+                  disabled={isLocked}
+                  style={isLocked ? { background: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed' } : undefined}
                 />
               </div>
             </div>
@@ -553,7 +656,8 @@ export default function BillingProfilePage() {
                 onChange={(e) => handleBillingChange('countryCode', e.target.value)}
                 placeholder="FI"
                 maxLength={2}
-                style={{ width: 60 }}
+                style={isLocked ? { width: 60, background: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed' } : { width: 60 }}
+                disabled={isLocked}
               />
             </div>
 
@@ -593,7 +697,17 @@ export default function BillingProfilePage() {
             {showEInvoice && (
               <>
                 <hr style={{ margin: '24px 0', borderColor: '#e5e7eb' }} />
-                <h2 style={{ marginBottom: 12, fontSize: 16 }}>E-Invoice Address</h2>
+                <h2 style={{ marginBottom: 8, fontSize: 16 }}>E-Invoice Address</h2>
+                {eInvoiceMeta && (
+                  <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 12, marginTop: 0 }}>
+                    {eInvoiceMeta.lastModifiedBy
+                      ? <>Last updated by <strong>{eInvoiceMeta.lastModifiedBy}</strong></>
+                      : <>Last updated by <strong>integration</strong></>}
+                    {eInvoiceMeta.lastModifiedAt && (
+                      <> on {new Date(eInvoiceMeta.lastModifiedAt).toLocaleString()}</>
+                    )}
+                  </p>
+                )}
                 {eInvoiceSuccess && <div className="success-msg">E-invoice address saved.</div>}
 
                 <div className="field">
@@ -644,6 +758,39 @@ export default function BillingProfilePage() {
                     {eInvoiceSaving ? 'Saving...' : 'Save E-Invoice Address'}
                   </button>
                 </div>
+              </>
+            )}
+
+            {showDirectDebit && (
+              <>
+                <hr style={{ margin: '24px 0', borderColor: '#e5e7eb' }} />
+                <h2 style={{ marginBottom: 12, fontSize: 16 }}>Direct Debit Mandate</h2>
+                {directDebitMandate ? (
+                  <table className="data-table" style={{ marginBottom: 16 }}>
+                    <tbody>
+                      <tr>
+                        <th style={{ width: 180 }}>Mandate Reference</th>
+                        <td>{directDebitMandate.mandateReference}</td>
+                      </tr>
+                      <tr>
+                        <th>Bank Account</th>
+                        <td>{directDebitMandate.bankAccount}</td>
+                      </tr>
+                      <tr>
+                        <th>Activated</th>
+                        <td>{directDebitMandate.activatedAt ? new Date(directDebitMandate.activatedAt).toLocaleString() : '—'}</td>
+                      </tr>
+                      <tr>
+                        <th>Terminated</th>
+                        <td>{directDebitMandate.terminatedAt ? new Date(directDebitMandate.terminatedAt).toLocaleString() : '—'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  <p style={{ color: '#6b7280', fontSize: 13 }}>
+                    No active direct debit mandate on record. A mandate is set when the billing system sends a direct debit START order via integration.
+                  </p>
+                )}
               </>
             )}
           </div>

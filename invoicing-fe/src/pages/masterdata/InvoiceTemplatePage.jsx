@@ -218,6 +218,16 @@ export default function InvoiceTemplatePage() {
                 </select>
               </div>
 
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 6, padding: '10px 14px', marginTop: 8 }}>
+                <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#0369a1' }}>Custom Text Placement</p>
+                <p style={{ margin: '0 0 6px', fontSize: 12, color: '#374151' }}>
+                  Custom text entered on an invoice is included in the FINVOICE XML output as an <code style={{ background: '#e0f2fe', borderRadius: 3, padding: '1px 4px' }}>InvoiceFreeText</code> element, immediately after the invoice header fields.
+                </p>
+                <p style={{ margin: 0, fontSize: 12, color: '#374151' }}>
+                  The text applies per-invoice (set on the invoice detail page) or in bulk (via the invoice list "Set Text" action). It is visible to the customer in the transmitted invoice document.
+                </p>
+              </div>
+
             </div>
             <div className="modal-footer">
               <button className="btn-secondary" onClick={closeModal}>Cancel</button>

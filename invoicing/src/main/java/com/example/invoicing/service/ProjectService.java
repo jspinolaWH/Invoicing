@@ -38,6 +38,7 @@ public class ProjectService {
         project.setCustomerNumber(req.getCustomerNumber());
         project.setName(req.getName());
         project.setDescription(req.getDescription());
+        project.setLinkedPropertyId(req.getLinkedPropertyId());
         project.setActive(true);
         return ProjectResponse.from(projectRepository.save(project));
     }
@@ -48,6 +49,7 @@ public class ProjectService {
         project.setCustomerNumber(req.getCustomerNumber());
         project.setName(req.getName());
         project.setDescription(req.getDescription());
+        project.setLinkedPropertyId(req.getLinkedPropertyId());
         return ProjectResponse.from(projectRepository.save(project));
     }
 

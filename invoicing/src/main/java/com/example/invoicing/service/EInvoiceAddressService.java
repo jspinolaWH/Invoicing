@@ -45,8 +45,21 @@ public class EInvoiceAddressService {
     public void updateFromOperator(Long customerId, String address, String operatorCode) {
         addressRepo.findByCustomer_IdAndManuallyLockedFalse(customerId).ifPresentOrElse(
             existing -> { existing.setAddress(address); existing.setOperatorCode(operatorCode); addressRepo.save(existing); },
-            () -> addressRepo.findByCustomer_Id(customerId).ifPresent(locked ->
-                log.warn("Skipped operator update for customerId={}: address is manually locked", customerId))
+            () -> {
+                boolean locked = addressRepo.findByCustomer_Id(customerId).isPresent();
+                if (locked) {
+                    log.warn("Skipped operator update for customerId={}: address is manually locked", customerId);
+                } else {
+                    Customer customer = customerRepo.findById(customerId)
+                        .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Customer not found: " + customerId));
+                    EInvoiceAddress created = new EInvoiceAddress();
+                    created.setCustomer(customer);
+                    created.setAddress(address);
+                    created.setOperatorCode(operatorCode);
+                    addressRepo.save(created);
+                    log.info("Created new EInvoiceAddress for customerId={} via operator update", customerId);
+                }
+            }
         );
     }
 }

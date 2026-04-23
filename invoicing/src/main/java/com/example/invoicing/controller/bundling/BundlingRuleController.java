@@ -1,6 +1,7 @@
 package com.example.invoicing.controller.bundling;
 import com.example.invoicing.service.BundlingRuleService;
 
+import com.example.invoicing.entity.bundling.dto.BundlingRuleAuditLogResponse;
 import com.example.invoicing.entity.bundling.dto.BundlingRuleRequest;
 import com.example.invoicing.entity.bundling.dto.BundlingRuleResponse;
 import jakarta.validation.Valid;
@@ -20,6 +21,11 @@ public class BundlingRuleController {
     @GetMapping
     public List<BundlingRuleResponse> list(@PathVariable String customerNumber) {
         return service.findByCustomer(customerNumber);
+    }
+
+    @GetMapping("/audit-log")
+    public List<BundlingRuleAuditLogResponse> auditLog(@PathVariable String customerNumber) {
+        return service.findAuditLog(customerNumber);
     }
 
     @PutMapping

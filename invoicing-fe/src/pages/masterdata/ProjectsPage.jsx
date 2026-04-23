@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { getProjects, createProject, updateProject, deactivateProject } from '../../api/projects'
+import { searchProperties } from '../../api/properties'
 import RelatedTasks from '../../components/RelatedTasks'
+import CustomerSearchInput from '../../components/billing/CustomerSearchInput'
 import './VatRatesPage.css'
 
 const RELATED_TASKS = [
   { id: 'PD-287', label: '3.4.25 Projects — project-based invoicing', href: 'https://ioteelab.atlassian.net/browse/PD-287' },
 ]
 
-const emptyForm = { customerNumber: '', name: '', description: '' }
+const emptyForm = { customerNumber: '', name: '', description: '', linkedPropertyId: '' }
 const emptyErrors = { customerNumber: '', name: '' }
 
 function validate(form) {
@@ -20,6 +22,103 @@ function validate(form) {
 
 function hasErrors(errors) {
   return Object.values(errors).some(Boolean)
+}
+
+function PropertySearch({ value, onChange }) {
+  const [query, setQuery] = useState(value || '')
+  const [results, setResults] = useState([])
+  const [open, setOpen] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const debounceRef = useRef(null)
+
+  useEffect(() => {
+    if (!value) setQuery('')
+  }, [value])
+
+  const handleInput = (e) => {
+    const q = e.target.value
+    setQuery(q)
+    if (!q.trim()) {
+      onChange('')
+      setResults([])
+      setOpen(false)
+      return
+    }
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      if (q.trim().length < 2) return
+      setSearching(true)
+      try {
+        const res = await searchProperties(q.trim())
+        setResults(res.data ?? [])
+        setOpen(true)
+      } catch {
+        setResults([])
+      } finally {
+        setSearching(false)
+      }
+    }, 300)
+  }
+
+  const select = (p) => {
+    setQuery(p.propertyId)
+    onChange(p.propertyId)
+    setResults([])
+    setOpen(false)
+  }
+
+  const clear = () => {
+    setQuery('')
+    onChange('')
+    setResults([])
+    setOpen(false)
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          value={query}
+          onChange={handleInput}
+          placeholder="Search by property ID or address…"
+          style={{ flex: 1 }}
+        />
+        {query && (
+          <button type="button" className="btn-secondary" onClick={clear} style={{ padding: '0 8px' }}>
+            ×
+          </button>
+        )}
+      </div>
+      {searching && <div className="muted" style={{ fontSize: 12 }}>Searching…</div>}
+      {open && results.length > 0 && (
+        <div style={{
+          position: 'absolute', zIndex: 100, background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 6, width: '100%', maxHeight: 200, overflowY: 'auto', boxShadow: 'var(--shadow-md)',
+        }}>
+          {results.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => select(p)}
+              style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = ''}
+            >
+              <span className="code-badge" style={{ marginRight: 8 }}>{p.propertyId}</span>
+              <span className="muted">{p.streetAddress}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {open && results.length === 0 && !searching && (
+        <div style={{
+          position: 'absolute', zIndex: 100, background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 6, width: '100%', padding: '8px 12px', boxShadow: 'var(--shadow-md)',
+        }}>
+          <span className="muted">No properties found.</span>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function ProjectsPage() {
@@ -61,7 +160,12 @@ export default function ProjectsPage() {
 
   const openEdit = (p) => {
     setEditing(p)
-    setForm({ customerNumber: p.customerNumber, name: p.name, description: p.description ?? '' })
+    setForm({
+      customerNumber: p.customerNumber,
+      name: p.name,
+      description: p.description ?? '',
+      linkedPropertyId: p.linkedPropertyId ?? '',
+    })
     setErrors(emptyErrors)
     setTouched({})
     setShowModal(true)
@@ -98,6 +202,7 @@ export default function ProjectsPage() {
         customerNumber: form.customerNumber.trim(),
         name: form.name.trim(),
         description: form.description.trim() || null,
+        linkedPropertyId: form.linkedPropertyId.trim() || null,
       }
       if (editing) {
         await updateProject(editing.id, payload)
@@ -128,7 +233,7 @@ export default function ProjectsPage() {
       <div className="page-header">
         <div className="page-header-text">
           <h1>Projects</h1>
-          <p>Manage projects linked to customers for project-based invoicing</p>
+          <p>Manage projects linked to customers for project-based invoicing. Link a property to designate it as the property-based project source.</p>
         </div>
         <button className="btn-primary" onClick={openAdd}>+ Add Project</button>
       </div>
@@ -156,19 +261,25 @@ export default function ProjectsPage() {
               <th>Customer #</th>
               <th>Name</th>
               <th>Description</th>
+              <th>Linked Property</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {projects.length === 0 ? (
-              <tr><td colSpan={5} className="empty">No projects found.</td></tr>
+              <tr><td colSpan={6} className="empty">No projects found.</td></tr>
             ) : (
               projects.map((p) => (
                 <tr key={p.id} style={!p.active ? { opacity: 0.5 } : {}}>
                   <td><span className="code-badge">{p.customerNumber}</span></td>
                   <td>{p.name}</td>
                   <td>{p.description ?? <span className="muted">—</span>}</td>
+                  <td>
+                    {p.linkedPropertyId
+                      ? <span className="code-badge">{p.linkedPropertyId}</span>
+                      : <span className="muted">—</span>}
+                  </td>
                   <td>{p.active ? 'Active' : 'Inactive'}</td>
                   <td className="actions">
                     <button className="btn-secondary" onClick={() => openEdit(p)}>Edit</button>
@@ -193,12 +304,12 @@ export default function ProjectsPage() {
             <div className="modal-body">
               <div className="field">
                 <label>Customer Number <span className="required">*</span></label>
-                <input
-                  value={form.customerNumber}
-                  onChange={(e) => handleChange('customerNumber', e.target.value)}
-                  onBlur={() => handleBlur('customerNumber')}
+                <CustomerSearchInput
+                  customerNumber={form.customerNumber}
+                  onSelect={(num) => { handleChange('customerNumber', num); handleBlur('customerNumber') }}
+                  hasError={!!(errors.customerNumber && touched.customerNumber)}
+                  required={false}
                   placeholder="6-9 digits"
-                  className={errors.customerNumber && touched.customerNumber ? 'input-error' : ''}
                 />
                 {errors.customerNumber && touched.customerNumber && (
                   <span className="field-error">{errors.customerNumber}</span>
@@ -225,6 +336,23 @@ export default function ProjectsPage() {
                   placeholder="Optional description"
                   rows={3}
                 />
+              </div>
+              <div className="field">
+                <label>
+                  Linked Property <span className="optional">(optional)</span>
+                  <span className="muted" style={{ fontWeight: 400, marginLeft: 8, fontSize: 12 }}>
+                    — designates this project as property-based
+                  </span>
+                </label>
+                <PropertySearch
+                  value={form.linkedPropertyId}
+                  onChange={(val) => handleChange('linkedPropertyId', val)}
+                />
+                {form.linkedPropertyId && (
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    Linked to property: <strong>{form.linkedPropertyId}</strong>
+                  </span>
+                )}
               </div>
             </div>
             <div className="modal-footer">

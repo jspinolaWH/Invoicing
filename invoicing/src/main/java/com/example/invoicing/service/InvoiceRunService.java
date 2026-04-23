@@ -120,6 +120,11 @@ public class InvoiceRunService {
         return InvoiceRunResponse.from(runRepository.save(run));
     }
 
+    @Transactional(readOnly = true)
+    public boolean verifyAttachmentIdentifier(String identifier) {
+        return externalInvoicingClient.verifyAttachment(identifier);
+    }
+
     public void updateStatus(Long runId, InvoiceRunStatus status) {
         runRepository.findById(runId).ifPresent(run -> {
             run.setStatus(status);

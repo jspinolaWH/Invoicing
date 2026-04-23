@@ -8,8 +8,9 @@ import {
   confirmTransferBillingEvent, cancelTransferBillingEvent,
   updateBillingEventComponents, recordContractorPayment,
   overrideValidation, validateBillingEvents, getBillingEventValidationFailures,
-  approveCorrectionBillingEvent,
+  approveCorrectionBillingEvent, getBillingEventParentInvoice,
 } from '../../api/billingEvents'
+import { getClassificationRules } from '../../api/classificationRules'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
 import StatusTransitionPanel from '../../components/billing/StatusTransitionPanel'
@@ -50,6 +51,7 @@ export default function BillingEventDetailPage() {
   const [simErrorReason, setSimErrorReason] = useState('')
   const [simLoading, setSimLoading] = useState(false)
   const [simError, setSimError] = useState(null)
+  const [parentInvoiceId, setParentInvoiceId] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -65,7 +67,13 @@ export default function BillingEventDetailPage() {
       .catch(() => setCreditTransferLink(null))
   }
 
-  useEffect(() => { load(); loadLink() }, [id])
+  const loadParentInvoice = () => {
+    getBillingEventParentInvoice(id)
+      .then(r => setParentInvoiceId(r.data?.invoiceId ?? null))
+      .catch(() => setParentInvoiceId(null))
+  }
+
+  useEffect(() => { load(); loadLink(); loadParentInvoice() }, [id])
 
   if (loading) return <div className="loading">Loading event…</div>
   if (!event) return <div className="error-msg">Event not found.</div>
@@ -252,6 +260,14 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>Customer #</label><span><code>{event.customerNumber}</code></span></div>
             <div className="detail-field"><label>Product</label><span>{event.product?.name ?? event.product?.code}</span></div>
             <div className="detail-field"><label>Origin</label><span><span className="origin-badge">{event.origin ?? '—'}</span></span></div>
+            <div className="detail-field">
+              <label>Billing Type</label>
+              <span>
+                {event.resolvedBillingType === 'IMMEDIATE'
+                  ? <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e', fontSize: 12, fontWeight: 600 }}>Immediate — processed in next run, not held for cycle</span>
+                  : <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #bae6fd', background: '#eff6ff', color: '#0369a1', fontSize: 12, fontWeight: 600 }}>Cycle-based — held until billing cycle is due</span>}
+              </span>
+            </div>
             <div className="detail-field"><label>Waste Fee</label><span>{event.wasteFeePrice?.toFixed(2)}</span></div>
             <div className="detail-field"><label>Transport Fee</label><span>{event.transportFeePrice?.toFixed(2)}</span></div>
             <div className="detail-field"><label>Eco Fee</label><span>{event.ecoFeePrice?.toFixed(2)}</span></div>
@@ -260,6 +276,22 @@ export default function BillingEventDetailPage() {
             <div className="detail-field"><label>VAT 0%</label><span>{event.vatRate0}</span></div>
             <div className="detail-field"><label>VAT 24%</label><span>{event.vatRate24}</span></div>
             <div className="detail-field"><label>Classification</label><span>{event.legalClassification ?? '—'}</span></div>
+            <div className="detail-field">
+              <label>Enforcement Path</label>
+              <span>
+                {event.legalClassification === 'PUBLIC_LAW' && (
+                  <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', fontSize: 12, fontWeight: 600 }}>
+                    Statutory Authority — public-law enforcement applies
+                  </span>
+                )}
+                {event.legalClassification === 'PRIVATE_LAW' && (
+                  <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #fed7aa', background: '#fff7ed', color: '#c2410c', fontSize: 12, fontWeight: 600 }}>
+                    General Debt Collection — private-law enforcement applies
+                  </span>
+                )}
+                {!event.legalClassification && <span className="muted">Not determined</span>}
+              </span>
+            </div>
             <div className="detail-field"><label>Registration Number</label><span>{event.registrationNumber ?? '—'}</span></div>
             <div className="detail-field"><label>Vehicle</label><span>{event.vehicleId ?? '—'}</span></div>
             <div className="detail-field"><label>Driver</label><span>{event.driverId ?? '—'}</span></div>
@@ -312,6 +344,14 @@ export default function BillingEventDetailPage() {
                   )
                 })()}
               </div>
+              {parentInvoiceId != null && (
+                <div style={{ marginTop: 'var(--space-3)', padding: 'var(--space-3)', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 13 }}>This event is included in invoice <strong>#{parentInvoiceId}</strong>. An invoice can aggregate multiple events with different VAT rates and cost centres.</span>
+                  <button className="btn-secondary" style={{ padding: '2px 10px', fontSize: 13 }} onClick={() => navigate(`/invoices/${parentInvoiceId}`)}>
+                    View Invoice #{parentInvoiceId}
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {event.priceOverridden && (
@@ -339,6 +379,8 @@ export default function BillingEventDetailPage() {
               </div>
             </div>
           )}
+          <ClassificationReasonSection event={event} />
+          <FinvoiceDataSection event={event} />
           <ComponentBillingSection event={event} canEdit={canEdit} onUpdated={load} />
           {event.contractor && (
             <ContractorPaymentSection event={event} onUpdated={load} />
@@ -463,6 +505,71 @@ export default function BillingEventDetailPage() {
           onSuccess={() => { setCreditTransferModal(false); load(); loadLink() }}
           onClose={() => setCreditTransferModal(false)}
         />
+      )}
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------
+// FINVOICE Data Section (PD-299 AC4)
+// -----------------------------------------------------------------------
+function FinvoiceDataSection({ event }) {
+  const [open, setOpen] = useState(false)
+
+  const rows = [
+    { finvoice: 'InvoiceRow/ArticleName',           value: event.product?.name ?? event.product?.code ?? '—' },
+    { finvoice: 'InvoiceRow/DeliveredQuantity',      value: event.quantity ?? '—' },
+    { finvoice: 'InvoiceRow/UnitPriceAmount (waste)',value: event.wasteFeePrice?.toFixed(2) ?? '—' },
+    { finvoice: 'InvoiceRow/UnitPriceAmount (transport)', value: event.transportFeePrice?.toFixed(2) ?? '—' },
+    { finvoice: 'InvoiceRow/UnitPriceAmount (eco)',  value: event.ecoFeePrice?.toFixed(2) ?? '—' },
+    { finvoice: 'InvoiceRow/VatRatePercent',         value: event.resolvedVatRatePercent != null ? `${event.resolvedVatRatePercent}%` : '—' },
+    { finvoice: 'InvoiceRow/VatCode',                value: event.resolvedVatRateCode ?? '—' },
+    { finvoice: 'InvoiceRow/RowVatAmount',           value: event.calculatedAmountVat?.toFixed(2) ?? '—' },
+    { finvoice: 'InvoiceRow/RowAmount (net)',        value: event.calculatedAmountNet?.toFixed(2) ?? '—' },
+    { finvoice: 'InvoiceRow/RowAmount (gross)',      value: event.calculatedAmountGross?.toFixed(2) ?? '—' },
+    { finvoice: 'InvoiceRow/DeliveryDate',           value: event.eventDate ?? '—' },
+    { finvoice: 'InvoiceRow/EanCode / ArticleIdentifier', value: event.product?.code ?? '—' },
+    { finvoice: 'BuyerPartyIdentifier',              value: event.customerNumber ?? '—' },
+    { finvoice: 'BuyerVatRegistrationText',          value: event.buyerVatNumber ?? '—' },
+    { finvoice: 'AgreementIdentifier (registration)',value: event.registrationNumber ?? '—' },
+    { finvoice: 'InvoiceRow/AccountDimensionText',   value: event.accountingAccount ? `${event.accountingAccount.code} — ${event.accountingAccount.name}` : '—' },
+    { finvoice: 'InvoiceRow/CostObjectText',         value: event.costCenter?.compositeCode ?? event.resolvedCostCenterCode ?? '—' },
+    { finvoice: 'RowIdentifier IdentifierType="ServiceResponsibility"', value: event.legalClassification ?? '—' },
+    { finvoice: 'FreeText (internal ref)',            value: event.comments ?? '—' },
+  ]
+
+  const transmitted = ['SENT', 'COMPLETED'].includes(event.status)
+  const pending = ['IN_PROGRESS', 'FOR_CORRECTION'].includes(event.status)
+
+  return (
+    <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--color-bg-subtle, #f9fafb)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer' }} onClick={() => setOpen(o => !o)}>
+        <strong>FINVOICE Material</strong>
+        {transmitted && <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', fontSize: 12, fontWeight: 500 }}>Transmitted</span>}
+        {pending && <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #fde047', background: '#fefce8', color: '#854d0e', fontSize: 12, fontWeight: 500 }}>Pending transmission</span>}
+        {!transmitted && !pending && <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #e5e7eb', background: '#f9fafb', color: '#6b7280', fontSize: 12 }}>Not yet queued</span>}
+        <span className="muted" style={{ marginLeft: 'auto', fontSize: 13 }}>{open ? 'Hide' : 'Show field mapping'}</span>
+      </div>
+      <p className="muted" style={{ marginTop: 'var(--space-2)', fontSize: 13 }}>
+        When this event is included in an invoice, these field values are written into the FINVOICE 3.0 XML transmitted to the operator.
+      </p>
+      {open && (
+        <table className="data-table" style={{ marginTop: 'var(--space-3)' }}>
+          <thead>
+            <tr>
+              <th style={{ width: '45%' }}>FINVOICE 3.0 Element</th>
+              <th>Value from this event</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.finvoice}>
+                <td><code style={{ fontSize: 12 }}>{r.finvoice}</code></td>
+                <td>{r.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   )
@@ -841,6 +948,74 @@ function AttachmentsTab({ eventId }) {
             ))}
           </tbody>
         </table>
+      )}
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------
+// Classification Reason Section (PD-284 AC9)
+// -----------------------------------------------------------------------
+function ClassificationReasonSection({ event }) {
+  const [rules, setRules] = useState([])
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      getClassificationRules(1).then(r => setRules(r.data ?? [])).catch(() => {})
+    }
+  }, [open])
+
+  if (!event.legalClassification) return null
+
+  const matchedRule = rules.find(rule => {
+    const productCode = event.product?.code ?? null
+    const customerType = null
+    const region = event.municipalityId ?? null
+    if (rule.productCodeCondition && rule.productCodeCondition !== productCode) return false
+    if (rule.regionCondition && rule.regionCondition !== region) return false
+    if (rule.customerTypeCondition) return false
+    return rule.resultClassification === event.legalClassification && rule.active
+  }) ?? rules.find(rule => rule.resultClassification === event.legalClassification && rule.active)
+
+  return (
+    <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 'var(--radius-md)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer' }} onClick={() => setOpen(o => !o)}>
+        <strong>Classification Compliance</strong>
+        <span style={{ padding: '2px 10px', borderRadius: 12, border: '1px solid #c4b5fd', background: '#ede9fe', color: '#6d28d9', fontSize: 12, fontWeight: 500 }}>
+          {event.legalClassification.replace('_', ' ')}
+        </span>
+        <span className="muted" style={{ marginLeft: 'auto', fontSize: 13 }}>{open ? 'Hide details' : 'Show matched rule'}</span>
+      </div>
+      <p className="muted" style={{ marginTop: 'var(--space-2)', fontSize: 13 }}>
+        This event was automatically classified as <strong>{event.legalClassification.replace('_', ' ')}</strong> by the legal classification rule engine.
+      </p>
+      {open && (
+        <div style={{ marginTop: 'var(--space-3)' }}>
+          {rules.length === 0 ? (
+            <p className="muted" style={{ fontSize: 13 }}>Loading classification rules…</p>
+          ) : matchedRule ? (
+            <div style={{ padding: 'var(--space-3)', background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 'var(--radius-md)', fontSize: 13 }}>
+              <strong>Matched rule:</strong>{' '}
+              {matchedRule.label ? `"${matchedRule.label}" — ` : ''}
+              Priority {matchedRule.priority}
+              {matchedRule.customerTypeCondition && ` · Customer type: ${matchedRule.customerTypeCondition}`}
+              {matchedRule.productCodeCondition && ` · Product: ${matchedRule.productCodeCondition}`}
+              {matchedRule.regionCondition && ` · Region: ${matchedRule.regionCondition}`}
+              {' '}→ <strong>{matchedRule.resultClassification.replace('_', ' ')}</strong>
+            </div>
+          ) : (
+            <div style={{ padding: 'var(--space-3)', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 'var(--radius-md)', fontSize: 13 }}>
+              No specific rule match found — classification applied via company default or manual assignment.
+              {rules.length > 0 && (
+                <span className="muted"> ({rules.length} active rules loaded)</span>
+              )}
+            </div>
+          )}
+          <p style={{ color: '#6b7280', fontSize: 12, marginTop: 8 }}>
+            Rules are evaluated in priority order. The first matching rule determines the classification.
+          </p>
+        </div>
       )}
     </div>
   )

@@ -67,6 +67,18 @@ export default function BillingRestrictionsPage() {
       </div>
       <RelatedTasks tasks={RELATED_TASKS} />
 
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 10,
+        padding: '12px 16px', marginBottom: 'var(--space-4)',
+        background: '#eff6ff', border: '1px solid #bfdbfe',
+        borderRadius: 8, fontSize: 'var(--font-size-sm)', color: '#1e40af',
+      }}>
+        <span style={{ fontWeight: 700, flexShrink: 0, fontSize: 15 }}>i</span>
+        <span>
+          <strong>Conflict prevention is active.</strong> Billing events matched by an <span style={{ fontWeight: 600 }}>IMMEDIATE</span> restriction are processed in the very next invoice run, bypassing all billing-cycle frequency delays. They are never held for MONTHLY, QUARTERLY, or SEMI-ANNUAL cycles and will not be bundled with recurring events into the same invoice batch. <span style={{ fontWeight: 600 }}>CYCLE_BASED</span> events continue to be grouped and delayed according to the customer&apos;s billing cycle.
+        </span>
+      </div>
+
       {successMsg && <div className="success-msg">{successMsg}</div>}
       {error && <div className="error-msg">{error}</div>}
 

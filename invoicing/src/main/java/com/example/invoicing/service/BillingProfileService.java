@@ -28,6 +28,7 @@ public class BillingProfileService {
     private final EInvoiceAddressService einvoiceAddressService;
     private final CustomerAuditLogRepository auditLogRepo;
     private final AuditorAware<String> auditorAware;
+    private final InvoiceRepository invoiceRepository;
 
     @Transactional(readOnly = true)
     public BillingProfileResponse getBillingProfile(Long customerId) {
@@ -55,6 +56,8 @@ public class BillingProfileService {
 
         List<CustomerAuditLog> auditEntries = buildAuditEntries(customerId, customer, request);
 
+        int openInvoiceCount = invoiceRepository.findOpenByCustomerId(customerId).size();
+
         customer.setBillingProfile(request.toBillingProfile());
         customer.setParentCustomerNumber(request.getParentCustomerNumber());
         if (oldMethod == DeliveryMethod.E_INVOICE && request.getDeliveryMethod() != DeliveryMethod.E_INVOICE) {
@@ -63,7 +66,7 @@ public class BillingProfileService {
         Customer saved = customerRepo.save(customer);
         auditLogRepo.saveAll(auditEntries);
         eventPublisher.publishEvent(new BillingAddressChangedEvent(this, customerId));
-        return BillingProfileResponse.from(saved);
+        return BillingProfileResponse.fromWithCount(saved, openInvoiceCount);
     }
 
     private List<CustomerAuditLog> buildAuditEntries(Long customerId, Customer customer, BillingProfileRequest request) {
@@ -89,7 +92,33 @@ public class BillingProfileService {
                 .changedBy(changedBy).changedAt(now).build());
         }
 
+        com.example.invoicing.entity.customer.BillingAddress oldAddr =
+            customer.getBillingProfile() != null ? customer.getBillingProfile().getBillingAddress() : null;
+        com.example.invoicing.entity.customer.dto.BillingAddressRequest newAddr = request.getBillingAddress();
+        if (newAddr != null) {
+            addIfChanged(entries, customerId, "billingAddress.streetAddress",
+                oldAddr != null ? oldAddr.getStreetAddress() : null, newAddr.getStreetAddress(), changedBy, now);
+            addIfChanged(entries, customerId, "billingAddress.postalCode",
+                oldAddr != null ? oldAddr.getPostalCode() : null, newAddr.getPostalCode(), changedBy, now);
+            addIfChanged(entries, customerId, "billingAddress.city",
+                oldAddr != null ? oldAddr.getCity() : null, newAddr.getCity(), changedBy, now);
+            addIfChanged(entries, customerId, "billingAddress.countryCode",
+                oldAddr != null ? oldAddr.getCountryCode() : null, newAddr.getCountryCode(), changedBy, now);
+            addIfChanged(entries, customerId, "billingAddress.emailAddress",
+                oldAddr != null ? oldAddr.getEmailAddress() : null, newAddr.getEmailAddress(), changedBy, now);
+        }
+
         return entries;
+    }
+
+    private void addIfChanged(List<CustomerAuditLog> entries, Long customerId, String field,
+                              String oldValue, String newValue, String changedBy, Instant now) {
+        if (!Objects.equals(oldValue, newValue)) {
+            entries.add(CustomerAuditLog.builder()
+                .customerId(customerId).field(field)
+                .oldValue(oldValue).newValue(newValue)
+                .changedBy(changedBy).changedAt(now).build());
+        }
     }
 
     private Customer findCustomer(Long id) {

@@ -15,6 +15,16 @@ const PRICING_UNITS = ['PCS', 'KG', 'TON', 'M3', 'LITER', 'METER', 'HOUR']
 const LOCALES = ['fi', 'sv', 'en']
 const LOCALE_LABELS = { fi: 'Finnish', sv: 'Swedish', en: 'English' }
 
+const UNIT_TRANSLATIONS = {
+  PCS:   { fi: 'kpl', sv: 'st',  en: 'pcs' },
+  KG:    { fi: 'kg',  sv: 'kg',  en: 'kg'  },
+  TON:   { fi: 't',   sv: 't',   en: 't'   },
+  M3:    { fi: 'm3',  sv: 'm3',  en: 'm3'  },
+  LITER: { fi: 'l',   sv: 'l',   en: 'l'   },
+  METER: { fi: 'm',   sv: 'm',   en: 'm'   },
+  HOUR:  { fi: 'h',   sv: 'h',   en: 'h'   },
+}
+
 const RELATED_TASKS = [
   { id: 'PD-308', label: '3.4.4 Invoice data based on language selection', href: 'https://ioteelab.atlassian.net/browse/PD-308' },
   { id: 'PD-300', label: '3.4.12 Reverse charge VAT', href: 'https://ioteelab.atlassian.net/browse/PD-300' },
@@ -247,6 +257,33 @@ export default function ProductsPage() {
       <RelatedTasks tasks={RELATED_TASKS} />
 
       {error && <div className="error-msg">{error}</div>}
+
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 15, marginBottom: 8 }}>Unit Label Reference</h2>
+        <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 10 }}>
+          These are the unit labels that appear on invoices for each pricing unit and language. They are fixed system values.
+        </p>
+        <table className="data-table" style={{ maxWidth: 480 }}>
+          <thead>
+            <tr>
+              <th>Unit</th>
+              <th>Finnish (fi)</th>
+              <th>Swedish (sv)</th>
+              <th>English (en)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PRICING_UNITS.map((u) => (
+              <tr key={u}>
+                <td><span className="unit-badge">{u}</span></td>
+                <td><span className="locale-badge">fi</span> {UNIT_TRANSLATIONS[u].fi}</td>
+                <td><span className="locale-badge">sv</span> {UNIT_TRANSLATIONS[u].sv}</td>
+                <td><span className="locale-badge">en</span> {UNIT_TRANSLATIONS[u].en}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="filter-bar">
         <label>Filter by locale:</label>

@@ -114,4 +114,13 @@ public class InvoiceRun extends BaseAuditEntity {
 
     @Column(name = "batch_attachment_security_class", length = 20)
     private String batchAttachmentSecurityClass;
+
+    @Column(name = "minimum_fee_adjustment_count")
+    private Integer minimumFeeAdjustmentCount;
+
+    @Column(name = "minimum_fee_adjustment_total", precision = 19, scale = 4)
+    private BigDecimal minimumFeeAdjustmentTotal;
+
+    @Column(name = "minimum_fee_exempt_count")
+    private Integer minimumFeeExemptCount;
 }

@@ -53,6 +53,10 @@ import PriceListsPage from './pages/masterdata/PriceListsPage'
 import AccountingReportPage from './pages/reports/AccountingReportPage'
 import ProjectsPage from './pages/masterdata/ProjectsPage'
 import WeighbridgeConfigPage from './pages/integration/WeighbridgeConfigPage'
+import CashRegisterIntegrationPage from './pages/integration/CashRegisterIntegrationPage'
+import ErpIntegrationStatusPage from './pages/integration/ErpIntegrationStatusPage'
+import InvoicingDefaultsPage from './pages/config/InvoicingDefaultsPage'
+import RunFilterCriteriaConfigPage from './pages/config/RunFilterCriteriaConfigPage'
 
 export default function App() {
   return (
@@ -113,6 +117,10 @@ export default function App() {
           <Route path="reports/accounting" element={<AccountingReportPage />} />
           <Route path="master-data/projects" element={<ProjectsPage />} />
           <Route path="integration/weighbridge-config" element={<WeighbridgeConfigPage />} />
+          <Route path="integration/cash-register" element={<CashRegisterIntegrationPage />} />
+          <Route path="integration/erp-status" element={<ErpIntegrationStatusPage />} />
+          <Route path="config/invoicing-defaults" element={<InvoicingDefaultsPage />} />
+          <Route path="config/run-filter-criteria" element={<RunFilterCriteriaConfigPage />} />
         </Route>
         </Route>
       </Routes>

@@ -18,6 +18,7 @@ export default function InvoiceLineItemsTable({ lineItems = [], invoicingMode })
           <th>Net{invoicingMode && !isGross ? primaryBadge : null}</th>
           <th>Gross{invoicingMode && isGross ? primaryBadge : null}</th>
           <th>Classification</th>
+          <th>Enforcement Path</th>
           <th>Account</th>
           <th>Cost Center</th>
         </tr>
@@ -45,6 +46,19 @@ export default function InvoiceLineItemsTable({ lineItems = [], invoicingMode })
             <td>{li.netAmount?.toFixed(4)}</td>
             <td>{li.grossAmount?.toFixed(4)}</td>
             <td><ClassificationBadge classification={li.legalClassification} /></td>
+            <td>
+              {li.legalClassification === 'PUBLIC_LAW' && (
+                <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 10, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  Statutory Authority
+                </span>
+              )}
+              {li.legalClassification === 'PRIVATE_LAW' && (
+                <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 10, border: '1px solid #fed7aa', background: '#fff7ed', color: '#c2410c', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  Debt Collection
+                </span>
+              )}
+              {!li.legalClassification && <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
+            </td>
             <td><code>{li.accountingAccountCode || '—'}</code></td>
             <td><code>{li.costCenterCode || '—'}</code></td>
           </tr>

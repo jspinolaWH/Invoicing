@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ralph Skill Workflow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f1117;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 32px 24px 64px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #f8fafc;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 48px;
+  }
+
+  .canvas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px 56px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .flow {
+    background: #161b27;
+    border: 1px solid #2d3748;
+    border-radius: 14px;
+    padding: 24px 22px 20px;
+    position: relative;
+  }
+
+  .flow-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #2d3748;
+  }
+
+  .flow.ui-loop   { border-color: #7c3aed44; }
+  .flow.ui-loop   .flow-title { color: #a78bfa; }
+  .flow.ralph     { border-color: #05966944; }
+  .flow.ralph     .flow-title { color: #34d399; }
+  .flow.brother   { border-color: #d9770644; }
+  .flow.brother   .flow-title { color: #fb923c; }
+
+  .steps { display: flex; flex-direction: column; gap: 10px; }
+
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .step-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-body { flex: 1; }
+
+  .step-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1.3;
+  }
+
+  .step-desc {
+    font-size: 11.5px;
+    color: #94a3b8;
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+
+  .pill {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .pill-purple { background: #4c1d9520; color: #a78bfa; border: 1px solid #7c3aed55; }
+  .pill-green  { background: #05966920; color: #34d399; border: 1px solid #05966955; }
+
+  .arrow {
+    width: 1px;
+    height: 10px;
+    background: #334155;
+    margin: 0 0 0 15px;
+  }
+
+  .decision {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 2px 0;
+  }
+  .diamond {
+    width: 24px;
+    height: 24px;
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+  .decision-label { font-size: 11px; color: #64748b; font-style: italic; }
+
+  .outcomes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; margin-left: 42px; }
+  .outcome {
+    font-size: 10.5px;
+    padding: 2px 9px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .out-pass   { background: #05966920; color: #34d399; border: 1px solid #05966955; }
+  .out-fix    { background: #d9770620; color: #fb923c; border: 1px solid #d9770655; }
+  .out-review { background: #71717120; color: #a1a1aa; border: 1px solid #52525b55; }
+
+  .connector-note {
+    text-align: center;
+    font-size: 11px;
+    color: #475569;
+    margin: 12px 0 0;
+    letter-spacing: 0.03em;
+    padding-top: 10px;
+    border-top: 1px dashed #1e293b;
+  }
+
+  code {
+    font-family: monospace;
+    font-size: 10.5px;
+  }
+
+  .outputs {
+    max-width: 1100px;
+    margin: 40px auto 0;
+    background: #161b27;
+    border: 1px solid #2d3748;
+    border-radius: 14px;
+    padding: 22px;
+  }
+  .outputs h2 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 16px;
+  }
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px;
+  }
+  .file-item {
+    background: #0d1117;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .file-path { font-size: 11px; font-family: monospace; color: #7dd3fc; margin-bottom: 3px; }
+  .file-desc { font-size: 11px; color: #64748b; }
+
+  @media (max-width: 700px) {
+    .canvas { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Ralph Skill Workflow</h1>
+<p class="subtitle">How /ui-loop, /ralph, and /ralph-brother relate to each other</p>
+
+<div class="canvas">
+
+  <!-- /ui-loop -->
+  <div class="flow ui-loop">
+    <div class="flow-title">/ui-loop &nbsp;·&nbsp; UI coverage scan (Phase 1 + 2)</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">📋</div>
+        <div class="step-body">
+          <div class="step-label">Read prd.json</div>
+          <div class="step-desc">Loads all requirements. Counts already-mapped vs remaining.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">🔄</div>
+        <div class="step-body">
+          <div class="step-label">For each requirement → <span class="pill pill-purple">/ui-check</span></div>
+          <div class="step-desc">Spawns one agent per requirement in parallel batches. Each agent scans the React frontend for the requirement's acceptance criteria.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="decision">
+        <div class="diamond"></div>
+        <div class="decision-label">ui-check verdict per requirement</div>
+      </div>
+      <div class="outcomes">
+        <span class="outcome out-pass">UI_MAPPED — all ACs visible</span>
+        <span class="outcome out-fix">PARTIAL_UI — some ACs missing</span>
+        <span class="outcome out-review">NO_UI — no frontend surface</span>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">💾</div>
+        <div class="step-body">
+          <div class="step-label">Write UI flow report per requirement</div>
+          <div class="step-desc">Writes <code style="color:#a78bfa">ralph/ui/[domain]/PD-XXX.md</code> — plain-English steps + per-AC verdict. Updates <code style="color:#a78bfa">prd.json</code> with <code style="color:#7dd3fc">ui_mapped</code>, <code style="color:#7dd3fc">ui_partial</code>, <code style="color:#7dd3fc">ui_no_frontend</code>.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">🔍</div>
+        <div class="step-body">
+          <div class="step-label">Phase 2 — Orphan audit</div>
+          <div class="step-desc">Cross-references every route in App.jsx against all reports. Flags any page with no requirement backing it.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">📊</div>
+        <div class="step-body">
+          <div class="step-label">Write ui-coverage-summary.md</div>
+          <div class="step-desc">Full coverage table (19 mapped / 31 partial / 2 no-UI) plus orphan audit results.</div>
+        </div>
+      </div>
+
+    </div>
+    <p class="connector-note">outputs ui_partial / ui_no_frontend flags in prd.json → consumed by /ralph-brother</p>
+  </div>
+
+  <!-- /ui-check detail -->
+  <div class="flow ui-loop" style="border-color:#7c3aed22;">
+    <div class="flow-title">/ui-check &nbsp;·&nbsp; Single-requirement UI scan (called by /ui-loop)</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">🗺️</div>
+        <div class="step-body">
+          <div class="step-label">Load nav map</div>
+          <div class="step-desc">Reads App.jsx (all routes) and Layout.jsx (sidebar tree) to know exactly how users navigate the app.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">🔎</div>
+        <div class="step-body">
+          <div class="step-label">For each AC — find the page</div>
+          <div class="step-desc">Greps <code style="color:#a78bfa">src/pages/</code> with keywords from the criterion. Reads matched files to find buttons, forms, table columns, API calls.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">🧭</div>
+        <div class="step-body">
+          <div class="step-label">Trace navigation path</div>
+          <div class="step-desc">Writes exact click-by-click steps from the top nav bar to the feature. Bolding every element the user clicks.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="decision">
+        <div class="diamond"></div>
+        <div class="decision-label">AC verdict</div>
+      </div>
+      <div class="outcomes">
+        <span class="outcome out-pass">✅ VISIBLE</span>
+        <span class="outcome out-fix">⚠️ PARTIAL</span>
+        <span class="outcome out-review">❌ NOT VISIBLE</span>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#4c1d9520;">📝</div>
+        <div class="step-body">
+          <div class="step-label">Write UI flow report</div>
+          <div class="step-desc">One MD file per requirement. Final line = <code style="color:#7dd3fc">UI_MAPPED / PARTIAL_UI / NO_UI</code>. Read by /ui-loop to update prd.json and later by /ralph-brother Step 2.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- /ralph original -->
+  <div class="flow ralph">
+    <div class="flow-title">/ralph &nbsp;·&nbsp; Original code-gap loop</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-icon" style="background:#05966920;">📋</div>
+        <div class="step-body">
+          <div class="step-label">Queue: requirements where <code style="color:#34d399">passes: false</code></div>
+          <div class="step-desc">Ignores UI status. Focuses only on whether backend + frontend code satisfies each AC at the code level.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#05966920;">🔬</div>
+        <div class="step-body">
+          <div class="step-label">Step 1 — <span class="pill pill-green">/gap-check</span></div>
+          <div class="step-desc">Scans Java + React source. Greps AC keywords. Reads matched files. Writes <code style="color:#34d399">ralph/gaps/PD-XXX.md</code> with IMPLEMENTED / PARTIAL / MISSING verdict per AC.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="decision">
+        <div class="diamond"></div>
+        <div class="decision-label">GAP_CHECK_RESULT</div>
+      </div>
+      <div class="outcomes">
+        <span class="outcome out-pass">PASSES → mark done, next req</span>
+        <span class="outcome out-fix">GAPS_FOUND → Step 2</span>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#05966920;">🔧</div>
+        <div class="step-body">
+          <div class="step-label">Step 2 — <span class="pill pill-green">/code-fix</span></div>
+          <div class="step-desc">Reads gap report. Implements every fix (entity, service, controller, DTO, React component, API call). Sets <code style="color:#34d399">passes: true</code> in prd.json when done.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#05966920;">↩️</div>
+        <div class="step-body">
+          <div class="step-label">Loop back to Step 1</div>
+          <div class="step-desc">Re-runs gap-check after each fix. Repeats until PASSES or max iterations hit.</div>
+        </div>
+      </div>
+
+    </div>
+    <p class="connector-note">writes ralph/gaps/PD-XXX.md → also read by /ralph-brother in its merge step</p>
+  </div>
+
+  <!-- /ralph-brother -->
+  <div class="flow brother">
+    <div class="flow-title">/ralph-brother &nbsp;·&nbsp; UI-gap fix loop (Option B merge)</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-icon" style="background:#d9770620;">📋</div>
+        <div class="step-body">
+          <div class="step-label">Queue: <code style="color:#fb923c">ui_partial</code> OR <code style="color:#fb923c">ui_no_frontend</code> OR <code style="color:#fb923c">passes:false</code></div>
+          <div class="step-desc">Processes anything with UI gaps or lingering code gaps. Skips only requirements with <code style="color:#fb923c">ui_mapped: true</code> AND <code style="color:#fb923c">passes: true</code>.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#d9770620;">🔬</div>
+        <div class="step-body">
+          <div class="step-label">Step 1 — <span class="pill pill-green">/gap-check</span> (always runs first)</div>
+          <div class="step-desc">Finds backend/frontend code gaps independently. Catches missing endpoints and entities before the UI layer is considered. Writes <code style="color:#fb923c">ralph/gaps/PD-XXX.md</code>.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#d9770620;">🔀</div>
+        <div class="step-body">
+          <div class="step-label">Step 2 — UI synthesis + merge</div>
+          <div class="step-desc">
+            Reads <code style="color:#a78bfa">ralph/ui/[domain]/PD-XXX.md</code>. For each PARTIAL / NOT VISIBLE AC:<br/>
+            &nbsp;• Backend gap found by gap-check → upgrade to <strong>Layer: Both</strong><br/>
+            &nbsp;• No gap + no endpoint exists → add new <strong>Layer: Both</strong> gap<br/>
+            &nbsp;• No gap + endpoint exists → add <strong>Layer: Frontend</strong> gap<br/>
+            Rewrites the merged gap report in-place. /code-fix now has full context.
+          </div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#d9770620;">🔧</div>
+        <div class="step-body">
+          <div class="step-label">Step 3 — <span class="pill pill-green">/code-fix</span></div>
+          <div class="step-desc">Reads merged gap report. Implements BE first (entities, endpoints, DTOs), then FE (components, API calls, route wiring). Both layers in one pass.</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="step">
+        <div class="step-icon" style="background:#d9770620;">✅</div>
+        <div class="step-body">
+          <div class="step-label">Step 4 — <span class="pill pill-purple">/ui-check</span> verification</div>
+          <div class="step-desc">Re-scans the frontend. Only marks done when <code style="color:#fb923c">UI_MAPPED</code>. If still partial → loops back to Step 1 for another iteration (up to max).</div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+
+      <div class="decision">
+        <div class="diamond"></div>
+        <div class="decision-label">UI_CHECK_RESULT</div>
+      </div>
+      <div class="outcomes">
+        <span class="outcome out-pass">UI_MAPPED → done, update prd.json</span>
+        <span class="outcome out-fix">PARTIAL_UI → loop back</span>
+        <span class="outcome out-review">max iters → needs_review</span>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /canvas -->
+
+<!-- FILES PRODUCED -->
+<div class="outputs">
+  <h2>Files produced by each skill</h2>
+  <div class="file-grid">
+
+    <div class="file-item">
+      <div class="file-path">ralph/prd.json</div>
+      <div class="file-desc">Source of truth. All skills read and write flags here: <code>passes</code>, <code>ui_mapped</code>, <code>ui_partial</code>, <code>ui_no_frontend</code>, <code>needs_review</code>.</div>
+    </div>
+
+    <div class="file-item">
+      <div class="file-path">ralph/ui/[domain]/PD-XXX.md</div>
+      <div class="file-desc">UI flow report per requirement. Plain-English steps + per-AC verdict. Written by /ui-check, read by /ralph-brother Step 2.</div>
+    </div>
+
+    <div class="file-item">
+      <div class="file-path">ralph/ui/ui-coverage-summary.md</div>
+      <div class="file-desc">Full coverage table + orphan audit. Written by /ui-loop after all ui-checks complete.</div>
+    </div>
+
+    <div class="file-item">
+      <div class="file-path">ralph/ui/ui-loop.log</div>
+      <div class="file-desc">Append-only event log. Written by /ui-loop and /ralph-brother.</div>
+    </div>
+
+    <div class="file-item">
+      <div class="file-path">ralph/gaps/PD-XXX.md</div>
+      <div class="file-desc">Code gap report. Written by /gap-check. Merged with UI gaps and rewritten by /ralph-brother Step 2.</div>
+    </div>
+
+    <div class="file-item">
+      <div class="file-path">ralph/loop.log</div>
+      <div class="file-desc">Append-only event log for /ralph original loop.</div>
+    </div>
+
+    <div class="file-item">
+      <div class="file-path">ralph/loop-summary.md</div>
+      <div class="file-desc">Final pass/fail summary written by /ralph after all requirements processed.</div>
+    </div>
+
+    <div class="file-item">
+      <div class="file-path">ralph/ui/brother-summary.md</div>
+      <div class="file-desc">Final UI fix summary written by /ralph-brother after all requirements processed.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- RUN ORDER -->
+<div class="outputs" style="margin-top:16px;">
+  <h2>Recommended run order</h2>
+  <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; font-size:13px; color:#94a3b8;">
+    <span style="background:#4c1d9520;border:1px solid #7c3aed55;color:#a78bfa;padding:6px 14px;border-radius:8px;font-weight:700;">/ui-loop</span>
+    <span style="color:#475569;font-size:18px;">→</span>
+    <div>
+      <div style="color:#64748b;font-size:11px;margin-bottom:4px;">run in parallel</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="background:#05966920;border:1px solid #05966955;color:#34d399;padding:6px 14px;border-radius:8px;font-weight:700;">/ralph</span>
+        <span style="color:#475569;font-size:18px;">+</span>
+        <span style="background:#d9770620;border:1px solid #d9770655;color:#fb923c;padding:6px 14px;border-radius:8px;font-weight:700;">/ralph-brother</span>
+      </div>
+    </div>
+    <span style="color:#475569;font-size:18px;">→</span>
+    <span style="background:#4c1d9520;border:1px solid #7c3aed55;color:#a78bfa;padding:6px 14px;border-radius:8px;font-weight:700;">/ui-loop</span>
+    <span style="color:#64748b;font-size:11px;">(re-run to confirm)</span>
+  </div>
+  <p style="font-size:11.5px;color:#64748b;margin-top:14px;line-height:1.7;">
+    <strong style="color:#94a3b8;">/ralph</strong> fixes code-level gaps (missing endpoints, entities, business logic). It does not care about UI.<br/>
+    <strong style="color:#fb923c;">/ralph-brother</strong> fixes UI-level gaps using the ui-check reports as its specification, with a backend pre-flight via /gap-check to catch missing endpoints before the FE tries to call them.<br/>
+    They can run in parallel — ralph targets <code style="color:#34d399">ralph/gaps/</code> exclusively, brother reads those same files only after its own gap-check step writes them fresh.
+  </p>
+</div>
+
+</body>
+</html>

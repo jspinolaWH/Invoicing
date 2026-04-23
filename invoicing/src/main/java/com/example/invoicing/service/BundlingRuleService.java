@@ -3,6 +3,7 @@ package com.example.invoicing.service;
 import com.example.invoicing.entity.bundling.BundlingRule;
 import com.example.invoicing.entity.bundling.BundlingRuleAuditLog;
 import com.example.invoicing.entity.bundling.BundlingType;
+import com.example.invoicing.entity.bundling.dto.BundlingRuleAuditLogResponse;
 import com.example.invoicing.entity.bundling.dto.BundlingRuleRequest;
 import com.example.invoicing.entity.bundling.dto.BundlingRuleResponse;
 import com.example.invoicing.repository.BundlingRuleAuditLogRepository;
@@ -103,6 +104,12 @@ public class BundlingRuleService {
     }
 
     @Transactional(readOnly = true)
+    public List<BundlingRuleAuditLogResponse> findAuditLog(String customerNumber) {
+        return auditLogRepository.findByCustomerNumberOrderByChangedAtDesc(customerNumber)
+            .stream().map(this::toAuditResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public BundlingType resolveForProductGroup(String customerNumber, String productGroup) {
         return repository.findByCustomerNumberAndProductGroup(customerNumber, productGroup)
             .map(BundlingRule::getBundlingType)
@@ -116,6 +123,18 @@ public class BundlingRuleService {
             .productGroup(r.getProductGroup())
             .bundlingType(r.getBundlingType())
             .description(r.getDescription())
+            .build();
+    }
+
+    private BundlingRuleAuditLogResponse toAuditResponse(BundlingRuleAuditLog log) {
+        return BundlingRuleAuditLogResponse.builder()
+            .id(log.getId())
+            .productGroup(log.getProductGroup())
+            .action(log.getAction())
+            .oldValue(log.getOldValue())
+            .newValue(log.getNewValue())
+            .changedBy(log.getChangedBy())
+            .changedAt(log.getChangedAt())
             .build();
     }
 

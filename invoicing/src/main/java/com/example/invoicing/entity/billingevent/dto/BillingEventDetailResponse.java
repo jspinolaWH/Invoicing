@@ -93,4 +93,6 @@ public class BillingEventDetailResponse {
     private String validationOverrideReason;
     private String validationOverriddenBy;
     private java.time.Instant validationOverriddenAt;
+    // Resolved billing type based on active restrictions (PD-292 AC10)
+    private String resolvedBillingType;
 }
