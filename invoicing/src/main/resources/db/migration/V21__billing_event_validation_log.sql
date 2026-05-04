@@ -1,5 +1,5 @@
 CREATE TABLE billing_event_validation_logs (
-    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id               BIGSERIAL PRIMARY KEY,
     billing_event_id BIGINT        NOT NULL,
     rule_type        VARCHAR(30),
     rule_code        VARCHAR(80),

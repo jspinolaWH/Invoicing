@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls *)",
+      "Bash(grep -E \"^.*\\\\.md$\")",
+      "Bash(xargs cat *)",
+      "Bash(curl *)",
+      "Bash(awk '{print $2}')",
+      "Bash(cmd.exe *)",
+      "Bash(powershell.exe *)",
+      "Bash(xargs sed *)",
+      "Bash(sed -n '55,70p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/InvoiceSimulationService.java)",
+      "Bash(sed -n '70,85p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/InvoiceRunOrchestratorService.java)",
+      "Bash(sed -n '37,52p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/CostCenterService.java)",
+      "Bash(sed -n '32,48p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/PriceListService.java)",
+      "Bash(sed -n '42,56p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/ProductService.java)",
+      "Bash(sed -n '55,75p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/CostCenterService.java)",
+      "Bash(sed -n '51,75p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/PriceListService.java)",
+      "Bash(sed -n '88,120p' /mnt/c/Users/drasm/Desktop/Invoicing/invoicing/src/main/java/com/example/invoicing/service/ProductService.java)"
+    ]
+  }
+}

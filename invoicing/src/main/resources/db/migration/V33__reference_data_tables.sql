@@ -1,3 +1,5 @@
+SET search_path TO public;
+
 -- V33: Reference data tables for vehicles, drivers, locations, waste types, receiving sites
 
 -- ─────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 CREATE TABLE validation_rules (
-    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id               BIGSERIAL PRIMARY KEY,
     company_id       BIGINT       NOT NULL,
     rule_type        VARCHAR(30)  NOT NULL,
     rule_code        VARCHAR(80)  NOT NULL,
