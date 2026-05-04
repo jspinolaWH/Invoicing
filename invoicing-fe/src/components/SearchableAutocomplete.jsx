@@ -14,6 +14,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
  *   debounceMs     – debounce delay in ms (default 300)
  *   required       – passes through to the <input>
  *   disabled       – passes through to the <input>
+ *   showOnFocus    – fire a search immediately on focus so the user sees available options (default true)
  */
 export default function SearchableAutocomplete({
   value,
@@ -26,6 +27,7 @@ export default function SearchableAutocomplete({
   debounceMs = 300,
   required = false,
   disabled = false,
+  showOnFocus = true,
 }) {
   const [results, setResults] = useState([])
   const [open, setOpen] = useState(false)
@@ -45,8 +47,8 @@ export default function SearchableAutocomplete({
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const runSearch = useCallback(async (q) => {
-    if (q.length < minChars) {
+  const runSearch = useCallback(async (q, ignoreMinChars = false) => {
+    if (!ignoreMinChars && q.length < minChars) {
       setResults([])
       setOpen(false)
       return
@@ -104,7 +106,10 @@ export default function SearchableAutocomplete({
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => { if (results.length > 0) setOpen(true) }}
+          onFocus={() => {
+        if (results.length > 0) { setOpen(true); return }
+        if (showOnFocus) runSearch(value || '', true)
+      }}
           placeholder={placeholder}
           required={required}
           disabled={disabled}

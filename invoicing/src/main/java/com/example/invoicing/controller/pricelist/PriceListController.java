@@ -3,6 +3,7 @@ package com.example.invoicing.controller.pricelist;
 import com.example.invoicing.entity.pricelist.dto.PriceListRequest;
 import com.example.invoicing.entity.pricelist.dto.PriceListResponse;
 import com.example.invoicing.service.PriceListService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -31,12 +32,12 @@ public class PriceListController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public PriceListResponse create(@RequestBody PriceListRequest request) {
+    public PriceListResponse create(@Valid @RequestBody PriceListRequest request) {
         return PriceListResponse.from(service.create(request));
     }
 
     @PutMapping("/{id}")
-    public PriceListResponse update(@PathVariable Long id, @RequestBody PriceListRequest request) {
+    public PriceListResponse update(@PathVariable Long id, @Valid @RequestBody PriceListRequest request) {
         return PriceListResponse.from(service.update(id, request));
     }
 

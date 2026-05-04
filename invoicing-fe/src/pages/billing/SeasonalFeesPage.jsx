@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getSeasonalFees, createSeasonalFee, updateSeasonalFee, deleteSeasonalFee, generateNow } from '../../api/seasonalFees'
 import { getProducts } from '../../api/products'
 import RelatedTasks from '../../components/RelatedTasks'
+import CustomerSearchInput from '../../components/billing/CustomerSearchInput'
 import '../masterdata/VatRatesPage.css'
 
 const RELATED_TASKS = [
@@ -132,7 +133,12 @@ export default function SeasonalFeesPage() {
             </div>
             <div className="modal-body">
               <div className="field"><label>Customer Number <span className="required">*</span></label>
-                <input value={form.customerNumber} onChange={e => setForm({ ...form, customerNumber: e.target.value })} disabled={!!editing} />
+                <CustomerSearchInput
+                  customerNumber={form.customerNumber}
+                  onSelect={(num) => setForm(f => ({ ...f, customerNumber: num }))}
+                  required={false}
+                  disabled={!!editing}
+                />
               </div>
               <div className="field"><label>Product <span className="required">*</span></label>
                 <select value={form.productId} onChange={e => setForm({ ...form, productId: e.target.value })}>

@@ -15,13 +15,14 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
         """)
     Page<Property> search(@Param("q") String q, Pageable pageable);
 
-    @Query("""
-        SELECT p FROM Property p
-        WHERE p.customerNumber = :customerNumber
-          AND (:q IS NULL OR LOWER(p.streetAddress) LIKE LOWER(CONCAT('%', :q, '%'))
-               OR LOWER(p.propertyId) LIKE LOWER(CONCAT('%', :q, '%')))
-        ORDER BY p.streetAddress ASC
-        """)
+    @Query(value = """
+        SELECT * FROM properties
+        WHERE customer_number = :customerNumber
+          AND (:q IS NULL OR LOWER(street_address) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(property_id) LIKE LOWER(CONCAT('%', :q, '%')))
+        ORDER BY street_address ASC
+        LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}
+        """, nativeQuery = true)
     java.util.List<Property> findByCustomerNumber(
         @Param("customerNumber") String customerNumber,
         @Param("q") String q,

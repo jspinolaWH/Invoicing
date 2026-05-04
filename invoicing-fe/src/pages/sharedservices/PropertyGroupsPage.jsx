@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getPropertyGroups, createPropertyGroup, getPropertyGroup, replaceParticipants, validatePropertyGroup, addParticipantRetroactive } from '../../api/propertyGroups'
+import CustomerSearchInput from '../../components/billing/CustomerSearchInput'
 import '../masterdata/VatRatesPage.css'
 
 export default function PropertyGroupsPage() {
@@ -176,7 +177,7 @@ export default function PropertyGroupsPage() {
               <tbody>
                 {participants.map((p, idx) => (
                   <tr key={idx}>
-                    <td><input value={p.customerNumber} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, customerNumber: e.target.value } : x))} style={{ width: 120 }} /></td>
+                    <td><CustomerSearchInput customerNumber={p.customerNumber} onSelect={(num) => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, customerNumber: num } : x))} required={false} /></td>
                     <td><input type="number" step="0.01" value={p.sharePercentage} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, sharePercentage: e.target.value } : x))} style={{ width: 80 }} /></td>
                     <td><input type="date" value={p.validFrom ?? ''} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, validFrom: e.target.value } : x))} /></td>
                     <td><input type="date" value={p.validTo ?? ''} onChange={e => setParticipants(prev => prev.map((x, i) => i === idx ? { ...x, validTo: e.target.value || null } : x))} /></td>
@@ -234,7 +235,11 @@ export default function PropertyGroupsPage() {
               </p>
               <div className="field">
                 <label>Customer Number *</label>
-                <input value={retroForm.customerNumber} onChange={e => setRetroForm(f => ({ ...f, customerNumber: e.target.value }))} />
+                <CustomerSearchInput
+                  customerNumber={retroForm.customerNumber}
+                  onSelect={(num) => setRetroForm(f => ({ ...f, customerNumber: num }))}
+                  required={false}
+                />
               </div>
               <div className="field">
                 <label>Share % *</label>

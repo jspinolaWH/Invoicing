@@ -3,6 +3,7 @@ package com.example.invoicing.controller.invoicetemplate;
 import com.example.invoicing.entity.invoicetemplate.dto.InvoiceTemplateRequest;
 import com.example.invoicing.entity.invoicetemplate.dto.InvoiceTemplateResponse;
 import com.example.invoicing.service.InvoiceTemplateService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -28,13 +29,13 @@ public class InvoiceTemplateController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public InvoiceTemplateResponse create(@RequestBody InvoiceTemplateRequest request) {
+    public InvoiceTemplateResponse create(@Valid @RequestBody InvoiceTemplateRequest request) {
         return InvoiceTemplateResponse.from(service.create(request));
     }
 
     @PutMapping("/{id}")
     public InvoiceTemplateResponse update(@PathVariable Long id,
-                                          @RequestBody InvoiceTemplateRequest request) {
+                                          @Valid @RequestBody InvoiceTemplateRequest request) {
         return InvoiceTemplateResponse.from(service.update(id, request));
     }
 

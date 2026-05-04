@@ -453,15 +453,15 @@ public class BillingEventService {
 
         List<BillingEventAuditLog> auditEntries = new ArrayList<>();
         if (req.getIncludeWasteFee() != null && req.getIncludeWasteFee() != event.isIncludeWasteFee()) {
-            auditEntries.add(buildAudit(id, "includeWasteFee", event.isIncludeWasteFee(), req.getIncludeWasteFee(), user, null));
+            auditEntries.add(buildAudit(id, "includeWasteFee", event.isIncludeWasteFee(), req.getIncludeWasteFee(), user, "Component inclusion updated"));
             event.setIncludeWasteFee(req.getIncludeWasteFee());
         }
         if (req.getIncludeTransportFee() != null && req.getIncludeTransportFee() != event.isIncludeTransportFee()) {
-            auditEntries.add(buildAudit(id, "includeTransportFee", event.isIncludeTransportFee(), req.getIncludeTransportFee(), user, null));
+            auditEntries.add(buildAudit(id, "includeTransportFee", event.isIncludeTransportFee(), req.getIncludeTransportFee(), user, "Component inclusion updated"));
             event.setIncludeTransportFee(req.getIncludeTransportFee());
         }
         if (req.getIncludeEcoFee() != null && req.getIncludeEcoFee() != event.isIncludeEcoFee()) {
-            auditEntries.add(buildAudit(id, "includeEcoFee", event.isIncludeEcoFee(), req.getIncludeEcoFee(), user, null));
+            auditEntries.add(buildAudit(id, "includeEcoFee", event.isIncludeEcoFee(), req.getIncludeEcoFee(), user, "Component inclusion updated"));
             event.setIncludeEcoFee(req.getIncludeEcoFee());
         }
         billingEventRepository.save(event);

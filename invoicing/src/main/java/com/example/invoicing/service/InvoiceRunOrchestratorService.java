@@ -72,12 +72,13 @@ public class InvoiceRunOrchestratorService {
         try {
             Long resolvedProductId = resolveProductId(run.getFilterServiceType());
 
+            LegalClassification runCls = resolveClassification(run.getFilterServiceResponsibility());
             List<BillingEvent> events = billingEventRepository.findByRunFilter(
                 run.getFilterMunicipality(),
-                run.getFilterPeriodFrom(),
-                run.getFilterPeriodTo(),
+                run.getFilterPeriodFrom() != null ? run.getFilterPeriodFrom().toString() : null,
+                run.getFilterPeriodTo()   != null ? run.getFilterPeriodTo().toString()   : null,
                 resolvedProductId,
-                resolveClassification(run.getFilterServiceResponsibility()),
+                runCls != null ? runCls.name() : null,
                 run.getFilterLocation()
             );
 

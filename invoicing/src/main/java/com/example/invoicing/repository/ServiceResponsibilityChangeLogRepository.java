@@ -17,18 +17,24 @@ public interface ServiceResponsibilityChangeLogRepository extends JpaRepository<
 
     List<ServiceResponsibilityChangeLog> findByToCustomerNumberOrderByAppliedAtDesc(String toCustomerNumber);
 
-    @Query("""
-        SELECT l FROM ServiceResponsibilityChangeLog l
+    @Query(value = """
+        SELECT * FROM service_responsibility_change_log
         WHERE (:customerNumber IS NULL
-               OR l.fromCustomerNumber = :customerNumber
-               OR l.toCustomerNumber = :customerNumber)
-          AND (:from IS NULL OR l.appliedAt >= :from)
-          AND (:to   IS NULL OR l.appliedAt <= :to)
-        ORDER BY l.appliedAt DESC
-        """)
+               OR from_customer_number = :customerNumber
+               OR to_customer_number   = :customerNumber)
+          AND (:fromStr IS NULL OR applied_at >= CAST(:fromStr AS TIMESTAMP))
+          AND (:toStr   IS NULL OR applied_at <= CAST(:toStr   AS TIMESTAMP))
+        ORDER BY applied_at DESC
+        """, nativeQuery = true)
     List<ServiceResponsibilityChangeLog> findFiltered(
         @Param("customerNumber") String customerNumber,
-        @Param("from") Instant from,
-        @Param("to") Instant to
+        @Param("fromStr") String fromStr,
+        @Param("toStr") String toStr
     );
+
+    default List<ServiceResponsibilityChangeLog> findFiltered(String customerNumber, Instant from, Instant to) {
+        return findFiltered(customerNumber,
+                from != null ? from.toString().replace("Z", "") : null,
+                to != null ? to.toString().replace("Z", "") : null);
+    }
 }

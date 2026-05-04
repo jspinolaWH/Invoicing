@@ -6,6 +6,12 @@ import { getPropertyGroups } from '../../api/propertyGroups'
 import { getMyRoles } from '../../api/me'
 import RelatedTasks from '../../components/RelatedTasks'
 import StatusBadge from '../../components/billing/StatusBadge'
+import SearchableAutocomplete from '../../components/SearchableAutocomplete'
+import { searchVehicles } from '../../api/vehicles'
+import { searchDrivers } from '../../api/drivers'
+import { searchLocations, searchMunicipalities } from '../../api/locations'
+import { searchWasteTypes } from '../../api/wasteTypes'
+import { searchReceivingSites } from '../../api/receivingSites'
 import '../masterdata/VatRatesPage.css'
 import './BillingEventsPage.css'
 
@@ -24,6 +30,7 @@ export default function EditBillingEventPage() {
   const [error, setError] = useState(null)
   const [fieldErrors, setFieldErrors] = useState({})
   const [canEditAll, setCanEditAll] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   const [form, setForm] = useState({
     eventDate: '', productId: '', wasteFeePrice: '', transportFeePrice: '',
@@ -67,6 +74,7 @@ export default function EditBillingEventPage() {
         })
       })
       .catch(() => setError('Failed to load event.'))
+      .finally(() => setLoading(false))
   }, [id])
 
   const set = (field) => (e) => {
@@ -118,7 +126,8 @@ export default function EditBillingEventPage() {
     }
   }
 
-  if (!event) return <div className="loading">Loading event…</div>
+  if (loading) return <div className="loading">Loading event…</div>
+  if (!event) return <div className="error-msg">{error || 'Failed to load event.'}</div>
 
   const isMutable = event.status === 'IN_PROGRESS' || event.status === 'ERROR'
   const fieldDisabled = (pricingField) => !isMutable || (!pricingField && !canEditAll)
@@ -241,17 +250,55 @@ export default function EditBillingEventPage() {
             </div>
             <div className="field">
               <label>Municipality</label>
-              <input value={form.municipalityId} onChange={set('municipalityId')} disabled={fieldDisabled(false)} />
+              <SearchableAutocomplete
+                value={form.municipalityId}
+                onChange={(v) => setForm(f => ({ ...f, municipalityId: v }))}
+                onSelect={(m) => setForm(f => ({ ...f, municipalityId: m.municipalityId }))}
+                onSearch={async (q) => { const r = await searchMunicipalities(q); return r.data }}
+                renderOption={(m) => <span><strong>{m.municipalityId}</strong> — {m.municipalityName}</span>}
+                placeholder="Type municipality name or code…"
+                disabled={fieldDisabled(false)}
+              />
             </div>
           </div>
           <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
             <div className="field">
-              <label>Vehicle ID</label>
-              <input value={form.vehicleId} onChange={set('vehicleId')} disabled={fieldDisabled(false)} />
+              <label>Location ID</label>
+              <SearchableAutocomplete
+                value={form.locationId}
+                onChange={(v) => setForm(f => ({ ...f, locationId: v }))}
+                onSelect={(loc) => setForm(f => ({ ...f, locationId: loc.locationId, municipalityId: loc.municipalityId }))}
+                onSearch={async (q) => { const r = await searchLocations(q); return r.data }}
+                renderOption={(loc) => <span><strong>{loc.locationId}</strong> — {loc.name}, {loc.municipalityName}</span>}
+                placeholder="Type location ID or name…"
+                disabled={fieldDisabled(false)}
+              />
             </div>
             <div className="field">
+              <label>Vehicle ID</label>
+              <SearchableAutocomplete
+                value={form.vehicleId}
+                onChange={(v) => setForm(f => ({ ...f, vehicleId: v }))}
+                onSelect={(v) => setForm(f => ({ ...f, vehicleId: v.vehicleId }))}
+                onSearch={async (q) => { const r = await searchVehicles(q); return r.data }}
+                renderOption={(v) => <span><strong>{v.vehicleId}</strong> · {v.registrationPlate} <em style={{color:'var(--color-text-muted)'}}>({v.vehicleType})</em></span>}
+                placeholder="Type vehicle ID or plate…"
+                disabled={fieldDisabled(false)}
+              />
+            </div>
+          </div>
+          <div className="form-row" style={{ marginTop: 'var(--space-4)' }}>
+            <div className="field">
               <label>Driver ID</label>
-              <input value={form.driverId} onChange={set('driverId')} disabled={fieldDisabled(false)} />
+              <SearchableAutocomplete
+                value={form.driverId}
+                onChange={(v) => setForm(f => ({ ...f, driverId: v }))}
+                onSelect={(d) => setForm(f => ({ ...f, driverId: d.driverId }))}
+                onSearch={async (q) => { const r = await searchDrivers(q); return r.data }}
+                renderOption={(d) => <span><strong>{d.driverId}</strong> · {d.name}</span>}
+                placeholder="Type driver ID or name…"
+                disabled={fieldDisabled(false)}
+              />
             </div>
           </div>
         </div>
@@ -269,11 +316,27 @@ export default function EditBillingEventPage() {
           <div className="form-row">
             <div className="field">
               <label>Waste Type <span className="optional">(optional)</span></label>
-              <input value={form.wasteType} onChange={set('wasteType')} disabled={fieldDisabled(false)} placeholder="e.g. MIXED_WASTE, PAPER, BIO_WASTE" />
+              <SearchableAutocomplete
+                value={form.wasteType}
+                onChange={(v) => setForm(f => ({ ...f, wasteType: v }))}
+                onSelect={(wt) => setForm(f => ({ ...f, wasteType: wt.code }))}
+                onSearch={async (q) => { const r = await searchWasteTypes(q); return r.data }}
+                renderOption={(wt) => <span><strong>{wt.code}</strong> — {wt.nameEn} <em style={{color:'var(--color-text-muted)'}}>({wt.category})</em></span>}
+                placeholder="Type waste type code or name…"
+                disabled={fieldDisabled(false)}
+              />
             </div>
             <div className="field">
               <label>Receiving Site <span className="optional">(optional)</span></label>
-              <input value={form.receivingSite} onChange={set('receivingSite')} disabled={fieldDisabled(false)} placeholder="e.g. Ämmässuo Waste Treatment Centre" />
+              <SearchableAutocomplete
+                value={form.receivingSite}
+                onChange={(v) => setForm(f => ({ ...f, receivingSite: v }))}
+                onSelect={(s) => setForm(f => ({ ...f, receivingSite: s.name }))}
+                onSearch={async (q) => { const r = await searchReceivingSites(q); return r.data }}
+                renderOption={(s) => <span>{s.name}<em style={{color:'var(--color-text-muted)',marginLeft:8}}>{s.municipalityName}</em></span>}
+                placeholder="Type site name…"
+                disabled={fieldDisabled(false)}
+              />
             </div>
           </div>
         </div>

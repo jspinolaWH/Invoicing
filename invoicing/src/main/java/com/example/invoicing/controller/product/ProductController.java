@@ -5,6 +5,7 @@ import com.example.invoicing.entity.product.dto.ProductResponse;
 import com.example.invoicing.entity.product.dto.TranslationRequest;
 import com.example.invoicing.entity.product.dto.TranslationResponse;
 import com.example.invoicing.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -33,12 +34,12 @@ public class ProductController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProductResponse create(@RequestBody ProductRequest request) {
+    public ProductResponse create(@Valid @RequestBody ProductRequest request) {
         return ProductResponse.from(service.create(request));
     }
 
     @PutMapping("/{id}")
-    public ProductResponse update(@PathVariable Long id, @RequestBody ProductRequest request) {
+    public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         return ProductResponse.from(service.update(id, request));
     }
 

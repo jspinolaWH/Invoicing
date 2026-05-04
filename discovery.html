@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>How AI Built Our Invoicing System</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f1117;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── Chapter dividers ── */
+  .chapter {
+    max-width: 1240px;
+    margin: 60px auto 28px;
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .chapter-num {
+    font-size: 64px;
+    font-weight: 900;
+    line-height: 1;
+    color: #1e293b;
+    flex-shrink: 0;
+    letter-spacing: -3px;
+    margin-top: -6px;
+  }
+  .chapter-text {}
+  .chapter-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #334155;
+    margin-bottom: 4px;
+  }
+  .chapter-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #f1f5f9;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .chapter-intro {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.8;
+    max-width: 760px;
+  }
+  .chapter-intro strong { color: #94a3b8; }
+
+  /* ── Part divider ── */
+  .part-divider {
+    max-width: 1240px;
+    margin: 80px auto 60px;
+    position: relative;
+    text-align: center;
+  }
+  .part-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    height: 1px;
+    background: #1e293b;
+  }
+  .part-label {
+    display: inline-block;
+    position: relative;
+    background: #0f1117;
+    padding: 0 24px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #334155;
+  }
+  .part-title {
+    margin-top: 18px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #f1f5f9;
+  }
+  .part-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #475569;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: #161b27;
+    border-radius: 14px;
+    border: 1px solid #2d3748;
+    overflow: hidden;
+    max-width: 1240px;
+    margin: 0 auto 28px;
+  }
+  .card-header {
+    padding: 13px 20px 11px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-desc {
+    padding: 10px 20px 14px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.7;
+    border-bottom: 1px solid #1e293b;
+  }
+  .card.discovery  { border-color: #0e749055; }
+  .card.discovery  .card-header { color: #67e8f9; background: #041f24; }
+  .card.together   { border-color: #7c3aed55; }
+  .card.together   .card-header { color: #a78bfa; background: #1a1036; }
+  .card.planning   { border-color: #b4530955; }
+  .card.planning   .card-header { color: #fbbf24; background: #1c1007; }
+
+  .diagram-wrap { padding: 20px 8px; }
+  .mermaid { display: flex; justify-content: center; }
+  .mermaid svg { max-width: 100%; height: auto; }
+
+  /* ── Section blocks ── */
+  .section {
+    max-width: 1240px;
+    margin: 0 auto 28px;
+    background: #161b27;
+    border: 1px solid #2d3748;
+    border-radius: 14px;
+    padding: 22px 24px;
+  }
+  .section-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 18px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    max-width: 1240px;
+    margin: 0 auto 60px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 36px;
+    font-weight: 900;
+    color: #f8fafc;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero-body {
+    font-size: 15px;
+    color: #64748b;
+    line-height: 1.85;
+    max-width: 700px;
+    margin: 0 auto 32px;
+  }
+  .hero-body strong { color: #94a3b8; }
+
+  /* ── Result stats ── */
+  .result-row {
+    max-width: 1240px;
+    margin: 0 auto 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .result-card {
+    border-radius: 14px;
+    padding: 28px 32px;
+    text-align: center;
+  }
+  .result-number {
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: -3px;
+  }
+  .result-denom {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    opacity: 0.7;
+  }
+  .result-label {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ── Requirements examples ── */
+  .req-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .req-card {
+    background: #0d1117;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .req-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #334155;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .req-text {
+    font-size: 13px;
+    color: #e2e8f0;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  .req-note {
+    font-size: 11px;
+    color: #475569;
+    line-height: 1.5;
+  }
+
+  /* ── Together: side-by-side comparison ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    align-items: start;
+  }
+  .compare-col { padding: 0 20px; }
+  .compare-divider {
+    width: 1px;
+    background: #1e293b;
+    align-self: stretch;
+    margin: 0 4px;
+  }
+  .compare-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .compare-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .compare-icon { flex-shrink: 0; margin-top: 2px; }
+
+  /* ── Pipeline strip ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    background: #0d1117;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 18px 22px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pipe-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .pipe-badge {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .pipe-label {
+    font-size: 10px;
+    color: #475569;
+    text-align: center;
+    max-width: 120px;
+    line-height: 1.4;
+  }
+  .pipe-arrow {
+    font-size: 20px;
+    color: #334155;
+    padding: 0 4px;
+    margin-bottom: 16px;
+  }
+  .pipe-parallel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .pipe-parallel-label {
+    font-size: 10px;
+    color: #475569;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+  .pipe-parallel-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .badge-cyan   { background: #041f24; border: 1px solid #0891b2; color: #67e8f9; }
+  .badge-green  { background: #052e16; border: 1px solid #059669; color: #34d399; }
+  .badge-orange { background: #431407; border: 1px solid #d97706; color: #fb923c; }
+
+  /* ── P&P phases ── */
+  .phase-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .phase-card {
+    background: #0d1117;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .phase-num   { font-size: 10px; font-family: monospace; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.06em; }
+  .phase-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .phase-body  { font-size: 11.5px; color: #94a3b8; line-height: 1.65; }
+  .phase-rule {
+    font-size: 10.5px;
+    margin-top: 12px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    line-height: 1.4;
+  }
+
+  /* ── Blueprint ── */
+  .contract-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .contract-explain {
+    font-size: 12.5px;
+    color: #94a3b8;
+    line-height: 1.75;
+  }
+  .contract-explain p { margin-bottom: 12px; }
+  .contract-explain strong { color: #e2e8f0; }
+  .blueprint-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .blueprint-part {
+    background: #0d1117;
+    border-radius: 10px;
+    padding: 16px 18px;
+    line-height: 1.7;
+  }
+  .blueprint-label {
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .blueprint-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .blueprint-body  { font-size: 11.5px; color: #94a3b8; }
+  .blueprint-example {
+    margin-top: 8px;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    line-height: 1.5;
+  }
+
+  /* ── Estimation ── */
+  .est-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .est-card {
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+  }
+  .est-points { font-size: 34px; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+  .est-label  { font-size: 10.5px; line-height: 1.5; }
+  .disagree-box {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    align-items: center;
+    background: #0d1117;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 18px 22px;
+  }
+  .disagree-person  { text-align: center; }
+  .disagree-middle  {
+    text-align: center;
+    padding: 0 10px;
+    font-size: 11.5px;
+    color: #94a3b8;
+    line-height: 1.9;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    max-width: 1240px;
+    margin: 0 auto 28px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 16px 20px;
+    background: #161b27;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    font-size: 11.5px;
+    color: #94a3b8;
+  }
+  .legend-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; font-weight: 700; margin-right: 4px; }
+  .legend-item  { display: flex; align-items: center; gap: 7px; }
+  .leg-circle   { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .leg-rect     { width: 18px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .leg-diamond  { width: 12px; height: 12px; transform: rotate(45deg); border-radius: 2px; flex-shrink: 0; }
+
+  @media (max-width: 960px) {
+    .compare-grid, .phase-grid, .est-grid, .contract-grid, .blueprint-grid, .req-grid, .result-row { grid-template-columns: 1fr; }
+    .compare-divider { display: none; }
+    .pipeline { justify-content: center; }
+    .hero h1 { font-size: 26px; }
+    .chapter-num { font-size: 42px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     HERO
+     ══════════════════════════════════════════════════════ -->
+
+<div style="text-align: center; margin-bottom: 48px;">
+  <img src="image (4).png" alt="" style="max-width: 960px; width: 100%; border-radius: 12px;" />
+</div>
+
+<div class="hero">
+  <h1>52 Requirements.<br>One AI. A Working Product.</h1>
+  <p class="hero-body">
+    This is the story of how we built a complex invoicing system using AI as the primary builder.
+    We started with a list of 52 written requirements — and ended with a working, verified product
+    where <strong>49 of 52 features were confirmed automatically</strong>, without a developer checking them by hand.
+    <br><br>
+    We'll also walk through how our team plans and estimates features together —
+    the process that makes it possible for AI to build the right things in the first place.
+  </p>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPTER 1 — THE STARTING POINT
+     ══════════════════════════════════════════════════════ -->
+
+<div class="chapter">
+  <div class="chapter-num">01</div>
+  <div class="chapter-text">
+    <div class="chapter-label">Chapter 1</div>
+    <div class="chapter-title">The Starting Point</div>
+    <p class="chapter-intro">
+      Before a single line of code was written, the product team had documented everything
+      the invoicing system needed to do. These are called <strong>requirements</strong> —
+      one written statement per feature, describing exactly what the system must be able to do
+      and under what conditions. Think of them as a contract between the business and the development team.
+      Here are a few examples of what a real requirement looks like.
+    </p>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Example requirements — plain English statements of what the system must do</div>
+  <div class="req-grid">
+
+    <div class="req-card">
+      <span class="req-tag">Requirement · Billing</span>
+      <div class="req-text">"Users must be able to filter the invoice list by status: Draft, Sent, or Paid."</div>
+      <div class="req-note">This means a filter button must appear on the screen and actually work — not just exist in the code somewhere.</div>
+    </div>
+
+    <div class="req-card">
+      <span class="req-tag">Requirement · Price Lists</span>
+      <div class="req-text">"A price list must support multiple currencies and apply the correct rate automatically based on the customer's country."</div>
+      <div class="req-note">This touches data, business rules, and what the user sees — three different parts of the system working together.</div>
+    </div>
+
+    <div class="req-card">
+      <span class="req-tag">Requirement · Invoice Generation</span>
+      <div class="req-text">"The system must prevent duplicate invoices from being created for the same customer and billing period."</div>
+      <div class="req-note">A rule that lives in the background — the user never sees it, but it must be there and it must be tested.</div>
+    </div>
+
+    <div class="req-card">
+      <span class="req-tag">Requirement · Seasonal Fees</span>
+      <div class="req-text">"Seasonal fees must be automatically applied to matching services within a billing cycle, without manual input from the user."</div>
+      <div class="req-note">Automation — the system does the work so the person using it doesn't have to remember every rule.</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top: 20px; padding: 16px 20px; background: #0d1117; border: 1px solid #1e293b; border-radius: 10px; font-size: 13px; color: #64748b; line-height: 1.8;">
+    We had <strong style="color:#e2e8f0;">52 of these.</strong>
+    Each one describing a single behaviour the system must have.
+    Some were simple. Some had hidden complexity.
+    A few depended on other requirements being built first.
+    The challenge: how do you turn 52 of these into working software — reliably, quickly, and without missing anything?
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPTER 2 — HOW AI BUILT IT
+     ══════════════════════════════════════════════════════ -->
+
+<div class="chapter">
+  <div class="chapter-num">02</div>
+  <div class="chapter-text">
+    <div class="chapter-label">Chapter 2</div>
+    <div class="chapter-title">How AI Built It</div>
+    <p class="chapter-intro">
+      Instead of handing all 52 requirements to developers and waiting weeks,
+      we gave them to an AI. The AI read every requirement, figured out what depended on what,
+      created a step-by-step build plan — and then built, checked, and fixed each feature in sequence.
+      Two specialised AI agents, Ralph and Ralph-Brother, made sure nothing slipped through.
+      Here is exactly what happened.
+    </p>
+  </div>
+</div>
+
+<div class="card discovery">
+  <div class="card-header">The Build Journey &nbsp;·&nbsp; 52 Requirements → Verified Product</div>
+  <div class="card-desc">
+    Read top to bottom. Each step feeds into the next. The two coloured paths — green and orange —
+    are the two AI agents running their checks. Anything neither agent could resolve was flagged
+    and handed to a developer at the very end.
+  </div>
+  <div class="diagram-wrap">
+    <div class="mermaid">
+%%{init: {'theme': 'dark', 'flowchart': {'curve': 'linear', 'nodeSpacing': 30, 'rankSpacing': 42}}}%%
+flowchart TD
+    classDef start   fill:#0891b2,stroke:#0369a1,color:#ffffff
+    classDef act     fill:#041f24,stroke:#0891b2,color:#67e8f9
+    classDef ralph   fill:#052e16,stroke:#059669,color:#6ee7b7
+    classDef brother fill:#431407,stroke:#d97706,color:#fcd34d
+    classDef dec     fill:#1e293b,stroke:#334155,color:#94a3b8
+    classDef flag    fill:#292524,stroke:#57534e,color:#a8a29e
+    classDef manual  fill:#1e1b4b,stroke:#4c1d95,color:#c4b5fd
+    classDef done    fill:#052e16,stroke:#16a34a,color:#4ade80
+
+    S(( )):::start
+
+    S --> REQS["52 business requirements"]:::act
+    REQS --> CLAUDE["AI reads all 52 requirements\nfinds what depends on what\nbuilds a step-by-step plan with reasons"]:::act
+    CLAUDE --> DOCS["13-step build plan\nwith reasoning behind every step"]:::act
+    DOCS --> STEP["Build the next step"]:::act
+
+    STEP --> UISC["Screen scan\nWhat can users already see and do?"]:::act
+
+    UISC --> RALPH["Ralph\nCode check — is each feature actually built?"]:::ralph
+    RALPH --> RC{"Feature\ncomplete?"}:::dec
+    RC -->|Yes| BROTHER
+    RC -->|Gaps found| RFIX["Ralph\nBuilds what is missing"]:::ralph
+    RFIX --> RITER{"3 attempts\nexceeded?"}:::dec
+    RITER -->|No| RALPH
+    RITER -->|Yes| RFLAG["Flagged for human review"]:::flag
+
+    RFLAG --> BROTHER
+    RC -->|Yes| BROTHER["Ralph-Brother\nScreen check — can a real user find and use this?\n(opens the app, traces every click path)"]:::brother
+    BROTHER --> BC{"Visible\nto users?"}:::dec
+    BC -->|All visible| NEXT
+    BC -->|Missing or partial| BFIX["Ralph-Brother\nFixes both the hidden logic\nand the visible screen in one pass"]:::brother
+    BFIX --> BITER{"3 attempts\nexceeded?"}:::dec
+    BITER -->|No| BROTHER
+    BITER -->|Yes| BFLAG["Flagged for human review"]:::flag
+
+    BFLAG --> NEXT
+    NEXT{"More\nsteps?"}:::dec
+    NEXT -->|Yes| STEP
+    NEXT -->|No| MANUAL["Human developer\nreviews the flagged items\nand resolves what AI couldn't"]:::manual
+
+    MANUAL --> PROTO["Product complete\n49 / 52 verified automatically ✓\n 3 / 52 resolved by a human ✓"]:::done
+    PROTO --> E(( )):::start
+    </div>
+  </div>
+</div>
+
+<!-- Result highlight -->
+<div class="result-row">
+  <div class="result-card" style="background: #052e16; border: 1px solid #059669;">
+    <div class="result-number" style="color: #4ade80;">49</div>
+    <div class="result-denom" style="color: #34d399;">of 52 features</div>
+    <div class="result-label" style="color: #6ee7b7;">
+      Verified automatically by AI — no developer needed to check them by hand.
+      Code built. Screens wired. Click paths tested.
+    </div>
+  </div>
+  <div class="result-card" style="background: #1e1b4b; border: 1px solid #4c1d95;">
+    <div class="result-number" style="color: #c4b5fd;">3</div>
+    <div class="result-denom" style="color: #a78bfa;">of 52 features</div>
+    <div class="result-label" style="color: #c4b5fd;">
+      Required a human developer to look at them.
+      Edge cases that were too nuanced for the AI to resolve on its own.
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPTER 3 — MEET RALPH & RALPH-BROTHER
+     ══════════════════════════════════════════════════════ -->
+
+<div class="chapter">
+  <div class="chapter-num">03</div>
+  <div class="chapter-text">
+    <div class="chapter-label">Chapter 3</div>
+    <div class="chapter-title">Meet Ralph &amp; Ralph-Brother</div>
+    <p class="chapter-intro">
+      Two AI agents. Each one asking a completely different question.
+      This is what makes the process robust — one checks that the feature <strong>exists in the code</strong>,
+      the other checks that a <strong>real user can actually find and use it on screen</strong>.
+      You need both. The example below shows exactly why.
+    </p>
+  </div>
+</div>
+
+<div class="card together">
+  <div class="card-header">Ralph &amp; Ralph-Brother &nbsp;·&nbsp; Two Checks, Two Different Questions</div>
+  <div class="card-desc">
+    They run at the same time because they look at completely different things and never interfere with each other.
+  </div>
+
+  <div style="padding: 24px;">
+
+    <div class="compare-grid">
+      <div class="compare-col">
+        <div class="compare-title" style="color:#34d399; border-color:#05966944;">
+          Ralph &nbsp;·&nbsp; "Is the feature actually built?"
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#34d399;">✓</span>
+          <span>Reads every requirement and checks whether the code for it exists</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#34d399;">✓</span>
+          <span>Finds missing features, business rules, and data storage</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#34d399;">✓</span>
+          <span>Writes a list of what's missing, then builds it</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#34d399;">✓</span>
+          <span>Re-checks every fix immediately to confirm it worked</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#f87171;">✗</span>
+          <span style="color:#64748b;">Never opens the app. Does not check if users can actually see the feature.</span>
+        </div>
+      </div>
+
+      <div class="compare-divider"></div>
+
+      <div class="compare-col">
+        <div class="compare-title" style="color:#fb923c; border-color:#d9770644;">
+          Ralph-Brother &nbsp;·&nbsp; "Can a real user actually find it?"
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#fb923c;">✓</span>
+          <span>Knows which features are already visible to users and which aren't</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#fb923c;">✓</span>
+          <span>Checks the underlying code first, before touching anything on screen</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#fb923c;">✓</span>
+          <span>Fixes both the hidden logic <em>and</em> the visible screen in one pass — buttons, pages, connections</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#fb923c;">✓</span>
+          <span>Re-tests every fix: follows the exact steps a real user would take</span>
+        </div>
+        <div class="compare-item">
+          <span class="compare-icon" style="color:#fb923c;">✓</span>
+          <span>A feature only passes when a user can find it, click it, and use it on screen</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- The key example -->
+    <div style="margin: 24px 0 20px; background: #0d1117; border: 1px solid #1e293b; border-radius: 10px; padding: 18px 22px;">
+      <div style="font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; font-weight: 700; margin-bottom: 12px;">Why you need both — a real example from this project</div>
+      <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; font-size: 12px;">
+        <div style="background: #052e16; border: 1px solid #059669; border-radius: 8px; padding: 14px 16px; color: #6ee7b7; line-height: 1.7;">
+          <strong style="color:#34d399; display:block; margin-bottom:6px;">Ralph says: PASS ✓</strong>
+          The logic for filtering invoices by status is built. The data queries are there.
+          The business rules are implemented. Requirement satisfied.
+        </div>
+        <div style="text-align:center; color:#334155; font-size:22px;">→</div>
+        <div style="background: #431407; border: 1px solid #d97706; border-radius: 8px; padding: 14px 16px; color: #fcd34d; line-height: 1.7;">
+          <strong style="color:#fb923c; display:block; margin-bottom:6px;">Ralph-Brother says: FAIL ✗</strong>
+          Opens the app. Goes to the Invoice List page. Looks for the filter button.
+          It's not there. Someone built the logic but never wired it to the screen.
+          A real user cannot find this feature.
+        </div>
+      </div>
+    </div>
+
+    <!-- Run order -->
+    <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #475569; margin-bottom: 14px;">How they run together</div>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <span class="pipe-badge badge-cyan">Screen Scan</span>
+        <span class="pipe-label">① Map what users can already see</span>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-parallel">
+        <div class="pipe-parallel-label">run at the same time</div>
+        <div class="pipe-parallel-row">
+          <div class="pipe-step">
+            <span class="pipe-badge badge-green">Ralph</span>
+            <span class="pipe-label">② Fix missing code</span>
+          </div>
+          <div style="color:#334155; font-size:18px; margin-bottom:16px;">+</div>
+          <div class="pipe-step">
+            <span class="pipe-badge badge-orange">Ralph-Brother</span>
+            <span class="pipe-label">③ Fix missing screens</span>
+          </div>
+        </div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <span class="pipe-badge badge-cyan">Screen Scan</span>
+        <span class="pipe-label">④ Confirm everything is now visible</span>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <span class="pipe-badge" style="background:#1e1b4b; border: 1px solid #4c1d95; color:#c4b5fd;">Human Review</span>
+        <span class="pipe-label">⑤ Resolve the few things AI flagged</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     PART 2 DIVIDER
+     ══════════════════════════════════════════════════════ -->
+
+<div class="part-divider">
+  <span class="part-label">Part Two</span>
+  <div class="part-title">How We Plan Features as a Team</div>
+  <div class="part-subtitle">AI can only build what we define clearly. This is how we define it.</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPTER 4 — THE PLANNING PROCESS
+     ══════════════════════════════════════════════════════ -->
+
+<div class="chapter">
+  <div class="chapter-num">04</div>
+  <div class="chapter-text">
+    <div class="chapter-label">Chapter 4</div>
+    <div class="chapter-title">The Planning Process</div>
+    <p class="chapter-intro">
+      By the time this process starts, an AI mockup already exists.
+      The team doesn't read requirements in the abstract — they read them <strong>while looking at the screen</strong>.
+      That changes everything. A requirement that sounds vague on paper becomes obvious
+      the moment you can point at it and ask "is this what we mean?"
+      The mockup is the shared reference that makes the conversation concrete before any real code is committed.
+    </p>
+  </div>
+</div>
+
+<div class="card planning">
+  <div class="card-header">Feature Planning &nbsp;·&nbsp; Four Steps, Every Time</div>
+  <div class="card-desc">
+    This process happens after an AI mockup is already in place.
+    The team reads each task and matches it against what they can see on screen —
+    using the mockup as a visual reference to validate, challenge, and sharpen the requirements
+    before committing to building them for real.
+  </div>
+  <div class="diagram-wrap">
+    <div class="mermaid">
+%%{init: {'theme': 'dark', 'flowchart': {'curve': 'linear', 'nodeSpacing': 30, 'rankSpacing': 42}}}%%
+flowchart TD
+    classDef act   fill:#1c1007,stroke:#b45309,color:#fbbf24
+    classDef dec   fill:#292524,stroke:#57534e,color:#d6d3d1
+    classDef term  fill:#b45309,stroke:#92400e,color:#ffffff
+    classDef done  fill:#052e16,stroke:#16a34a,color:#4ade80
+    classDef spike fill:#1e1b4b,stroke:#4c1d95,color:#c4b5fd
+    classDef api   fill:#041f24,stroke:#0891b2,color:#67e8f9
+
+    S(( )):::term
+
+    S --> MOCK["AI mockup already exists\nThe team has a working screen to look at\nbefore the planning session begins"]:::api
+
+    MOCK --> GROOM["Step 1 — Grooming\nRead each task alongside the mockup\nDoes what we wrote match what we see?\nAlign on meaning before talking about how to build it"]:::act
+
+    GROOM --> UNK{"Anything\nunclear?"}:::dec
+    UNK -->|Yes| SPIKE["Quick investigation\nTime-boxed — one specific question\nAnswer it, then come back"]:::spike
+    SPIKE --> GROOM
+
+    UNK -->|No| BREAK["Step 2 — Task Breakdown\nSplit into small, completable tasks\nFront-end · Back-end · Tests\nEach has one clear done condition"]:::act
+
+    BREAK --> CONTRACT["Step 3 — Shared Blueprint\nBefore any code:\nBoth sides agree on exactly what they will send and receive"]:::api
+
+    CONTRACT --> EST["Step 4 — Estimation\nScore complexity: 1 · 2 · 3 · 5 · 8\nComplexity — not hours"]:::act
+
+    EST --> AGREE{"Everyone\nagrees?"}:::dec
+    AGREE -->|"Big gap (e.g. 2 vs 8)"| DISCUSS["Do not average — stop and talk\nThe disagreement means someone\nknows something the others don't\nThen re-estimate"]:::act
+    DISCUSS --> EST
+
+    AGREE -->|Yes| SPRINT["Add to sprint\nwith clear acceptance criteria"]:::done
+    SPRINT --> E(( )):::term
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">What happens in each step</div>
+  <div class="phase-grid">
+
+    <div class="phase-card" style="border-top: 3px solid #fbbf24;">
+      <div class="phase-num" style="color:#fbbf24;">STEP 01</div>
+      <div class="phase-title" style="color:#fbbf24;">Grooming</div>
+      <div class="phase-body">
+        The team reads each task while looking at the AI mockup on screen.
+        The question is not "how do we build this?" — it's
+        <em style="color:#e2e8f0;">"does what we wrote match what we're looking at?"</em>
+        <br><br>
+        The mockup makes vague requirements concrete. It turns a sentence on a page
+        into a real screen you can point at, question, and validate.
+        <br><br>
+        If something doesn't line up — the requirement says one thing, the screen suggests another —
+        that gets resolved before any real code is written.
+      </div>
+      <div class="phase-rule" style="background:#1c1007; color:#fbbf24; border: 1px solid #92400e;">
+        The mockup is the shared reference — it replaces a hundred words of description
+      </div>
+    </div>
+
+    <div class="phase-card" style="border-top: 3px solid #a78bfa;">
+      <div class="phase-num" style="color:#a78bfa;">STEP 02</div>
+      <div class="phase-title" style="color:#a78bfa;">Task Breakdown</div>
+      <div class="phase-body">
+        Split the feature into small, individually completable tasks.
+        Separate by layer:
+        <span style="color:#fbbf24;">what the user sees</span> ·
+        <span style="color:#7dd3fc;">the logic behind it</span> ·
+        <span style="color:#86efac;">automated tests</span>
+        <br><br>
+        Each task has a clear done condition. There is no "80% done" —
+        a task is either done or it isn't.
+        <br><br>
+        Make dependencies explicit so the team works in the right order.
+      </div>
+      <div class="phase-rule" style="background:#1e1b4b; color:#a78bfa; border: 1px solid #4c1d95;">
+        If you can't estimate it confidently, it's still too big — break it further
+      </div>
+    </div>
+
+    <div class="phase-card" style="border-top: 3px solid #7dd3fc;">
+      <div class="phase-num" style="color:#7dd3fc;">STEP 03</div>
+      <div class="phase-title" style="color:#7dd3fc;">Shared Blueprint</div>
+      <div class="phase-body">
+        Before any code is written, both sides of the team agree on the exact
+        shape of the data they will exchange. Like an architect's drawing —
+        both sides agree on where the walls go before construction starts.
+        <br><br>
+        With a blueprint: both sides build at the same time, independently.
+        Without one: the day you thought you were finished becomes a debugging session.
+      </div>
+      <div class="phase-rule" style="background:#041f24; color:#7dd3fc; border: 1px solid #0e7490;">
+        ~30 minutes to write · hours saved when connecting the pieces
+      </div>
+    </div>
+
+    <div class="phase-card" style="border-top: 3px solid #4ade80;">
+      <div class="phase-num" style="color:#4ade80;">STEP 04</div>
+      <div class="phase-title" style="color:#4ade80;">Estimation</div>
+      <div class="phase-body">
+        The team scores how complex the task is — not how many hours it will take.
+        This happens <em>after</em> the blueprint is written, because the blueprint
+        removes hidden unknowns that make estimates unreliable.
+        <br><br>
+        A big disagreement between team members is <strong style="color:#e2e8f0;">valuable information</strong>,
+        not a problem. It means someone sees something the others don't. Stop and talk about it.
+      </div>
+      <div class="phase-rule" style="background:#052e16; color:#4ade80; border: 1px solid #16a34a;">
+        Estimate after the blueprint, not before
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPTER 5 — ESTIMATING COMPLEXITY
+     ══════════════════════════════════════════════════════ -->
+
+<div class="chapter">
+  <div class="chapter-num">05</div>
+  <div class="chapter-text">
+    <div class="chapter-label">Chapter 5</div>
+    <div class="chapter-title">Estimating Complexity</div>
+    <p class="chapter-intro">
+      We don't estimate in hours — we estimate in <strong>complexity points</strong>.
+      Hours are unreliable because they depend on who does the work and what surprises come up.
+      Complexity is about how well-understood the problem is, how many moving parts it has,
+      and how likely it is to hit an unexpected edge case. Five points on the scale below. One rule: if you reach 8, it's not a task yet.
+    </p>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Complexity scale — what each number means</div>
+  <div class="est-grid">
+    <div class="est-card" style="background:#052e16; border: 1px solid #16a34a;">
+      <div class="est-points" style="color:#4ade80;">1</div>
+      <div class="est-label" style="color:#86efac;">Done this exact thing before. Zero unknowns. Very low risk.</div>
+    </div>
+    <div class="est-card" style="background:#052e16; border: 1px solid #16a34a;">
+      <div class="est-points" style="color:#4ade80;">2</div>
+      <div class="est-label" style="color:#86efac;">Similar to things I know well. Small edge cases possible.</div>
+    </div>
+    <div class="est-card" style="background:#2d1900; border: 1px solid #92400e;">
+      <div class="est-points" style="color:#fbbf24;">3</div>
+      <div class="est-label" style="color:#fcd34d;">Understood, but has several moving parts. Some coordination needed.</div>
+    </div>
+    <div class="est-card" style="background:#2d1900; border: 1px solid #92400e;">
+      <div class="est-points" style="color:#fbbf24;">5</div>
+      <div class="est-label" style="color:#fcd34d;">More complex. Real unknowns. Could hit an unexpected edge case.</div>
+    </div>
+    <div class="est-card" style="background:#2d0c0c; border: 1px solid #b91c1c;">
+      <div class="est-points" style="color:#f87171;">8</div>
+      <div class="est-label" style="color:#fca5a5;"><strong>Still too big.</strong> Too many unknowns — split it before estimating.</div>
+    </div>
+  </div>
+
+  <div class="disagree-box">
+    <div class="disagree-person">
+      <div style="font-size: 32px; font-weight: 700; color: #4ade80; line-height: 1; margin-bottom: 6px;">2</div>
+      <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">Person A estimates</div>
+      <div style="font-size: 11px; color: #94a3b8; line-height: 1.6;">
+        "I've done this before.<br>It's straightforward."
+      </div>
+    </div>
+
+    <div class="disagree-middle">
+      <div style="font-size: 26px; margin-bottom: 10px;">⚡</div>
+      <div style="color: #fbbf24; font-weight: 700; font-size: 12px; margin-bottom: 10px;">Big disagreement</div>
+      <div>Do <strong style="color:#f87171;">not</strong> average them.</div>
+      <div>One person knows</div>
+      <div>something the other doesn't.</div>
+      <div style="margin-top: 12px; padding: 8px 14px; background: #052e16; border: 1px solid #16a34a; border-radius: 8px; color: #4ade80; font-weight: 600; font-size: 11px;">
+        Stop → Discuss → Surface the unknown → Re-estimate
+      </div>
+    </div>
+
+    <div class="disagree-person">
+      <div style="font-size: 32px; font-weight: 700; color: #f87171; line-height: 1; margin-bottom: 6px;">8</div>
+      <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">Person B estimates</div>
+      <div style="font-size: 11px; color: #94a3b8; line-height: 1.6;">
+        "Wait — this also needs<br>a data migration."
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ Legend ══ -->
+<div class="legend">
+  <span class="legend-title">Diagram Legend</span>
+  <div class="legend-item">
+    <div class="leg-circle" style="background:#0891b2;"></div>
+    <span>Start / End</span>
+  </div>
+  <div class="legend-item">
+    <div class="leg-rect" style="background:#041f24; border: 1px solid #0891b2;"></div>
+    <span>AI activity</span>
+  </div>
+  <div class="legend-item">
+    <div class="leg-rect" style="background:#052e16; border: 1px solid #059669;"></div>
+    <span>Ralph (code check)</span>
+  </div>
+  <div class="legend-item">
+    <div class="leg-rect" style="background:#431407; border: 1px solid #d97706;"></div>
+    <span>Ralph-Brother (screen check)</span>
+  </div>
+  <div class="legend-item">
+    <div class="leg-rect" style="background:#1e1b4b; border: 1px solid #4c1d95;"></div>
+    <span>Human / Investigation</span>
+  </div>
+  <div class="legend-item">
+    <div class="leg-rect" style="background:#052e16; border: 1px solid #16a34a;"></div>
+    <span>Done / Passing</span>
+  </div>
+  <div class="legend-item">
+    <div class="leg-diamond" style="background:#1e293b; border: 1px solid #475569;"></div>
+    <span>Decision</span>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    securityLevel: 'loose',
+  });
+</script>
+</body>
+</html>

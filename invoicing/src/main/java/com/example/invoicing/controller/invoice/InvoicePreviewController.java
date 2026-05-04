@@ -31,6 +31,9 @@ public class InvoicePreviewController {
 
     @PostMapping("/preview")
     public ResponseEntity<SimulationReport> preview(@RequestBody InvoicePreviewRequest request) {
+        if ((request.getEventIds() == null || request.getEventIds().isEmpty()) && request.getCustomerId() == null) {
+            return ResponseEntity.badRequest().build();
+        }
         List<BillingEvent> events;
         if (request.getEventIds() != null && !request.getEventIds().isEmpty()) {
             events = billingEventRepository.findAllById(request.getEventIds());

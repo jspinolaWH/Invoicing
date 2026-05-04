@@ -3,7 +3,7 @@
 -- ─────────────────────────────────────────────────────────────────
 -- 1. VEHICLES
 -- ─────────────────────────────────────────────────────────────────
-CREATE TABLE vehicles (
+CREATE TABLE IF NOT EXISTS vehicles (
     vehicle_id       VARCHAR(20)  NOT NULL,
     registration_plate VARCHAR(20) NOT NULL,
     vehicle_type     VARCHAR(100) NOT NULL,
@@ -23,12 +23,13 @@ INSERT INTO vehicles (vehicle_id, registration_plate, vehicle_type) VALUES
 ('VH-009', 'YZA-567', 'CONTAINER_TRUCK'),
 ('VH-010', 'BCD-890', 'CONTAINER_TRUCK'),
 ('VH-011', 'EFG-123', 'HOOKLIFT'),
-('VH-012', 'HIJ-456', 'HOOKLIFT');
+('VH-012', 'HIJ-456', 'HOOKLIFT')
+ON CONFLICT (vehicle_id) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────
 -- 2. DRIVERS
 -- ─────────────────────────────────────────────────────────────────
-CREATE TABLE drivers (
+CREATE TABLE IF NOT EXISTS drivers (
     driver_id      VARCHAR(50)  NOT NULL,
     name           VARCHAR(255) NOT NULL,
     license_number VARCHAR(50),
@@ -48,12 +49,13 @@ INSERT INTO drivers (driver_id, name, license_number) VALUES
 ('DRV-009', 'Matti Järvinen',   'LIC-FI-10009'),
 ('DRV-010', 'Ville Lehtonen',   'LIC-FI-10010'),
 ('DRV-011', 'Sari Laitinen',    'LIC-FI-10011'),
-('DRV-012', 'Hanna Turunen',    'LIC-FI-10012');
+('DRV-012', 'Hanna Turunen',    'LIC-FI-10012')
+ON CONFLICT (driver_id) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────
 -- 3. LOCATION MASTERS
 -- ─────────────────────────────────────────────────────────────────
-CREATE TABLE location_masters (
+CREATE TABLE IF NOT EXISTS location_masters (
     location_id       VARCHAR(50)  NOT NULL,
     name              VARCHAR(255) NOT NULL,
     municipality_id   VARCHAR(50)  NOT NULL,
@@ -78,12 +80,13 @@ INSERT INTO location_masters (location_id, name, municipality_id, municipality_n
 ('LOC-012', 'Turku Harbour Collection',         'TKU', 'Turku',       'Satamakatu 12, 20100 Turku'),
 ('LOC-013', 'Ruskon Jätekeskus',                'OUL', 'Oulu',        'Ruskonkatu 1, 90620 Oulu'),
 ('LOC-014', 'Mustankorkea Station',             'JKL', 'Jyväskylä',   'Mustankorkeantie 2, 40800 Jyväskylä'),
-('LOC-015', 'Kuopio Recycling Centre',          'KUO', 'Kuopio',      'Kuopionlahdenranta 4, 70100 Kuopio');
+('LOC-015', 'Kuopio Recycling Centre',          'KUO', 'Kuopio',      'Kuopionlahdenranta 4, 70100 Kuopio')
+ON CONFLICT (location_id) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────
 -- 4. WASTE TYPE MASTERS
 -- ─────────────────────────────────────────────────────────────────
-CREATE TABLE waste_type_masters (
+CREATE TABLE IF NOT EXISTS waste_type_masters (
     code     VARCHAR(50)  NOT NULL,
     name_fi  VARCHAR(255) NOT NULL,
     name_en  VARCHAR(255) NOT NULL,
@@ -107,12 +110,13 @@ INSERT INTO waste_type_masters (code, name_fi, name_en, category) VALUES
 ('BULKY',          'Suurikokoinen jäte',    'Bulky Waste',           'MUNICIPAL'),
 ('TEXTILE',        'Tekstiilijäte',         'Textile Waste',         'RECYCLABLE'),
 ('BATTERIES',      'Paristot ja akut',      'Batteries',             'HAZARDOUS'),
-('GARDEN',         'Puutarhajäte',          'Garden Waste',          'MUNICIPAL');
+('GARDEN',         'Puutarhajäte',          'Garden Waste',          'MUNICIPAL')
+ON CONFLICT (code) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────
 -- 5. RECEIVING SITES
 -- ─────────────────────────────────────────────────────────────────
-CREATE TABLE receiving_sites (
+CREATE TABLE IF NOT EXISTS receiving_sites (
     id                BIGSERIAL    NOT NULL,
     name              VARCHAR(255) NOT NULL,
     municipality_name VARCHAR(255) NOT NULL,
@@ -133,4 +137,5 @@ INSERT INTO receiving_sites (name, municipality_name, address, site_type) VALUES
 ('Mustankorkea Waste Centre',        'Jyväskylä', 'Mustankorkeantie 2, 40800 Jyväskylä',  'LANDFILL'),
 ('Kuopio Composting Plant',          'Kuopio',    'Kuopionlahdenranta 4, 70100 Kuopio',   'COMPOSTING'),
 ('Lahti Recycling Centre',           'Lahti',     'Paperitehtaankatu 5, 15140 Lahti',     'RECYCLING_CENTER'),
-('Hyvinkää Transfer Station',        'Hyvinkää',  'Sveitsinrinne 3, 05800 Hyvinkää',      'SORTING_FACILITY');
+('Hyvinkää Transfer Station',        'Hyvinkää',  'Sveitsinrinne 3, 05800 Hyvinkää',      'SORTING_FACILITY')
+ON CONFLICT (name) DO NOTHING;

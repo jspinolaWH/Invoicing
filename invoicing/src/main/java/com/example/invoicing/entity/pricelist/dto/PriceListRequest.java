@@ -1,5 +1,7 @@
 package com.example.invoicing.entity.pricelist.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,10 +10,10 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class PriceListRequest {
-    private String code;
-    private String name;
+    @NotBlank private String code;
+    @NotBlank private String name;
     private String tariffVariant;
-    private LocalDate validFrom;
+    @NotNull private LocalDate validFrom;
     private LocalDate validTo;
     private String description;
     private boolean active = true;

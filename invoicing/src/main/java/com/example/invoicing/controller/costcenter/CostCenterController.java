@@ -4,6 +4,7 @@ import com.example.invoicing.entity.costcenter.CostCenter;
 import com.example.invoicing.entity.costcenter.dto.CostCenterRequest;
 import com.example.invoicing.entity.costcenter.dto.CostCenterResponse;
 import com.example.invoicing.service.CostCenterService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -40,12 +41,12 @@ public class CostCenterController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CostCenterResponse create(@RequestBody CostCenterRequest request) {
+    public CostCenterResponse create(@Valid @RequestBody CostCenterRequest request) {
         return CostCenterResponse.from(service.create(request));
     }
 
     @PutMapping("/{id}")
-    public CostCenterResponse update(@PathVariable Long id, @RequestBody CostCenterRequest request) {
+    public CostCenterResponse update(@PathVariable Long id, @Valid @RequestBody CostCenterRequest request) {
         return CostCenterResponse.from(service.update(id, request));
     }
 

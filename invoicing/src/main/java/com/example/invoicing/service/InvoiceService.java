@@ -85,6 +85,7 @@ public class InvoiceService {
 
     @Transactional
     public void bulkUpdateCustomText(List<Long> ids, String customText) {
+        if (ids == null || ids.isEmpty()) return;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String loggedBy = (auth != null && auth.getName() != null) ? auth.getName() : "system";
         Instant now = Instant.now();

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { previewPriceAdjustment, applyPriceAdjustment } from '../../api/retroactive';
+import CustomerSearchInput from '../../components/billing/CustomerSearchInput';
 
 export default function PriceAdjustmentPage() {
   const [selectionMode, setSelectionMode] = useState('dateRange'); // 'dateRange' | 'eventIds'
@@ -130,7 +131,17 @@ export default function PriceAdjustmentPage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>{field('Customer Number *', 'customerNumber', 'text', 'e.g. 123456789')}</div>
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>Customer Number *</label>
+              <CustomerSearchInput
+                customerNumber={form.customerNumber}
+                onSelect={(num) => setForm(f => ({ ...f, customerNumber: num }))}
+                required={false}
+                placeholder="e.g. 123456789"
+              />
+            </div>
+          </div>
           <div>{field('Performed By', 'performedBy', 'text', 'e.g. john.doe')}</div>
 
           {selectionMode === 'dateRange' ? (

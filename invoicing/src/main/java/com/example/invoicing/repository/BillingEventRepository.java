@@ -29,23 +29,23 @@ public interface BillingEventRepository extends JpaRepository<BillingEvent, Long
         @Param("to") LocalDate to
     );
 
-    @Query("""
-        SELECT e FROM BillingEvent e
-        WHERE e.status = 'IN_PROGRESS'
-          AND e.excluded = false
-          AND (:municipalityId IS NULL OR e.municipalityId = :municipalityId)
-          AND (:dateFrom     IS NULL OR e.eventDate >= :dateFrom)
-          AND (:dateTo       IS NULL OR e.eventDate <= :dateTo)
-          AND (:productId    IS NULL OR e.product.id = :productId)
-          AND (:customerType IS NULL OR e.legalClassification = :customerType)
-          AND (:locationId   IS NULL OR e.locationId = :locationId)
-        """)
+    @Query(value = """
+        SELECT * FROM billing_events
+        WHERE status = 'IN_PROGRESS'
+          AND excluded = false
+          AND (:municipalityId IS NULL OR municipality_id = :municipalityId)
+          AND (:dateFrom       IS NULL OR event_date >= CAST(:dateFrom AS DATE))
+          AND (:dateTo         IS NULL OR event_date <= CAST(:dateTo   AS DATE))
+          AND (:productId      IS NULL OR product_id = :productId)
+          AND (:customerType   IS NULL OR legal_classification = :customerType)
+          AND (:locationId     IS NULL OR location_id = :locationId)
+        """, nativeQuery = true)
     List<BillingEvent> findByRunFilter(
         @Param("municipalityId")  String municipalityId,
-        @Param("dateFrom")        LocalDate dateFrom,
-        @Param("dateTo")          LocalDate dateTo,
+        @Param("dateFrom")        String dateFrom,
+        @Param("dateTo")          String dateTo,
         @Param("productId")       Long productId,
-        @Param("customerType")    LegalClassification customerType,
+        @Param("customerType")    String customerType,
         @Param("locationId")      String locationId
     );
 

@@ -55,12 +55,13 @@ public class InvoiceSimulationService {
     public SimulationReport simulate(InvoiceRunRequest request) {
         List<SimulationAuditEntry> auditLog = new ArrayList<>();
 
+        LegalClassification cls = resolveClassification(request.getFilterServiceResponsibility());
         List<BillingEvent> allEvents = billingEventRepository.findByRunFilter(
             request.getFilterMunicipality(),
-            request.getFilterPeriodFrom(),
-            request.getFilterPeriodTo(),
+            request.getFilterPeriodFrom() != null ? request.getFilterPeriodFrom().toString() : null,
+            request.getFilterPeriodTo()   != null ? request.getFilterPeriodTo().toString()   : null,
             null,
-            resolveClassification(request.getFilterServiceResponsibility()),
+            cls != null ? cls.name() : null,
             request.getFilterLocation()
         );
         auditLog.add(SimulationAuditEntry.builder()

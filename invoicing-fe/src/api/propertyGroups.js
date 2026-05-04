@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from './axios'
 
 export const getPropertyGroups = () => axios.get('/api/v1/property-groups')
 export const createPropertyGroup = (data) => axios.post('/api/v1/property-groups', data)

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import SearchableAutocomplete from '../SearchableAutocomplete'
 import { searchCustomers } from '../../api/customers'
 
-export default function CustomerSearchInput({ customerNumber, onSelect, hasError }) {
+export default function CustomerSearchInput({ customerNumber, onSelect, hasError, required = true, placeholder, disabled = false }) {
   const [displayText, setDisplayText] = useState(customerNumber || '')
 
   const handleSearch = async (q) => {
@@ -38,8 +38,9 @@ export default function CustomerSearchInput({ customerNumber, onSelect, hasError
           )}
         </span>
       )}
-      placeholder="Search by name or customer number…"
-      required
+      placeholder={placeholder ?? 'Search by name or customer number…'}
+      required={required}
+      disabled={disabled}
     />
   )
 }
